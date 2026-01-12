@@ -4,6 +4,7 @@ import { TaskList } from "@/components/dashboard/TaskList";
 import { TeamActivity } from "@/components/dashboard/TeamActivity";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
+import { SubUserSelector } from "@/components/subuser/SubUserSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -102,6 +103,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-4"
             >
+              <SubUserSelector />
               <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-sm font-medium">
                 <Calendar className="w-4 h-4" />
                 <span>Last 7 days</span>
