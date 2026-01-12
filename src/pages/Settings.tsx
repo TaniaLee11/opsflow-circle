@@ -2,38 +2,35 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSubUser, AIAgentId, AI_AGENTS } from "@/contexts/SubUserContext";
+import { useVOPSyMode, VOPSyModeId, VOPSY_MODES } from "@/contexts/VOPSyModeContext";
 import { Navigate } from "react-router-dom";
 import { 
   Settings as SettingsIcon, 
-  Bot, 
+  Sparkles, 
   Users, 
   Shield, 
   ToggleLeft, 
   ToggleRight,
-  ChevronRight,
   Crown,
   Lock,
   Eye,
-  EyeOff,
-  Save,
   AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type SettingsTab = "agents" | "team" | "permissions" | "general";
+type SettingsTab = "modes" | "team" | "permissions" | "general";
 
 export default function Settings() {
-  const { isAuthenticated, isOwner, isAdmin, user } = useAuth();
-  const { allAgents, toggleAgentEnabled } = useSubUser();
-  const [activeTab, setActiveTab] = useState<SettingsTab>("agents");
+  const { isAuthenticated, isOwner, isAdmin } = useAuth();
+  const { allModes, toggleModeEnabled } = useVOPSyMode();
+  const [activeTab, setActiveTab] = useState<SettingsTab>("modes");
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
   const tabs = [
-    { id: "agents" as const, label: "AI Agents", icon: Bot, adminOnly: true },
+    { id: "modes" as const, label: "VOPSy Modes", icon: Sparkles, adminOnly: true },
     { id: "team" as const, label: "Team & Roles", icon: Users, adminOnly: true },
     { id: "permissions" as const, label: "Permissions", icon: Shield, adminOnly: true },
     { id: "general" as const, label: "General", icon: SettingsIcon, adminOnly: false }
@@ -55,7 +52,7 @@ export default function Settings() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-                <p className="text-muted-foreground">Manage your platform and AI agents</p>
+                <p className="text-muted-foreground">Configure VOPSy modes and platform settings</p>
               </div>
             </div>
             
@@ -96,8 +93,8 @@ export default function Settings() {
 
             {/* Content */}
             <div className="flex-1">
-              {activeTab === "agents" && isAdmin && (
-                <AgentsSettings agents={allAgents} onToggle={toggleAgentEnabled} />
+              {activeTab === "modes" && isAdmin && (
+                <ModesSettings modes={allModes} onToggle={toggleModeEnabled} isOwner={isOwner} />
               )}
               {activeTab === "team" && isAdmin && <TeamSettings />}
               {activeTab === "permissions" && isAdmin && <PermissionsSettings />}
@@ -110,35 +107,50 @@ export default function Settings() {
   );
 }
 
-function AgentsSettings({ 
-  agents, 
-  onToggle 
+function ModesSettings({ 
+  modes, 
+  onToggle,
+  isOwner
 }: { 
-  agents: typeof AI_AGENTS[keyof typeof AI_AGENTS][]; 
-  onToggle: (id: AIAgentId) => void;
+  modes: typeof VOPSY_MODES[keyof typeof VOPSY_MODES][]; 
+  onToggle: (id: VOPSyModeId) => void;
+  isOwner: boolean;
 }) {
-  const [selectedAgent, setSelectedAgent] = useState<AIAgentId | null>(null);
-  const agent = selectedAgent ? AI_AGENTS[selectedAgent] : null;
+  const [selectedMode, setSelectedMode] = useState<VOPSyModeId | null>(null);
+  const mode = selectedMode ? VOPSY_MODES[selectedMode] : null;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">AI Agents</h2>
-        <p className="text-muted-foreground">Configure which AI agents are available to users and manage their permissions.</p>
+        <h2 className="text-xl font-semibold text-foreground mb-2">VOPSy Operating Modes</h2>
+        <p className="text-muted-foreground">
+          VOPSy is one AI agent with multiple operating modes. Each mode unlocks different capabilities and scope.
+        </p>
+      </div>
+
+      <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-start gap-3">
+        <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+        <div>
+          <p className="font-medium text-foreground">One Agent, Multiple Modes</p>
+          <p className="text-sm text-muted-foreground">
+            Unlike separate AI assistants, VOPSy maintains context across all modes. 
+            Switching modes changes capabilities, not identity.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Agent List */}
+        {/* Mode List */}
         <div className="space-y-3">
-          {agents.map((a) => (
+          {modes.map((m) => (
             <motion.div
-              key={a.id}
+              key={m.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              onClick={() => setSelectedAgent(a.id)}
+              onClick={() => setSelectedMode(m.id)}
               className={cn(
                 "p-4 rounded-xl border cursor-pointer transition-all",
-                selectedAgent === a.id
+                selectedMode === m.id
                   ? "glass gradient-border glow-primary-sm"
                   : "bg-card border-border hover:border-primary/30"
               )}
@@ -147,27 +159,38 @@ function AgentsSettings({
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-lg",
-                    a.color
+                    m.color
                   )}>
-                    {a.icon}
+                    {m.icon}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">{a.name}</h3>
-                    <p className="text-xs text-muted-foreground">{a.title}</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground">{m.fullName}</h3>
+                      {m.requiresAdmin && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-primary/20 text-primary">
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{m.purpose}</p>
                   </div>
                 </div>
                 
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onToggle(a.id);
+                    // Only owner can toggle Enterprise mode
+                    if (m.id === "enterprise" && !isOwner) return;
+                    onToggle(m.id);
                   }}
+                  disabled={m.id === "enterprise" && !isOwner}
                   className={cn(
                     "transition-colors",
-                    a.enabled ? "text-success" : "text-muted-foreground"
+                    m.enabled ? "text-success" : "text-muted-foreground",
+                    m.id === "enterprise" && !isOwner && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  {a.enabled ? (
+                  {m.enabled ? (
                     <ToggleRight className="w-8 h-8" />
                   ) : (
                     <ToggleLeft className="w-8 h-8" />
@@ -178,8 +201,8 @@ function AgentsSettings({
           ))}
         </div>
 
-        {/* Agent Details */}
-        {agent && (
+        {/* Mode Details */}
+        {mode && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -188,21 +211,32 @@ function AgentsSettings({
             <div className="flex items-center gap-4">
               <div className={cn(
                 "w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl",
-                agent.color
+                mode.color
               )}>
-                {agent.icon}
+                {mode.icon}
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-foreground">{agent.name}</h3>
-                <p className="text-sm text-muted-foreground">{agent.title}</p>
+                <h3 className="text-xl font-semibold text-foreground">{mode.fullName}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={cn(
+                    "px-2 py-0.5 text-xs font-medium rounded-full",
+                    mode.riskLevel === "high" 
+                      ? "bg-primary/20 text-primary" 
+                      : mode.riskLevel === "medium"
+                      ? "bg-warning/20 text-warning"
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    {mode.riskLevel.charAt(0).toUpperCase() + mode.riskLevel.slice(1)} Risk
+                  </span>
+                </div>
               </div>
             </div>
 
-            <p className="text-sm text-muted-foreground">{agent.description}</p>
+            <p className="text-sm text-muted-foreground">{mode.purpose}</p>
 
             <div>
               <h4 className="text-sm font-medium text-foreground mb-2">Tone & Style</h4>
-              <p className="text-sm text-muted-foreground italic">"{agent.tone}"</p>
+              <p className="text-sm text-muted-foreground italic">"{mode.tone}"</p>
             </div>
 
             <div>
@@ -211,7 +245,7 @@ function AgentsSettings({
                 Capabilities
               </h4>
               <ul className="space-y-1">
-                {agent.capabilities.map((cap, i) => (
+                {mode.capabilities.map((cap, i) => (
                   <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-success" />
                     {cap}
@@ -220,17 +254,17 @@ function AgentsSettings({
               </ul>
             </div>
 
-            {agent.restrictions.length > 0 && (
+            {mode.limitations.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                   <Lock className="w-4 h-4 text-destructive" />
-                  Restrictions
+                  Limitations
                 </h4>
                 <ul className="space-y-1">
-                  {agent.restrictions.map((res, i) => (
+                  {mode.limitations.map((lim, i) => (
                     <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                      {res}
+                      {lim}
                     </li>
                   ))}
                 </ul>
@@ -246,7 +280,7 @@ function AgentsSettings({
 function TeamSettings() {
   const roles = [
     { role: "Owner", count: 1, description: "Full platform control, non-removable", icon: Crown, color: "text-primary" },
-    { role: "Admin", count: 2, description: "Manage settings, users, and AI agents", icon: Shield, color: "text-info" },
+    { role: "Admin", count: 2, description: "Manage settings, users, and VOPSy modes", icon: Shield, color: "text-info" },
     { role: "Operator", count: 4, description: "Execute tasks and manage operations", icon: Users, color: "text-success" },
     { role: "Standard User", count: 12, description: "Basic access to assigned features", icon: Users, color: "text-muted-foreground" }
   ];
@@ -289,17 +323,17 @@ function PermissionsSettings() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-foreground mb-2">Permissions</h2>
-        <p className="text-muted-foreground">Configure what each role can access and modify.</p>
+        <p className="text-muted-foreground">Configure what each role can access and which VOPSy modes they can use.</p>
       </div>
 
       <div className="glass gradient-border rounded-xl p-6">
         <h3 className="font-semibold text-foreground mb-4">Permission Hierarchy</h3>
         <div className="space-y-4">
           {[
-            { role: "Owner", permissions: ["All permissions", "Platform ownership", "Cannot be removed"] },
-            { role: "Admin", permissions: ["Manage users", "Configure AI agents", "Access all features", "Cannot modify owner"] },
-            { role: "Operator", permissions: ["Execute tasks", "View reports", "Use AI agents", "Limited settings access"] },
-            { role: "User", permissions: ["Basic features only", "View assigned content", "Interact with approved AI agents"] }
+            { role: "Owner", permissions: ["All VOPSy modes", "Enterprise mode access", "Platform ownership", "Cannot be removed"] },
+            { role: "Admin", permissions: ["All modes except Enterprise (unless granted)", "Manage users", "Configure VOPSy settings"] },
+            { role: "Operator", permissions: ["Assistant mode", "Operations mode", "Finance mode", "Limited settings access"] },
+            { role: "User", permissions: ["Assistant mode only", "View assigned content", "Basic features"] }
           ].map((item, i) => (
             <div key={item.role} className="flex items-start gap-4">
               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
@@ -344,7 +378,7 @@ function GeneralSettings() {
 
         <div className="p-4 rounded-xl bg-card border border-border">
           <h3 className="font-medium text-foreground mb-1">AI Intelligence</h3>
-          <p className="text-sm text-muted-foreground">Powered by VOPSy</p>
+          <p className="text-sm text-muted-foreground">VOPSy — Single agent with multiple operating modes</p>
         </div>
       </div>
     </div>
