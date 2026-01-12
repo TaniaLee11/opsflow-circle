@@ -26,16 +26,15 @@ const App = () => (
             <Route path="/ai-studio" element={<AIStudio />} />
             <Route path="/academy" element={<Academy />} />
             <Route path="/financial" element={<FinancialHub />} />
-            {/* Placeholder routes - will show dashboard for now */}
+            {/* Placeholder routes */}
             <Route path="/projects" element={<Dashboard />} />
             <Route path="/team" element={<Dashboard />} />
-            <Route path="/invoicing" element={<Dashboard />} />
+            <Route path="/invoicing" element={<FinancialHub />} />
             <Route path="/autoresponder" element={<Dashboard />} />
             <Route path="/marketing" element={<Dashboard />} />
             <Route path="/automations" element={<Dashboard />} />
             <Route path="/messages" element={<Dashboard />} />
             <Route path="/settings" element={<Dashboard />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
