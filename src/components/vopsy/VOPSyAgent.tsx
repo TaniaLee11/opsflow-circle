@@ -7,60 +7,100 @@ import {
   Mic, 
   MicOff,
   Loader2,
-  ChevronRight,
+  ChevronDown,
   Zap,
-  MessageSquare
+  MessageSquare,
+  Bot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubUser, AIAgentId, AI_AGENTS } from "@/contexts/SubUserContext";
+import { ActorIndicator } from "@/components/subuser/ActorIndicator";
 
 interface Message {
   id: string;
-  role: "user" | "vopsy";
+  role: "user" | "agent";
+  agentId?: AIAgentId;
   content: string;
   timestamp: Date;
   actions?: { label: string; action: string }[];
 }
 
-const contextualSuggestions = {
-  dashboard: [
-    "What should I focus on today?",
-    "Summarize my financial health",
-    "Are there any urgent items?"
-  ],
-  financial: [
-    "Explain my cash flow",
-    "How much should I set aside for taxes?",
-    "What expenses can I reduce?"
-  ],
-  default: [
-    "What can you help me with?",
-    "Show me my priorities",
-    "Draft a client follow-up"
-  ]
+const agentResponses: Record<AIAgentId, (input: string) => string> = {
+  vopsy: (input) => {
+    const lower = input.toLowerCase();
+    if (lower.includes("priorit") || lower.includes("focus")) {
+      return "As your operations intelligence, here's my strategic assessment:\n\n**Immediate Priority:** Quarterly tax payment due in 3 days (~$3,200)\n\n**This Week:** Follow up on overdue invoices to maintain cash flow\n\n**Strategic:** Your runway is stable but consider reducing non-essential expenses\n\nI can delegate specific tasks to our specialized agents. Want me to have AI Finance prepare a detailed tax breakdown?";
+    }
+    return "I'm VOPSy, your primary operations intelligence. I orchestrate across all domains and can coordinate our specialized AI agents for specific tasks. What would you like to accomplish?";
+  },
+  ai_assistant: (input) => {
+    return "I'm here to help with general tasks! I can draft emails, answer questions, and assist with everyday work. What can I help you with?";
+  },
+  ai_operations: (input) => {
+    return "As your Operations specialist, I focus on workflows and automation. I can help you:\n\n• Set up automated processes\n• Optimize existing workflows\n• Document procedures\n• Schedule recurring tasks\n\nWhat operational challenge are you facing?";
+  },
+  ai_finance: (input) => {
+    const lower = input.toLowerCase();
+    if (lower.includes("tax") || lower.includes("taxes")) {
+      return "Based on your financial data:\n\n**Q4 Estimated Tax:** $3,200\n**Calculation:**\n• YTD Profit: ~$42,500\n• Estimated Rate: 30%\n• Q4 Portion: $3,200\n\n**Recommendation:** Set aside this amount by January 15. I can help you track this or set up automatic set-asides.\n\n⚠️ *Note: I provide calculations but cannot give tax advice. Consult a professional for specific guidance.*";
+    }
+    if (lower.includes("cash") || lower.includes("money") || lower.includes("flow")) {
+      return "Here's your cash flow analysis:\n\n**Current Position:**\n• Cash on Hand: $24,580\n• Monthly Burn Rate: $8,200 (↓5% from last month)\n• Runway: ~3 months\n\n**Assessment:** You're in a stable position. The reduced burn rate is positive.\n\n**Watch Items:**\n• ABC Corp invoice is overdue ($5,000)\n• Quarterly taxes due soon ($3,200)";
+    }
+    return "I'm AI Finance, specializing in financial analysis and interpretation. I can help you understand:\n\n• Cash flow and runway\n• Tax obligations and set-asides\n• Expense patterns\n• Budget recommendations\n\nWhat financial question do you have?";
+  },
+  ai_compliance: (input) => {
+    return "I'm AI Compliance, monitoring your regulatory obligations.\n\n**Current Alerts:**\n🔴 Quarterly Tax Payment: Due January 15 (3 days)\n🟡 Annual Report Filing: Due in 45 days\n\n**Upcoming:**\n• Business License Renewal: March 1\n• Insurance Review: February 15\n\nI track deadlines and requirements but cannot provide legal advice.";
+  },
+  ai_marketing: (input) => {
+    return "I'm AI Marketing, here to support your growth efforts!\n\n**Quick Insights:**\n• Email open rate: 24% (above industry avg)\n• Top performing content: How-to guides\n• Lead quality score: 7.2/10\n\nI can help with content ideas, campaign analysis, and audience insights. What marketing challenge are you working on?";
+  },
+  ai_education: (input) => {
+    return "Welcome to your learning journey! 🎓\n\nBased on your recent activity, I recommend:\n\n**Priority Course:**\n📚 \"Understanding Cash Flow\" (45 min)\n*Triggered by: Recent cash flow questions*\n\n**Learning Path:**\n1. Cash Flow Basics\n2. Tax Planning for Business\n3. Building Business Credit\n\nShall I start the recommended course or show your full learning path?";
+  }
 };
 
 export function VOPSyAgent() {
   const { user } = useAuth();
+  const { activeActor, availableAgents, switchToAgent } = useSubUser();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<AIAgentId>("vopsy");
+  const [showAgentPicker, setShowAgentPicker] = useState(false);
+  
+  const currentAgent = AI_AGENTS[selectedAgentId];
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      role: "vopsy",
-      content: `Hey ${user?.name?.split(" ")[0] || "there"}! I'm VOPSy, your operations intelligence. I can help you understand your business, complete tasks, and make decisions. What would you like to tackle?`,
+      role: "agent",
+      agentId: "vopsy",
+      content: `Hey ${user?.name?.split(" ")[0] || "there"}! I'm VOPSy, your operations intelligence. I can help you understand your business, complete tasks, and make decisions. You can also switch to our specialized agents for domain-specific help.`,
       timestamp: new Date(),
       actions: [
-        { label: "Review my finances", action: "review_finances" },
+        { label: "Review finances", action: "review_finances" },
         { label: "Check priorities", action: "check_priorities" }
       ]
     }
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [isListening, setIsListening] = useState(false);
 
-  const suggestions = contextualSuggestions.default;
+  const handleAgentSwitch = (agentId: AIAgentId) => {
+    setSelectedAgentId(agentId);
+    setShowAgentPicker(false);
+    
+    const agent = AI_AGENTS[agentId];
+    const switchMessage: Message = {
+      id: crypto.randomUUID(),
+      role: "agent",
+      agentId: agentId,
+      content: `You're now speaking with **${agent.name}** — ${agent.title}.\n\n${agent.description}\n\nHow can I help you?`,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, switchMessage]);
+  };
 
   const handleSend = async (text?: string) => {
     const messageText = text || input;
@@ -77,44 +117,19 @@ export function VOPSyAgent() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate VOPSy response
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
-    const vopsyResponse: Message = {
+    const responseFunc = agentResponses[selectedAgentId];
+    const agentResponse: Message = {
       id: crypto.randomUUID(),
-      role: "vopsy",
-      content: getVOPSyResponse(messageText),
-      timestamp: new Date(),
-      actions: [
-        { label: "Tell me more", action: "more" },
-        { label: "Take action", action: "action" }
-      ]
+      role: "agent",
+      agentId: selectedAgentId,
+      content: responseFunc(messageText),
+      timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, vopsyResponse]);
+    setMessages(prev => [...prev, agentResponse]);
     setIsTyping(false);
-  };
-
-  const getVOPSyResponse = (input: string): string => {
-    const lower = input.toLowerCase();
-    
-    if (lower.includes("focus") || lower.includes("priorit")) {
-      return "Based on your current situation, here's what I recommend focusing on:\n\n**1. Quarterly Tax Payment** — Due in 3 days. I've calculated you should set aside $3,200.\n\n**2. Invoice Follow-up** — ABC Corp payment is 5 days overdue. Want me to draft a reminder?\n\n**3. Cash Runway** — At current burn, you have 2.8 months. Consider reducing non-essential expenses.";
-    }
-    
-    if (lower.includes("cash") || lower.includes("financ") || lower.includes("money")) {
-      return "Here's your financial snapshot:\n\n**Cash on Hand:** $24,580 (healthy for your stage)\n**Monthly Burn:** $8,200 (down 5% — nice!)\n**Runway:** 3 months at current spending\n\n💡 You're in a stable position. The main action item is your upcoming tax payment. Want me to set up an automatic set-aside?";
-    }
-    
-    if (lower.includes("tax")) {
-      return "Your estimated quarterly tax payment is **$3,200**, due January 15.\n\nThis is based on:\n• YTD profit: ~$42,500\n• Estimated rate: 30%\n• Q4 portion: $3,200\n\nI can help you:\n1. Transfer to your tax savings account\n2. Set up automatic tax set-asides\n3. Connect with a tax professional\n\nWhat works best for you?";
-    }
-    
-    if (lower.includes("draft") || lower.includes("write") || lower.includes("email")) {
-      return "I'll draft that for you. Here's a professional follow-up:\n\n---\n\n**Subject:** Quick follow-up on Invoice #1247\n\nHi [Name],\n\nHope you're doing well! I wanted to check in on Invoice #1247 for $5,000, which was due on January 5th.\n\nPlease let me know if you need any additional information to process the payment.\n\nThanks!\n[Your name]\n\n---\n\nWant me to send this, or would you like to edit it first?";
-    }
-    
-    return "I understand you're asking about \"" + input + "\". Let me help with that.\n\nBased on your current operations data, I can:\n• Analyze relevant metrics\n• Draft communications\n• Set up automations\n• Guide you through next steps\n\nWhat specifically would you like me to do?";
   };
 
   if (!isOpen) {
@@ -139,22 +154,71 @@ export function VOPSyAgent() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
         className={cn(
-          "fixed bottom-6 right-6 z-50 w-96 rounded-2xl overflow-hidden shadow-2xl border border-border",
+          "fixed bottom-6 right-6 z-50 w-[420px] rounded-2xl overflow-hidden shadow-2xl border border-border",
           "bg-card backdrop-blur-xl",
-          isMinimized ? "h-16" : "h-[32rem]"
+          isMinimized ? "h-16" : "h-[36rem]"
         )}
       >
-        {/* Header */}
+        {/* Header with Agent Selector */}
         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/20 to-primary/5 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground text-sm">VOPSy</h3>
-              <p className="text-xs text-muted-foreground">Your Operations Intelligence</p>
-            </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowAgentPicker(!showAgentPicker)}
+              className="flex items-center gap-3 hover:bg-muted/50 px-2 py-1 rounded-lg transition-colors"
+            >
+              <div className={cn(
+                "w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center",
+                currentAgent.color
+              )}>
+                <span className="text-sm">{currentAgent.icon}</span>
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1">
+                  <h3 className="font-semibold text-foreground text-sm">{currentAgent.name}</h3>
+                  <ChevronDown className={cn(
+                    "w-3 h-3 text-muted-foreground transition-transform",
+                    showAgentPicker && "rotate-180"
+                  )} />
+                </div>
+                <p className="text-xs text-muted-foreground">{currentAgent.title}</p>
+              </div>
+            </button>
+
+            {/* Agent Picker Dropdown */}
+            <AnimatePresence>
+              {showAgentPicker && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute left-0 top-full mt-2 w-64 rounded-xl bg-card border border-border shadow-xl z-10 p-2"
+                >
+                  {availableAgents.map((agent) => (
+                    <button
+                      key={agent.id}
+                      onClick={() => handleAgentSwitch(agent.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-2 rounded-lg transition-colors mb-1",
+                        selectedAgentId === agent.id ? "bg-primary/10" : "hover:bg-muted"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center",
+                        agent.color
+                      )}>
+                        <span className="text-sm">{agent.icon}</span>
+                      </div>
+                      <div className="text-left">
+                        <span className="font-medium text-foreground text-sm">{agent.name}</span>
+                        <p className="text-xs text-muted-foreground">{agent.title}</p>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
@@ -174,46 +238,58 @@ export function VOPSyAgent() {
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 h-80 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={cn(
-                    "flex gap-3",
-                    message.role === "user" && "flex-row-reverse"
-                  )}
-                >
-                  {message.role === "vopsy" && (
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                    </div>
-                  )}
-                  <div className={cn(
-                    "max-w-[80%] rounded-xl px-4 py-3",
-                    message.role === "vopsy" 
-                      ? "bg-muted text-foreground" 
-                      : "bg-primary text-primary-foreground"
-                  )}>
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    
-                    {message.actions && message.role === "vopsy" && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {message.actions.map((action) => (
-                          <button
-                            key={action.action}
-                            onClick={() => handleSend(action.label)}
-                            className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                          >
-                            {action.label}
-                          </button>
-                        ))}
+            <div className="flex-1 h-[26rem] overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => {
+                const messageAgent = message.agentId ? AI_AGENTS[message.agentId] : null;
+                
+                return (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "flex gap-3",
+                      message.role === "user" && "flex-row-reverse"
+                    )}
+                  >
+                    {message.role === "agent" && messageAgent && (
+                      <div className={cn(
+                        "w-7 h-7 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0",
+                        messageAgent.color
+                      )}>
+                        <span className="text-xs">{messageAgent.icon}</span>
                       </div>
                     )}
-                  </div>
-                </motion.div>
-              ))}
+                    <div className={cn(
+                      "max-w-[85%] rounded-xl px-4 py-3",
+                      message.role === "agent" 
+                        ? "bg-muted text-foreground" 
+                        : "bg-primary text-primary-foreground"
+                    )}>
+                      {message.role === "agent" && messageAgent && (
+                        <p className="text-[10px] text-muted-foreground mb-1 font-medium">
+                          {messageAgent.name}
+                        </p>
+                      )}
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      
+                      {message.actions && message.role === "agent" && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {message.actions.map((action) => (
+                            <button
+                              key={action.action}
+                              onClick={() => handleSend(action.label)}
+                              className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
 
               {isTyping && (
                 <motion.div
@@ -221,32 +297,20 @@ export function VOPSyAgent() {
                   animate={{ opacity: 1 }}
                   className="flex gap-3"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-primary" />
+                  <div className={cn(
+                    "w-7 h-7 rounded-lg bg-gradient-to-br flex items-center justify-center",
+                    currentAgent.color
+                  )}>
+                    <span className="text-xs">{currentAgent.icon}</span>
                   </div>
                   <div className="bg-muted rounded-xl px-4 py-3">
                     <div className="flex items-center gap-1">
                       <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      <span className="text-sm text-muted-foreground">VOPSy is thinking...</span>
+                      <span className="text-sm text-muted-foreground">{currentAgent.name} is thinking...</span>
                     </div>
                   </div>
                 </motion.div>
               )}
-            </div>
-
-            {/* Suggestions */}
-            <div className="px-4 pb-2">
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {suggestions.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => handleSend(suggestion)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors whitespace-nowrap shrink-0"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Input */}
@@ -257,22 +321,9 @@ export function VOPSyAgent() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Ask VOPSy anything..."
+                  placeholder={`Ask ${currentAgent.name}...`}
                   className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none px-2"
                 />
-                <button
-                  onClick={() => setIsListening(!isListening)}
-                  className={cn(
-                    "p-2 rounded-lg transition-colors",
-                    isListening ? "bg-destructive text-destructive-foreground" : "hover:bg-background"
-                  )}
-                >
-                  {isListening ? (
-                    <MicOff className="w-4 h-4" />
-                  ) : (
-                    <Mic className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </button>
                 <button
                   onClick={() => handleSend()}
                   disabled={!input.trim()}
