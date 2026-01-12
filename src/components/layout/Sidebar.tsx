@@ -105,8 +105,8 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             className="flex flex-col"
           >
-            <span className="font-semibold text-foreground">VOPSy</span>
-            <span className="text-xs text-muted-foreground">Virtual OPS Hub</span>
+            <span className="font-semibold text-foreground">Virtual OPS Hub</span>
+            <span className="text-xs text-muted-foreground">Powered by VOPSy</span>
           </motion.div>
         )}
       </div>

@@ -96,7 +96,7 @@ export default function Auth() {
             transition={{ delay: 0.35 }}
             className="text-sm text-muted-foreground mb-4"
           >
-            AI-Powered Operations Intelligence
+            Powered by <span className="text-primary font-medium">VOPSy</span> — Your AI Operations Intelligence
           </motion.p>
           
           <motion.div
