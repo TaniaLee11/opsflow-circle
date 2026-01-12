@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, ArrowRight, Mail, Lock, User, Zap } from "lucide-react";
+import { Shield, ArrowRight, Mail, Lock, User, Zap, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 type AuthMode = "signin" | "signup";
 
@@ -10,12 +11,39 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login, signup, isAuthenticated } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // For demo purposes, navigate to dashboard
+  // Redirect if already authenticated
+  if (isAuthenticated) {
     navigate("/dashboard");
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      if (mode === "signin") {
+        await login(email, password);
+      } else {
+        if (!name.trim()) {
+          setError("Please enter your name");
+          setIsLoading(false);
+          return;
+        }
+        await signup(email, password, name);
+      }
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Authentication failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,8 +87,17 @@ export default function Auth() {
             transition={{ delay: 0.3 }}
             className="text-3xl font-bold text-foreground mb-2"
           >
-            Elite Operational Sync
+            Virtual OPS Hub
           </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="text-sm text-muted-foreground mb-4"
+          >
+            AI-Powered Operations Intelligence
+          </motion.p>
           
           <motion.div
             initial={{ opacity: 0 }}
@@ -69,7 +106,7 @@ export default function Auth() {
             className="flex items-center justify-center gap-4"
           >
             <button
-              onClick={() => setMode("signin")}
+              onClick={() => { setMode("signin"); setError(""); }}
               className={`text-sm font-medium transition-colors ${
                 mode === "signin" ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -78,7 +115,7 @@ export default function Auth() {
             </button>
             <span className="text-muted-foreground/50">|</span>
             <button
-              onClick={() => setMode("signup")}
+              onClick={() => { setMode("signup"); setError(""); }}
               className={`text-sm font-medium transition-colors ${
                 mode === "signup" ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -95,6 +132,17 @@ export default function Auth() {
           transition={{ delay: 0.5 }}
           className="glass gradient-border rounded-2xl p-8"
         >
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 p-3 mb-5 rounded-lg bg-destructive/10 text-destructive text-sm"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </motion.div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <AnimatePresence mode="wait">
               {mode === "signup" && (
@@ -133,6 +181,7 @@ export default function Auth() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
+                  required
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground outline-none transition-all"
                 />
               </div>
@@ -149,6 +198,8 @@ export default function Auth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  required
+                  minLength={6}
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground outline-none transition-all"
                 />
               </div>
@@ -156,13 +207,14 @@ export default function Auth() {
 
             <motion.button
               type="submit"
+              disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 glow-primary hover:bg-primary/90 transition-colors group"
+              className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 glow-primary hover:bg-primary/90 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Shield className="w-5 h-5" />
-              <span>Authorize Connection</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span>{isLoading ? "Connecting..." : "Authorize Connection"}</span>
+              {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
             </motion.button>
           </form>
 
@@ -186,6 +238,16 @@ export default function Auth() {
           className="text-center mt-8 text-sm text-muted-foreground"
         >
           Platform access restricted to active operational partners.
+        </motion.p>
+
+        {/* Demo hint */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="text-center mt-4 text-xs text-muted-foreground/60"
+        >
+          Demo: Use tania@virtualops.com for owner access
         </motion.p>
       </motion.div>
     </div>
