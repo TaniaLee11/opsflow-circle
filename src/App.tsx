@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { SubUserProvider } from "@/contexts/SubUserContext";
+import { VOPSyModeProvider } from "@/contexts/VOPSyModeContext";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import AIStudio from "./pages/AIStudio";
@@ -18,7 +18,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <SubUserProvider>
+      <VOPSyModeProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -30,7 +30,6 @@ const App = () => (
               <Route path="/academy" element={<Academy />} />
               <Route path="/financial" element={<FinancialHub />} />
               <Route path="/settings" element={<Settings />} />
-              {/* Placeholder routes */}
               <Route path="/projects" element={<Dashboard />} />
               <Route path="/team" element={<Dashboard />} />
               <Route path="/invoicing" element={<FinancialHub />} />
@@ -42,7 +41,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </SubUserProvider>
+      </VOPSyModeProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
