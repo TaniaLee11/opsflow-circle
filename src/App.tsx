@@ -16,6 +16,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import TierSelection from "./pages/TierSelection";
 import ProductSelection from "./pages/ProductSelection";
+import Studio from "./pages/Studio";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/select-tier" element={<TierSelection />} />
               <Route path="/select-product" element={<ProductSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/studio" element={<Studio />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/academy" element={<Academy />} />
               <Route path="/financial" element={<FinancialHub />} />

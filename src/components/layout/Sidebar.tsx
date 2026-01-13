@@ -20,7 +20,8 @@ import {
   Workflow,
   Crown,
   LogOut,
-  Shield
+  Shield,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,9 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", category: "Core" },
   { icon: FolderKanban, label: "Projects", href: "/projects", badge: 3, category: "Core" },
   { icon: Users, label: "Team", href: "/team", category: "Core" },
+  
+  // Creative
+  { icon: Sparkles, label: "Studio", href: "/studio", category: "Creative" },
   
   // Financial Hub
   { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Finance" },
