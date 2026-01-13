@@ -18,6 +18,7 @@ import ProductSelection from "./pages/ProductSelection";
 import Studio from "./pages/Studio";
 import Integrations from "./pages/Integrations";
 import VOPSy from "./pages/VOPSy";
+import Vault from "./pages/Vault";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/select-product" element={<ProductSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/vopsy" element={<VOPSy />} />
+              <Route path="/vault" element={<Vault />} />
               <Route path="/studio" element={<Studio />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/academy" element={<Academy />} />

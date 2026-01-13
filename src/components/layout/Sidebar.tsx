@@ -21,7 +21,8 @@ import {
   Crown,
   LogOut,
   Shield,
-  Sparkles
+  Sparkles,
+  FolderLock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,23 +38,26 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // AI Assistant - VOPSy is the brain that powers it all
+  // Core - Dashboard first
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", category: "Core" },
+  
+  // AI Assistant - VOPSy second
   { icon: Brain, label: "VOPSy", href: "/vopsy", category: "AI Assistant" },
   
-  // Core
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", category: "Core" },
+  // Documents & Storage
+  { icon: FolderLock, label: "Vault", href: "/vault", category: "Documents" },
   
   // Creative - Studio for content creation and marketing
   { icon: Sparkles, label: "Studio", href: "/studio", category: "Creative" },
-  
-  // Operations
-  { icon: Workflow, label: "Integrations", href: "/integrations", category: "Integrations" },
   
   // Learning
   { icon: GraduationCap, label: "Academy", href: "/academy", category: "Learning" },
   
   // Financial Hub
   { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Finance" },
+  
+  // Operations
+  { icon: Workflow, label: "Integrations", href: "/integrations", category: "Integrations" },
 ];
 
 export function Sidebar() {
