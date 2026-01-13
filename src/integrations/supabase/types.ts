@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      cohort_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invite_code: string
+          invited_by: string
+          organization_id: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invite_code: string
+          invited_by: string
+          organization_id?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_code?: string
+          invited_by?: string
+          organization_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cohort_memberships: {
+        Row: {
+          converted_at: string | null
+          converted_to_tier: string | null
+          expires_at: string
+          id: string
+          organization_id: string | null
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          converted_at?: string | null
+          converted_to_tier?: string | null
+          expires_at?: string
+          id?: string
+          organization_id?: string | null
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          converted_at?: string | null
+          converted_to_tier?: string | null
+          expires_at?: string
+          id?: string
+          organization_id?: string | null
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_memberships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
