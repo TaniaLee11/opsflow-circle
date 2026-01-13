@@ -25,16 +25,18 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "Free",
     displayName: "AI Free",
     price: null,
-    description: "Limited AI interaction and LMS preview",
+    description: "A guided introduction to smarter business operations — clarity without complexity",
     capabilities: [
-      "Limited AI interaction",
-      "LMS preview access",
-      "Basic templates"
+      "Basic AI assistant support",
+      "Starter business insights & prompts",
+      "Limited access to operational tools",
+      "Guided recommendations for next steps"
     ],
     limitations: [
-      "No automation depth",
-      "No execution orchestration",
-      "Limited action volume"
+      "No automation features",
+      "No financial tools",
+      "Limited action volume",
+      "Upgrade to unlock full capabilities"
     ],
     icon: "🆓",
     color: "from-gray-500 to-gray-400"
