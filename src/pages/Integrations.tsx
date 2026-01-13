@@ -609,50 +609,42 @@ function IntegrationCard({
           <div className="flex gap-2 pt-2">
             {integration.status === "connected" ? (
               <>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="flex-1"
                   onClick={() => onDisconnect(integration)}
                 >
                   Disconnect
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="px-2"
-                >
+                <Button variant="ghost" size="sm" className="px-2">
                   <Settings className="w-4 h-4" />
                 </Button>
               </>
-            ) : integration.status === "needs_setup" ? (
-              <Button 
-                size="sm" 
-                className="flex-1"
-                variant="outline"
-                disabled
-              >
-                <Wrench className="w-4 h-4 mr-2" />
-                Configure First
-              </Button>
             ) : (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="flex-1"
+                variant={integration.status === "needs_setup" ? "outline" : "default"}
                 onClick={() => onConnect(integration)}
               >
                 <Link2 className="w-4 h-4 mr-2" />
                 Connect
               </Button>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="px-2"
-            >
+
+            <Button variant="ghost" size="sm" className="px-2">
               <ExternalLink className="w-4 h-4" />
             </Button>
           </div>
+
+          {integration.status === "needs_setup" && (
+            <div className="pt-1">
+              <Badge variant="outline" className="text-[10px] font-normal">
+                Admin setup required (credentials missing)
+              </Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
