@@ -87,12 +87,12 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden px-4 sm:px-6">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-[100px] animate-pulse-glow" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/5 to-transparent rounded-full" />
+        <div className="absolute top-1/4 -left-32 w-64 sm:w-96 h-64 sm:h-96 bg-primary/10 rounded-full blur-[100px] animate-pulse-glow" />
+        <div className="absolute bottom-1/4 -right-32 w-64 sm:w-96 h-64 sm:h-96 bg-primary/5 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[800px] h-[400px] sm:h-[800px] bg-gradient-radial from-primary/5 to-transparent rounded-full" />
       </div>
 
       {/* Grid Pattern */}
@@ -108,24 +108,24 @@ export default function Auth() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-md px-6"
+        className="relative z-10 w-full max-w-md"
       >
         {/* Logo & Title */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-6 sm:mb-10">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, type: "spring" }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-6 glow-primary"
+            className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-primary/10 border border-primary/20 mb-4 sm:mb-6 glow-primary"
           >
-            <Zap className="w-8 h-8 text-primary" />
+            <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
           </motion.div>
           
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-3xl font-bold text-foreground mb-2"
+            className="text-2xl sm:text-3xl font-bold text-foreground mb-2"
           >
             Virtual OPS Hub
           </motion.h1>
@@ -134,7 +134,7 @@ export default function Auth() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
-            className="text-sm text-muted-foreground mb-4"
+            className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4"
           >
             Powered by <span className="text-primary font-medium">VOPSy</span> — Your AI Operations Intelligence
           </motion.p>
@@ -170,7 +170,7 @@ export default function Auth() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="glass gradient-border rounded-2xl p-8"
+          className="glass gradient-border rounded-xl sm:rounded-2xl p-5 sm:p-8"
         >
           {error && (
             <motion.div

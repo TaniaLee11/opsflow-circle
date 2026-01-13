@@ -138,25 +138,25 @@ export default function Academy() {
     <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
       <Sidebar />
       
-      <main className="ml-64 min-h-screen">
+      <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                <GraduationCap className="w-6 h-6" />
+        <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 rounded-xl bg-primary/10 text-primary">
+                <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground">
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                     {isReadOnly ? `${viewedClient?.displayName || "Client"}'s Academy` : "Academy"}
                   </h1>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {isReadOnly ? `Viewing progress for ${viewedClient?.email}` : "Learn to run your operations with confidence"}
                   </p>
                 </div>
                 {isReadOnly && (
-                  <Badge className="bg-warning/20 text-warning border-0 gap-1">
+                  <Badge className="bg-warning/20 text-warning border-0 gap-1 text-xs">
                     <Eye className="w-3 h-3" />
                     Read Only
                   </Badge>
@@ -165,17 +165,17 @@ export default function Academy() {
             </div>
             
             {canCreateCourses && !isReadOnly && (
-              <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium flex items-center gap-2 glow-primary-sm">
-                <Plus className="w-4 h-4" />
+              <button className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-xs sm:text-sm font-medium flex items-center gap-2 glow-primary-sm w-fit">
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Create Course
               </button>
             )}
           </div>
         </header>
 
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
           {/* Progress Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

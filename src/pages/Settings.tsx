@@ -46,51 +46,51 @@ export default function Settings() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       
-      <main className="ml-64 min-h-screen">
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                <SettingsIcon className="w-6 h-6" />
+      <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
+        <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 rounded-xl bg-primary/10 text-primary">
+                <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-                <p className="text-muted-foreground">Manage your subscription and platform settings</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Settings</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">Manage your subscription and platform settings</p>
               </div>
             </div>
             
             {isOwner && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary">
-                <Crown className="w-4 h-4" />
-                <span className="text-sm font-medium">Platform Owner</span>
+              <div className="flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-primary/10 text-primary w-fit">
+                <Crown className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm font-medium">Platform Owner</span>
               </div>
             )}
           </div>
         </header>
 
-        <div className="p-8">
-          <div className="flex gap-8">
-            <div className="w-64 shrink-0">
-              <nav className="space-y-1">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            <div className="w-full lg:w-64 shrink-0">
+              <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                 {filteredTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                      "flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors text-left whitespace-nowrap",
                       activeTab === tab.id
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <tab.icon className="w-5 h-5" />
-                    <span className="font-medium">{tab.label}</span>
+                    <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="font-medium text-sm sm:text-base">{tab.label}</span>
                   </button>
                 ))}
               </nav>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {activeTab === "subscription" && <SubscriptionSettings />}
               {activeTab === "team" && isAdmin && <TeamSettings />}
               {activeTab === "permissions" && isAdmin && <PermissionsSettings />}

@@ -193,26 +193,26 @@ function VaultContent() {
     <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
       <Sidebar />
       
-      <main className="pl-64 min-h-screen">
-        <div className="p-8">
+      <main className="lg:pl-64 min-h-screen pt-14 lg:pt-0">
+        <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <FolderLock className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <FolderLock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </div>
-                <h1 className="text-3xl font-bold text-foreground">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                   {isReadOnly ? `${viewedClient?.displayName || viewedClient?.companyName || "Client"}'s Vault` : "Vault"}
                 </h1>
                 {isReadOnly && (
-                  <Badge className="bg-warning/20 text-warning border-0 gap-1">
+                  <Badge className="bg-warning/20 text-warning border-0 gap-1 text-xs">
                     <Eye className="w-3 h-3" />
                     Read Only
                   </Badge>
                 )}
               </div>
-              <p className="text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {isReadOnly 
                   ? `Viewing documents for ${viewedClient?.email || "this client"}`
                   : "Secure document storage shared between you and your advisor"}
@@ -220,13 +220,13 @@ function VaultContent() {
             </div>
 
             {!isReadOnly && (
-              <div className="flex items-center gap-3">
-                <Button variant="outline" className="gap-2">
-                  <Filter className="w-4 h-4" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Button variant="outline" className="gap-2 text-xs sm:text-sm">
+                  <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Filter
                 </Button>
-                <Button className="gap-2 bg-primary hover:bg-primary/90">
-                  <Upload className="w-4 h-4" />
+                <Button className="gap-2 bg-primary hover:bg-primary/90 text-xs sm:text-sm">
+                  <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Upload
                 </Button>
               </div>
@@ -234,7 +234,7 @@ function VaultContent() {
           </div>
 
           {/* Search and View Toggle */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -267,7 +267,7 @@ function VaultContent() {
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <Card className="bg-card/50">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">

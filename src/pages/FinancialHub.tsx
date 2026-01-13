@@ -207,47 +207,48 @@ export default function FinancialHub() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       
-      <main className="ml-64 min-h-screen">
+      <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                <Wallet className="w-6 h-6" />
+        <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 rounded-xl bg-primary/10 text-primary">
+                <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Financial Hub</h1>
-                <p className="text-muted-foreground">Your money, explained simply</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financial Hub</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">Your money, explained simply</p>
               </div>
             </div>
             
-            <button className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-sm font-medium flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
+            <button className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-xs sm:text-sm font-medium flex items-center gap-2 w-fit">
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Sync Accounts
             </button>
           </div>
         </header>
 
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
           {/* Tabs - Show Invoices tab only for owners */}
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
             <TabsList className="bg-muted/50">
-              <TabsTrigger value="overview" className="gap-2">
-                <Wallet className="w-4 h-4" />
+              <TabsTrigger value="overview" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Overview
               </TabsTrigger>
               {isOwner && (
-                <TabsTrigger value="invoices" className="gap-2">
-                  <FileText className="w-4 h-4" />
-                  Client Invoices
+                <TabsTrigger value="invoices" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Client Invoices</span>
+                  <span className="sm:hidden">Invoices</span>
                 </TabsTrigger>
               )}
             </TabsList>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-8">
+            <TabsContent value="overview" className="space-y-6 sm:space-y-8">
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {metrics.map((metric, index) => (
                   <motion.div
                     key={metric.label}

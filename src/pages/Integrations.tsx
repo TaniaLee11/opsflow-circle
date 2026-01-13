@@ -339,57 +339,57 @@ export default function Integrations() {
       <div className="min-h-screen flex bg-background">
         <Sidebar />
         
-        <main className="flex-1 ml-64 p-8">
+        <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 pt-14 lg:pt-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="max-w-7xl mx-auto"
           >
             {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-primary/10">
-                  <Link2 className="w-6 h-6 text-primary" />
+            <div className="mb-6 sm:mb-8">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-xl bg-primary/10">
+                  <Link2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
-                <h1 className="text-3xl font-bold text-foreground">Integrations</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Integrations</h1>
               </div>
-              <p className="text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Connect your favorite tools and services to streamline your workflow
               </p>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
               <Card className="bg-card border-border">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-success/10">
-                    <CheckCircle2 className="w-6 h-6 text-success" />
+                <CardContent className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-xl bg-success/10">
+                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{connectedCount}</p>
-                    <p className="text-sm text-muted-foreground">Connected</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{connectedCount}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Connected</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="bg-card border-border">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-primary/10">
-                    <Zap className="w-6 h-6 text-primary" />
+                <CardContent className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-xl bg-primary/10">
+                    <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{integrations.length}</p>
-                    <p className="text-sm text-muted-foreground">Available</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{integrations.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Available</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="bg-card border-border">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-info/10">
-                    <RefreshCw className="w-6 h-6 text-info" />
+                <CardContent className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-xl bg-info/10">
+                    <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 text-info" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">Real-time</p>
-                    <p className="text-sm text-muted-foreground">Sync Status</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">Real-time</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Sync Status</p>
                   </div>
                 </CardContent>
               </Card>
