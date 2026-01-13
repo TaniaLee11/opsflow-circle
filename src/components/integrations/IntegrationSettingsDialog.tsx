@@ -15,9 +15,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Settings, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Settings, Eye, EyeOff, Loader2, CheckCircle2, XCircle, AlertTriangle, Play } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ProviderConfig {
   id: string;
@@ -146,6 +147,11 @@ interface FormData {
   enabled: boolean;
 }
 
+interface TestResult {
+  status: "idle" | "testing" | "success" | "warning" | "error";
+  checks: { label: string; passed: boolean; message?: string }[];
+}
+
 export function IntegrationSettingsDialog() {
   const { isOwner, currentTier } = useAuth();
   const isEffectiveOwner = isOwner || currentTier === "owner";
@@ -155,6 +161,7 @@ export function IntegrationSettingsDialog() {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<Record<string, FormData>>({});
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   // Fetch existing configs
   const { data: existingConfigs, isLoading } = useQuery({
@@ -264,6 +271,100 @@ export function IntegrationSettingsDialog() {
     const config = existingConfigs?.find((c) => c.provider === providerId);
     if (!config) return "not-configured";
     return config.enabled ? "active" : "disabled";
+  };
+
+  const handleTestSetup = async (providerId: string) => {
+    const provider = PROVIDERS.find((p) => p.id === providerId);
+    if (!provider) return;
+
+    setTestResults((prev) => ({
+      ...prev,
+      [providerId]: { status: "testing", checks: [] },
+    }));
+
+    const checks: { label: string; passed: boolean; message?: string }[] = [];
+    const data = formData[providerId];
+    const existingConfig = existingConfigs?.find((c) => c.provider === providerId);
+
+    // Check 1: Client ID present
+    const hasClientId = !!(data?.clientId || existingConfig?.client_id);
+    checks.push({
+      label: "Client ID configured",
+      passed: hasClientId,
+      message: hasClientId ? "Client ID is set" : "Client ID is missing",
+    });
+
+    // Check 2: Client Secret present (either in form or already saved)
+    const hasSecret = !!data?.clientSecret || !!existingConfig;
+    checks.push({
+      label: "Client Secret configured",
+      passed: hasSecret,
+      message: hasSecret
+        ? existingConfig
+          ? "Client Secret is saved in database"
+          : "Client Secret is entered (save to persist)"
+        : "Client Secret is missing",
+    });
+
+    // Check 3: Integration enabled
+    const isEnabled = data?.enabled ?? existingConfig?.enabled ?? true;
+    checks.push({
+      label: "Integration enabled",
+      passed: isEnabled,
+      message: isEnabled ? "Integration is enabled" : "Integration is disabled",
+    });
+
+    // Check 4: Redirect URI format
+    const redirectUri = `${window.location.origin}/integrations/callback`;
+    const validRedirectUri = redirectUri.startsWith("https://") || redirectUri.startsWith("http://localhost");
+    checks.push({
+      label: "Redirect URI format",
+      passed: validRedirectUri,
+      message: `Redirect URI: ${redirectUri}`,
+    });
+
+    // Check 5: Client ID format validation (provider-specific)
+    let clientIdFormatValid = true;
+    let clientIdMessage = "Client ID format looks correct";
+
+    if (hasClientId && data?.clientId) {
+      const clientId = data.clientId;
+      if (providerId === "stripe" && !clientId.startsWith("ca_")) {
+        clientIdFormatValid = false;
+        clientIdMessage = "Stripe Client ID should start with 'ca_'";
+      } else if (providerId === "google" && !clientId.includes(".apps.googleusercontent.com")) {
+        clientIdFormatValid = false;
+        clientIdMessage = "Google Client ID should end with '.apps.googleusercontent.com'";
+      }
+    }
+
+    if (hasClientId) {
+      checks.push({
+        label: "Client ID format",
+        passed: clientIdFormatValid,
+        message: clientIdMessage,
+      });
+    }
+
+    // Determine overall status
+    const allPassed = checks.every((c) => c.passed);
+    const someWarnings = checks.some((c) => !c.passed);
+
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for UX
+
+    setTestResults((prev) => ({
+      ...prev,
+      [providerId]: {
+        status: allPassed ? "success" : someWarnings ? "warning" : "error",
+        checks,
+      },
+    }));
+
+    if (allPassed) {
+      toast.success(`${provider.name} setup looks good!`);
+    } else {
+      toast.warning(`${provider.name} has configuration issues`);
+    }
   };
 
   return (
@@ -418,11 +519,74 @@ export function IntegrationSettingsDialog() {
                         </div>
                       </div>
 
+                      {/* Test Results */}
+                      {testResults[provider.id] && testResults[provider.id].checks.length > 0 && (
+                        <Alert
+                          variant={
+                            testResults[provider.id].status === "success"
+                              ? "default"
+                              : testResults[provider.id].status === "error"
+                              ? "destructive"
+                              : "default"
+                          }
+                          className={
+                            testResults[provider.id].status === "success"
+                              ? "border-success bg-success/10"
+                              : testResults[provider.id].status === "warning"
+                              ? "border-warning bg-warning/10"
+                              : ""
+                          }
+                        >
+                          {testResults[provider.id].status === "success" ? (
+                            <CheckCircle2 className="h-4 w-4 text-success" />
+                          ) : testResults[provider.id].status === "warning" ? (
+                            <AlertTriangle className="h-4 w-4 text-warning" />
+                          ) : (
+                            <XCircle className="h-4 w-4" />
+                          )}
+                          <AlertTitle>
+                            {testResults[provider.id].status === "success"
+                              ? "All checks passed"
+                              : testResults[provider.id].status === "warning"
+                              ? "Some issues found"
+                              : "Configuration issues"}
+                          </AlertTitle>
+                          <AlertDescription>
+                            <ul className="mt-2 space-y-1 text-sm">
+                              {testResults[provider.id].checks.map((check, idx) => (
+                                <li key={idx} className="flex items-center gap-2">
+                                  {check.passed ? (
+                                    <CheckCircle2 className="w-3 h-3 text-success" />
+                                  ) : (
+                                    <XCircle className="w-3 h-3 text-destructive" />
+                                  )}
+                                  <span className={check.passed ? "text-muted-foreground" : ""}>
+                                    {check.label}: {check.message}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       {/* Action Buttons */}
                       <div className="flex gap-2 pt-4 border-t">
                         <Button onClick={() => handleSave(provider.id)} disabled={isSaving}>
                           {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                           {isConfigured ? "Update" : "Save"} Configuration
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleTestSetup(provider.id)}
+                          disabled={testResults[provider.id]?.status === "testing"}
+                        >
+                          {testResults[provider.id]?.status === "testing" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Play className="w-4 h-4 mr-2" />
+                          )}
+                          Test Setup
                         </Button>
                         {isConfigured && (
                           <Button
