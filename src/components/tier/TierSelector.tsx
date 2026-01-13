@@ -23,6 +23,16 @@ export function TierSelector() {
     }
   };
 
+  // Owner doesn't have/need a tier
+  if (isOwner) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30">
+        <Crown className="w-5 h-5 text-primary" />
+        <span className="font-medium text-primary">Platform Owner</span>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
       <button

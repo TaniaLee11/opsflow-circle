@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
+import TierSelection from "./pages/TierSelection";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Auth />} />
+              <Route path="/select-tier" element={<TierSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/academy" element={<Academy />} />

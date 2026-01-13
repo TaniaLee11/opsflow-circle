@@ -30,6 +30,15 @@ export default function Auth() {
     try {
       if (mode === "signin") {
         await login(email, password);
+        // Check if user needs tier selection (non-owners)
+        const userData = localStorage.getItem("vopsy_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.role !== "owner" && !user.tierSelected) {
+            navigate("/select-tier");
+            return;
+          }
+        }
       } else {
         if (!name.trim()) {
           setError("Please enter your name");
@@ -37,10 +46,13 @@ export default function Auth() {
           return;
         }
         await signup(email, password, name);
+        // New signups always go to tier selection
+        navigate("/select-tier");
+        return;
       }
       navigate("/dashboard");
-    } catch (err) {
-      setError("Authentication failed. Please try again.");
+    } catch (err: any) {
+      setError(err?.message || "Authentication failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -247,7 +259,7 @@ export default function Auth() {
           transition={{ delay: 0.8 }}
           className="text-center mt-4 text-xs text-muted-foreground/60"
         >
-          Demo: Use tania@virtualops.com for owner access
+          Owner: tania@virtualopsassist.com
         </motion.p>
       </motion.div>
     </div>
