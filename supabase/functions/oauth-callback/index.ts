@@ -57,16 +57,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Authenticate user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
-    const token = authHeader.replace("Bearer ", "");
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "");
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-    if (authError || !user) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
-
     // Get callback params
     const { code, state, provider } = await req.json();
     if (!code || !provider) throw new Error("Missing required parameters");
@@ -77,18 +67,24 @@ serve(async (req) => {
       throw new Error(`Unsupported provider: ${provider}`);
     }
 
-    // Verify state if stored
+    // Get user from stored state
+    let userId: string | null = null;
+    
     if (state) {
-      const { data: stateData } = await supabaseClient
+      const { data: stateData, error: stateError } = await supabaseClient
         .from("oauth_states")
-        .select("*")
+        .select("user_id")
         .eq("state", state)
-        .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (!stateData) {
-        logStep("State verification failed - proceeding anyway");
-      } else {
+      if (stateError) {
+        logStep("State lookup error", { error: stateError.message });
+      }
+
+      if (stateData) {
+        userId = stateData.user_id;
+        logStep("User found from state", { userId });
+        
         // Clean up used state
         await supabaseClient
           .from("oauth_states")
@@ -97,21 +93,40 @@ serve(async (req) => {
       }
     }
 
-    // Get credentials from integration_configs table
-    const { data: integrationConfig, error: configError } = await supabaseClient
+    // Fallback: try auth header if state didn't have user
+    if (!userId) {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader) {
+        const token = authHeader.replace("Bearer ", "");
+        const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+        const { data: { user } } = await anonClient.auth.getUser(token);
+        if (user) {
+          userId = user.id;
+          logStep("User from auth header", { userId });
+        }
+      }
+    }
+
+    if (!userId) {
+      throw new Error("Could not identify user - state expired or invalid");
+    }
+
+    // Get credentials from integration_configs table or fall back to env
+    const { data: integrationConfig } = await supabaseClient
       .from("integration_configs")
       .select("client_id, client_secret")
       .eq("provider", provider)
       .maybeSingle();
 
-    if (configError) {
-      logStep("Error fetching integration config", { error: configError.message });
-      throw new Error("Failed to retrieve integration configuration");
-    }
+    // Use configured credentials or fall back to environment variables
+    const clientId = integrationConfig?.client_id || Deno.env.get(`${provider.toUpperCase()}_CLIENT_ID`) || "";
+    const clientSecret = integrationConfig?.client_secret || Deno.env.get(`${provider.toUpperCase()}_CLIENT_SECRET`) || "";
 
-    if (!integrationConfig || !integrationConfig.client_id || !integrationConfig.client_secret) {
-      throw new Error(`${provider} credentials not configured by platform owner`);
+    if (!clientId || !clientSecret) {
+      logStep("No credentials available", { provider });
+      throw new Error(`OAuth credentials not configured for ${provider}`);
     }
+    logStep("Credentials loaded", { fromConfig: !!integrationConfig?.client_id });
 
     // Build redirect URI (must match the redirect_uri used during oauth-start)
     const origin =
@@ -133,10 +148,10 @@ serve(async (req) => {
     };
 
     if (config.usesBasicAuth) {
-      headers["Authorization"] = `Basic ${btoa(`${integrationConfig.client_id}:${integrationConfig.client_secret}`)}`;
+      headers["Authorization"] = `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
     } else {
-      tokenParams.set("client_id", integrationConfig.client_id);
-      tokenParams.set("client_secret", integrationConfig.client_secret);
+      tokenParams.set("client_id", clientId);
+      tokenParams.set("client_secret", clientSecret);
     }
 
     const tokenResponse = await fetch(config.tokenUrl, {
@@ -158,7 +173,7 @@ serve(async (req) => {
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("organization_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (!profile?.organization_id) {
@@ -170,7 +185,7 @@ serve(async (req) => {
       .from("integrations")
       .upsert({
         org_id: profile.organization_id,
-        user_id: user.id,
+        user_id: userId,
         provider,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
