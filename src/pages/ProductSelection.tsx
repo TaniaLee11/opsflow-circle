@@ -122,6 +122,20 @@ export default function ProductSelection() {
   const products = PRODUCT_OPTIONS[tier] || [];
   const tierTitle = TIER_TITLES[tier] || "Select Product";
 
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const handleContinue = async () => {
     if (!selectedProduct) return;
     
