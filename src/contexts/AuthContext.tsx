@@ -55,12 +55,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Platform owner email
-const PLATFORM_OWNER_EMAIL = "tania@virtualopsassist.com";
-
 function buildUserFallback(supabaseUser: SupabaseUser): User {
-  const emailIsOwner = supabaseUser.email?.toLowerCase() === PLATFORM_OWNER_EMAIL.toLowerCase();
-
   // Check localStorage for additional user data (tier selection, etc.)
   const storedData = localStorage.getItem(`vopsy_profile_${supabaseUser.id}`);
   const profileData = storedData ? JSON.parse(storedData) : {};
@@ -69,8 +64,8 @@ function buildUserFallback(supabaseUser: SupabaseUser): User {
     id: supabaseUser.id,
     email: supabaseUser.email || "",
     name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "User",
-    organization: emailIsOwner ? "Virtual OPS LLC" : undefined,
-    role: emailIsOwner ? "owner" : "user",
+    organization: undefined,
+    role: "user", // Default role, will be overwritten by backend data
     userType: "entrepreneur",
     tierSelected: profileData.tierSelected || false,
     selectedTier: profileData.selectedTier || null,
@@ -83,20 +78,26 @@ async function buildUserFromBackend(supabaseUser: SupabaseUser): Promise<User> {
   const [{ data: profile }, { data: roles }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, email, role, tier_selected, selected_tier")
+      .select("display_name, email, role, tier_selected, selected_tier, organization_id")
       .eq("user_id", supabaseUser.id)
       .maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", supabaseUser.id),
   ]);
 
+  // Role detection from user_roles table only (no hardcoded emails)
   const hasOwnerRole = (roles || []).some((r) => r.role === "owner");
   const hasAdminRole = (roles || []).some((r) => r.role === "admin");
+  const hasOperatorRole = (roles || []).some((r) => r.role === "operator");
 
-  const emailIsOwner = supabaseUser.email?.toLowerCase() === PLATFORM_OWNER_EMAIL.toLowerCase();
-  const profileIsOwner = profile?.role === "owner" || profile?.role === "platform_owner";
-  const isOwner = emailIsOwner || hasOwnerRole || profileIsOwner;
-
-  const resolvedRole: UserRole = isOwner ? "owner" : hasAdminRole ? "admin" : "user";
+  // Determine role hierarchy: owner > admin > operator > user
+  let resolvedRole: UserRole = "user";
+  if (hasOwnerRole) {
+    resolvedRole = "owner";
+  } else if (hasAdminRole) {
+    resolvedRole = "admin";
+  } else if (hasOperatorRole) {
+    resolvedRole = "operator";
+  }
 
   return {
     ...base,
@@ -105,7 +106,7 @@ async function buildUserFromBackend(supabaseUser: SupabaseUser): Promise<User> {
     role: resolvedRole,
     tierSelected: profile?.tier_selected ?? base.tierSelected,
     selectedTier: profile?.selected_tier ?? base.selectedTier,
-    organization: isOwner ? "Virtual OPS LLC" : base.organization,
+    organization: profile?.organization_id ? "Organization" : undefined,
   };
 }
 

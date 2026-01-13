@@ -115,11 +115,11 @@ serve(async (req) => {
       logStep("Integration not configured", { provider });
       return new Response(
         JSON.stringify({ 
-          error: `${provider} integration has not been configured. The platform owner needs to set up OAuth credentials.`,
-          needsConfiguration: true,
+          status: "needs_configuration",
+          message: "Admin setup required before authorization can begin.",
           provider 
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
@@ -127,11 +127,11 @@ serve(async (req) => {
       logStep("Integration disabled", { provider });
       return new Response(
         JSON.stringify({ 
-          error: `${provider} integration is currently disabled.`,
-          disabled: true,
+          status: "disabled",
+          message: "This integration is currently disabled by the administrator.",
           provider 
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
@@ -177,7 +177,7 @@ serve(async (req) => {
     logStep("OAuth URL generated", { provider, url: oauthUrl.substring(0, 100) + "..." });
 
     return new Response(
-      JSON.stringify({ url: oauthUrl, provider }),
+      JSON.stringify({ status: "ok", url: oauthUrl, provider }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {

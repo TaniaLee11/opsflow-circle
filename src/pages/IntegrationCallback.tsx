@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 export default function IntegrationCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState("Processing your connection...");
 
@@ -64,6 +66,9 @@ export default function IntegrationCallback() {
         setMessage(`Successfully connected to ${provider}!`);
         toast.success(`Connected to ${provider}`);
 
+        // Invalidate integrations query to update UI immediately
+        queryClient.invalidateQueries({ queryKey: ["integrations"] });
+
         setTimeout(() => navigate("/integrations"), 2000);
       } catch (err) {
         console.error("OAuth callback error:", err);
@@ -75,7 +80,7 @@ export default function IntegrationCallback() {
     };
 
     handleCallback();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, queryClient]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
