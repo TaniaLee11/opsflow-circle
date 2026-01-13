@@ -16,7 +16,9 @@ import {
   CreditCard,
   Gift,
   Zap,
-  Rocket
+  Building2,
+  TrendingUp,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -109,7 +111,10 @@ function SubscriptionSettings() {
       case "free": return <Gift className="w-5 h-5" />;
       case "ai_assistant": return <Sparkles className="w-5 h-5" />;
       case "ai_operations": return <Zap className="w-5 h-5" />;
-      case "ai_operations_full": return <Rocket className="w-5 h-5" />;
+      case "ai_enterprise": return <Building2 className="w-5 h-5" />;
+      case "ai_advisory": return <TrendingUp className="w-5 h-5" />;
+      case "ai_tax": return <FileText className="w-5 h-5" />;
+      case "ai_compliance": return <Shield className="w-5 h-5" />;
     }
   };
 

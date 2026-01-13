@@ -1,6 +1,6 @@
 import { useUserTier, UserTierId } from "@/contexts/UserTierContext";
 import { cn } from "@/lib/utils";
-import { Sparkles, Zap, Rocket, Gift } from "lucide-react";
+import { Sparkles, Zap, Gift, Building2, TrendingUp, FileText, Shield } from "lucide-react";
 
 interface TierBadgeProps {
   tierId?: UserTierId;
@@ -40,8 +40,14 @@ export function TierBadge({
         return <Sparkles className={iconSize[size]} />;
       case "ai_operations":
         return <Zap className={iconSize[size]} />;
-      case "ai_operations_full":
-        return <Rocket className={iconSize[size]} />;
+      case "ai_enterprise":
+        return <Building2 className={iconSize[size]} />;
+      case "ai_advisory":
+        return <TrendingUp className={iconSize[size]} />;
+      case "ai_tax":
+        return <FileText className={iconSize[size]} />;
+      case "ai_compliance":
+        return <Shield className={iconSize[size]} />;
     }
   };
 
@@ -53,8 +59,14 @@ export function TierBadge({
         return "bg-blue-500/20 text-blue-400";
       case "ai_operations":
         return "bg-purple-500/20 text-purple-400";
-      case "ai_operations_full":
+      case "ai_enterprise":
         return "bg-primary/20 text-primary";
+      case "ai_advisory":
+        return "bg-emerald-500/20 text-emerald-400";
+      case "ai_tax":
+        return "bg-amber-500/20 text-amber-400";
+      case "ai_compliance":
+        return "bg-rose-500/20 text-rose-400";
     }
   };
 

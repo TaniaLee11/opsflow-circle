@@ -1,8 +1,15 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 
-// User AI Tiers - what a user/organization can do for themselves
-export type UserTierId = "free" | "ai_assistant" | "ai_operations" | "ai_operations_full";
+// User AI Tiers / Product Types - purchasable products and portals
+export type UserTierId = 
+  | "free" 
+  | "ai_assistant" 
+  | "ai_operations" 
+  | "ai_enterprise" 
+  | "ai_advisory" 
+  | "ai_tax" 
+  | "ai_compliance";
 
 // Environment types
 export type EnvironmentType = "production" | "cohort";
@@ -35,8 +42,7 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     limitations: [
       "No automation features",
       "No financial tools",
-      "Limited action volume",
-      "Upgrade to unlock full capabilities"
+      "Limited action volume"
     ],
     icon: "🆓",
     color: "from-gray-500 to-gray-400"
@@ -52,14 +58,12 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
       "Compliance checklists",
       "Templates library",
       "Full LMS access",
-      "Guided single-step AI execution",
-      "Limited action volume"
+      "Guided single-step AI execution"
     ],
     limitations: [
       "No automation orchestration",
       "No multi-step workflows",
-      "No white-label",
-      "No client management"
+      "Limited action volume"
     ],
     icon: "💬",
     color: "from-blue-500 to-cyan-400"
@@ -72,43 +76,98 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     description: "Multi-step workflows with operational reasoning and automation",
     capabilities: [
       "Everything in AI Assistant",
-      "Expanded AI actions",
       "Multi-step workflows",
-      "Operational reasoning",
-      "Iterative refinement",
+      "Automation execution",
       "Persistent context",
-      "Automation execution"
+      "Operational reasoning"
     ],
     limitations: [
-      "No white-label",
-      "No firm dashboards",
-      "No client resale"
+      "Standard usage limits",
+      "No specialized advisory features"
     ],
     icon: "⚙️",
     color: "from-purple-500 to-pink-400"
   },
-  ai_operations_full: {
-    id: "ai_operations_full",
-    name: "AI Operations Full",
-    displayName: "AI Operations (Full)",
+  ai_enterprise: {
+    id: "ai_enterprise",
+    name: "AI Enterprise",
+    displayName: "AI Enterprise",
     price: 499,
-    description: "Highest tier for regular users with full automation and LMS",
+    description: "Full-scale operations with organization-wide workflows and priority support",
     capabilities: [
       "Full AI operations functionality",
       "Full automation availability",
-      "Full LMS access",
-      "Highest usage limits",
       "Organization-wide workflows",
-      "Priority support"
+      "Highest usage limits",
+      "Priority support",
+      "Advanced integrations"
     ],
     limitations: [
-      "No white-label (requires Enterprise)",
-      "No parent-child orgs",
-      "No client resale",
-      "No firm permissions"
+      "Requires annual commitment",
+      "Custom onboarding required"
     ],
-    icon: "🚀",
+    icon: "🏢",
     color: "from-primary to-orange-400"
+  },
+  ai_advisory: {
+    id: "ai_advisory",
+    name: "AI Advisory",
+    displayName: "AI Advisory",
+    price: 199.99,
+    description: "Strategic business advisory with AI-powered insights and recommendations",
+    capabilities: [
+      "Strategic business planning",
+      "Growth recommendations",
+      "Market analysis tools",
+      "Advisory dashboards",
+      "Quarterly business reviews"
+    ],
+    limitations: [
+      "No tax preparation",
+      "No compliance filings"
+    ],
+    icon: "📊",
+    color: "from-emerald-500 to-teal-400"
+  },
+  ai_tax: {
+    id: "ai_tax",
+    name: "AI Tax",
+    displayName: "AI Tax",
+    price: 149.99,
+    description: "Automated tax preparation, planning, and filing assistance",
+    capabilities: [
+      "Tax preparation workflows",
+      "Quarterly tax estimates",
+      "Deduction tracking",
+      "Tax document vault",
+      "Filing reminders & alerts"
+    ],
+    limitations: [
+      "Does not include CPA review",
+      "State-specific limitations may apply"
+    ],
+    icon: "📋",
+    color: "from-amber-500 to-yellow-400"
+  },
+  ai_compliance: {
+    id: "ai_compliance",
+    name: "AI Compliance",
+    displayName: "AI Compliance",
+    price: 179.99,
+    description: "Regulatory compliance monitoring, checklists, and automated alerts",
+    capabilities: [
+      "Compliance monitoring",
+      "Regulatory checklists",
+      "Audit preparation",
+      "Policy management",
+      "Compliance calendar & alerts"
+    ],
+    limitations: [
+      "Industry-specific modules sold separately",
+      "Does not include legal review"
+    ],
+    icon: "🛡️",
+    color: "from-rose-500 to-red-400"
   }
 };
 
@@ -163,7 +222,7 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
   const { user, isOwner } = useAuth();
   
   // In production, these would come from database/Stripe subscription
-  const [currentTierId, setCurrentTierId] = useState<UserTierId>("ai_operations_full");
+  const [currentTierId, setCurrentTierId] = useState<UserTierId>("ai_enterprise");
   const [environment, setEnvironment] = useState<EnvironmentType>("cohort"); // Demo: cohort environment
   
   const [cohortConfig, setCohortConfig] = useState<CohortConfig | null>({
@@ -185,11 +244,14 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
   };
 
   const canAccessFeature = (feature: string): boolean => {
-    const tierLevel = {
+    const tierLevel: Record<UserTierId, number> = {
       free: 0,
       ai_assistant: 1,
       ai_operations: 2,
-      ai_operations_full: 3
+      ai_enterprise: 3,
+      ai_advisory: 2,
+      ai_tax: 2,
+      ai_compliance: 2
     };
     
     const featureRequirements: Record<string, UserTierId> = {
@@ -204,9 +266,12 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
       "multi_step_workflows": "ai_operations",
       "automation_execution": "ai_operations",
       "persistent_context": "ai_operations",
-      "full_automation": "ai_operations_full",
-      "org_workflows": "ai_operations_full",
-      "priority_support": "ai_operations_full"
+      "full_automation": "ai_enterprise",
+      "org_workflows": "ai_enterprise",
+      "priority_support": "ai_enterprise",
+      "advisory_features": "ai_advisory",
+      "tax_features": "ai_tax",
+      "compliance_features": "ai_compliance"
     };
     
     const requiredTier = featureRequirements[feature] || "free";
