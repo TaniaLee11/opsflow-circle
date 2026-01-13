@@ -113,9 +113,12 @@ serve(async (req) => {
       throw new Error(`${provider} credentials not configured by platform owner`);
     }
 
-    // Build redirect URI
-    const siteUrl = Deno.env.get("SITE_URL") || "https://dnntsdncmptuxctbcjsp.lovableproject.com";
-    const redirectUri = `${siteUrl}/integrations/callback`;
+    // Build redirect URI (must match the redirect_uri used during oauth-start)
+    const origin =
+      req.headers.get("origin") ||
+      Deno.env.get("SITE_URL") ||
+      "https://dnntsdncmptuxctbcjsp.lovableproject.com";
+    const redirectUri = `${origin}/integrations/callback`;
 
     // Build token request
     const tokenParams = new URLSearchParams({
