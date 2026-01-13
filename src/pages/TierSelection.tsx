@@ -24,6 +24,13 @@ export default function TierSelection() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  const openCheckout = (url: string) => {
+    // In embedded previews (iframes), top-level navigation can be blocked.
+    // Prefer opening Stripe Checkout in a new tab and fall back to same-tab navigation.
+    const w = window.open(url, "_blank", "noopener,noreferrer");
+    if (!w) window.location.href = url;
+  };
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -47,9 +54,9 @@ export default function TierSelection() {
 
   const handleContinue = async () => {
     if (!selectedTier || !user) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       // Save selected tier to localStorage with user ID
       const profileData = {
@@ -83,10 +90,10 @@ export default function TierSelection() {
 
       // Create Stripe checkout session
       const { url } = await createCheckout(priceId, mode);
-      
+
       if (url) {
-        // Redirect to Stripe Checkout
-        window.location.href = url;
+        toast.message("Opening Stripe Checkout…", { description: "If nothing happens, check your pop-up blocker." });
+        openCheckout(url);
       } else {
         throw new Error("No checkout URL returned");
       }

@@ -112,6 +112,11 @@ export default function ProductSelection() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
+  const openCheckout = (url: string) => {
+    const w = window.open(url, "_blank", "noopener,noreferrer");
+    if (!w) window.location.href = url;
+  };
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -138,17 +143,18 @@ export default function ProductSelection() {
 
   const handleContinue = async () => {
     if (!selectedProduct) return;
-    
-    const product = products.find(p => p.id === selectedProduct);
+
+    const product = products.find((p) => p.id === selectedProduct);
     if (!product) return;
 
     setIsLoading(true);
-    
+
     try {
       const { url } = await createCheckout(product.priceId, product.mode);
-      
+
       if (url) {
-        window.location.href = url;
+        toast.message("Opening Stripe Checkout…", { description: "If nothing happens, check your pop-up blocker." });
+        openCheckout(url);
       } else {
         throw new Error("No checkout URL returned");
       }
