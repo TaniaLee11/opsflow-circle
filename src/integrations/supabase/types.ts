@@ -661,7 +661,14 @@ export type Database = {
       }
     }
     Enums: {
-      account_type: "individual" | "enterprise"
+      account_type:
+        | "free"
+        | "ai_assistant"
+        | "ai_operations"
+        | "ai_enterprise"
+        | "ai_advisory"
+        | "ai_tax"
+        | "ai_compliance"
       app_role: "owner" | "admin" | "operator" | "user"
       invitation_status: "pending" | "accepted" | "expired" | "cancelled"
       membership_role: "primary" | "member"
@@ -793,7 +800,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      account_type: ["individual", "enterprise"],
+      account_type: [
+        "free",
+        "ai_assistant",
+        "ai_operations",
+        "ai_enterprise",
+        "ai_advisory",
+        "ai_tax",
+        "ai_compliance",
+      ],
       app_role: ["owner", "admin", "operator", "user"],
       invitation_status: ["pending", "accepted", "expired", "cancelled"],
       membership_role: ["primary", "member"],
