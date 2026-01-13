@@ -31,6 +31,20 @@ export default function TierSelection() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const handleContinue = async () => {
     if (!selectedTier || !user) return;
     
