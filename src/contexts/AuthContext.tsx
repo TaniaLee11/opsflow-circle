@@ -12,6 +12,8 @@ export interface User {
   role: UserRole;
   userType: UserType;
   avatar?: string;
+  tierSelected?: boolean;
+  selectedTier?: string | null;
 }
 
 interface AuthContextType {
@@ -28,9 +30,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Platform owner configuration
+// Platform owner configuration - OWNER DOES NOT NEED A TIER
 const PLATFORM_OWNER = {
-  email: "tania@virtualops.com",
+  email: "tania@virtualopsassist.com",
+  password: "Anointed1!",
   name: "Tania Potter",
   organization: "Virtual OPS LLC"
 };
@@ -52,8 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const canCreateCourses = isAdmin;
 
   const login = async (email: string, password: string) => {
-    // Demo login - in production, this would call Supabase
+    // Check for owner login
     const isOwnerLogin = email.toLowerCase() === PLATFORM_OWNER.email.toLowerCase();
+    
+    // For owner, verify password
+    if (isOwnerLogin && password !== PLATFORM_OWNER.password) {
+      throw new Error("Invalid credentials");
+    }
     
     const newUser: User = {
       id: crypto.randomUUID(),
@@ -61,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: isOwnerLogin ? PLATFORM_OWNER.name : email.split("@")[0],
       organization: isOwnerLogin ? PLATFORM_OWNER.organization : undefined,
       role: isOwnerLogin ? "owner" : "user",
-      userType: "entrepreneur" // Default, would be set during onboarding
+      userType: "entrepreneur",
+      tierSelected: isOwnerLogin ? true : false, // Owner doesn't need tier selection
+      selectedTier: isOwnerLogin ? null : undefined // Owner has no tier
     };
 
     setUser(newUser);
@@ -69,12 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (email: string, password: string, name: string) => {
+    // Block owner email from signing up (must use login)
+    if (email.toLowerCase() === PLATFORM_OWNER.email.toLowerCase()) {
+      throw new Error("This email is reserved. Please use login.");
+    }
+    
     const newUser: User = {
       id: crypto.randomUUID(),
       email,
       name,
       role: "user",
-      userType: "entrepreneur"
+      userType: "entrepreneur",
+      tierSelected: false,
+      selectedTier: undefined
     };
 
     setUser(newUser);
