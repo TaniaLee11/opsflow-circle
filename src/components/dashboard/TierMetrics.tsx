@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
 import { 
   Users, 
@@ -13,7 +14,8 @@ import {
   BarChart3,
   UserPlus,
   Repeat,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -148,6 +150,12 @@ const totalUsers = 2269;
 const avgRetention = 88.7;
 
 export function TierMetrics() {
+  const navigate = useNavigate();
+
+  const handlePortalClick = (tierId: UserTierId) => {
+    navigate(`/portal/${tierId}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Platform Summary */}
@@ -207,7 +215,8 @@ export function TierMetrics() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="relative overflow-hidden rounded-xl border border-border bg-card hover:shadow-lg transition-all cursor-pointer group"
+            onClick={() => handlePortalClick(tier.tierId)}
+            className="relative overflow-hidden rounded-xl border border-border bg-card hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group"
           >
             {/* Header */}
             <div className="p-4 border-b border-border">
@@ -219,7 +228,10 @@ export function TierMetrics() {
                   {tier.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground">{tier.tierName}</h4>
+                  <h4 className="font-semibold text-foreground flex items-center gap-2">
+                    {tier.tierName}
+                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                  </h4>
                   <p className="text-[11px] text-muted-foreground truncate">{tier.tagline}</p>
                 </div>
               </div>

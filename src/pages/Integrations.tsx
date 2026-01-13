@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Link2, 
   Check, 
@@ -206,14 +207,49 @@ export default function Integrations() {
   const connectedCount = integrations.filter(i => i.status === "connected").length;
   const popularIntegrations = integrations.filter(i => i.popular);
 
-  const handleConnect = (integration: Integration) => {
+  const handleConnect = async (integration: Integration) => {
     if (integration.status === "connected") {
       toast.info(`${integration.name} is already connected`);
-    } else {
-      toast.success(`Connecting to ${integration.name}...`, {
-        description: "You'll be redirected to authorize the connection.",
+      return;
+    }
+    
+    // Map integration IDs to provider names
+    const providerMap: Record<string, string> = {
+      "google-workspace": "google",
+      "microsoft-365": "microsoft",
+      "quickbooks": "quickbooks",
+      "slack": "slack",
+      "hubspot": "hubspot",
+    };
+    
+    const provider = providerMap[integration.id];
+    if (!provider) {
+      toast.info(`${integration.name} integration coming soon!`);
+      return;
+    }
+
+    toast.loading(`Connecting to ${integration.name}...`);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('oauth-start', {
+        body: { provider },
       });
-      // In a real app, this would initiate OAuth flow
+      
+      if (error) throw error;
+      
+      if (data.needsConfiguration) {
+        toast.dismiss();
+        toast.error(data.error);
+        return;
+      }
+      
+      if (data.url) {
+        toast.dismiss();
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      toast.dismiss();
+      toast.error(err instanceof Error ? err.message : "Failed to start connection");
     }
   };
 
