@@ -10,7 +10,6 @@ const corsHeaders = {
 const OAUTH_CONFIGS: Record<string, {
   authUrl: string;
   scopes: string[];
-  clientIdEnv: string;
 }> = {
   google: {
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
@@ -19,7 +18,6 @@ const OAUTH_CONFIGS: Record<string, {
       "https://www.googleapis.com/auth/calendar.readonly",
       "https://www.googleapis.com/auth/drive.readonly",
     ],
-    clientIdEnv: "GOOGLE_CLIENT_ID",
   },
   microsoft: {
     authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
@@ -31,22 +29,18 @@ const OAUTH_CONFIGS: Record<string, {
       "Mail.Read",
       "Calendars.Read",
     ],
-    clientIdEnv: "MICROSOFT_CLIENT_ID",
   },
   quickbooks: {
     authUrl: "https://appcenter.intuit.com/connect/oauth2",
     scopes: ["com.intuit.quickbooks.accounting"],
-    clientIdEnv: "QUICKBOOKS_CLIENT_ID",
   },
   slack: {
     authUrl: "https://slack.com/oauth/v2/authorize",
     scopes: ["channels:read", "chat:write", "users:read"],
-    clientIdEnv: "SLACK_CLIENT_ID",
   },
   hubspot: {
     authUrl: "https://app.hubspot.com/oauth/authorize",
     scopes: ["crm.objects.contacts.read", "crm.objects.companies.read"],
-    clientIdEnv: "HUBSPOT_CLIENT_ID",
   },
 };
 
@@ -63,8 +57,12 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    const anonClient = createClient(
+      supabaseUrl,
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
@@ -73,7 +71,7 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
     if (authError || !user) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
@@ -87,14 +85,35 @@ serve(async (req) => {
       throw new Error(`Unsupported provider: ${provider}. Supported: ${Object.keys(OAUTH_CONFIGS).join(", ")}`);
     }
 
-    // Get client ID for the provider
-    const clientId = Deno.env.get(config.clientIdEnv);
-    if (!clientId) {
-      logStep("Client ID not configured", { envVar: config.clientIdEnv });
+    // Get OAuth credentials from integration_configs table (configured by owner)
+    const { data: integrationConfig, error: configError } = await supabaseClient
+      .from("integration_configs")
+      .select("client_id, client_secret, enabled")
+      .eq("provider", provider)
+      .maybeSingle();
+
+    if (configError) {
+      logStep("Error fetching integration config", { error: configError.message });
+    }
+
+    if (!integrationConfig || !integrationConfig.client_id) {
+      logStep("Integration not configured", { provider });
       return new Response(
         JSON.stringify({ 
-          error: `${provider} integration not configured. Please contact administrator to set up ${config.clientIdEnv}.`,
+          error: `${provider} integration has not been configured. The platform owner needs to set up OAuth credentials.`,
           needsConfiguration: true,
+          provider 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (!integrationConfig.enabled) {
+      logStep("Integration disabled", { provider });
+      return new Response(
+        JSON.stringify({ 
+          error: `${provider} integration is currently disabled.`,
+          disabled: true,
           provider 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
@@ -125,7 +144,7 @@ serve(async (req) => {
 
     // Build OAuth URL
     const authParams = new URLSearchParams({
-      client_id: clientId,
+      client_id: integrationConfig.client_id,
       redirect_uri: redirectUri,
       response_type: "code",
       scope: config.scopes.join(" "),

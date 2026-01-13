@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Link2, 
   Check, 
@@ -13,7 +14,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  Loader2
+  Loader2,
+  Wrench
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -23,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { IntegrationSettingsDialog } from "@/components/integrations/IntegrationSettingsDialog";
 
 interface Integration {
   id: string;
@@ -30,12 +33,13 @@ interface Integration {
   description: string;
   icon: string;
   category: "productivity" | "finance" | "communication" | "storage" | "marketing" | "crm";
-  status: "connected" | "disconnected" | "pending";
+  status: "connected" | "disconnected" | "pending" | "needs_setup";
   features: string[];
   popular?: boolean;
   connectedAccount?: string;
   lastSynced?: string;
   health?: string;
+  oauthProvider?: string; // Maps to integration_configs provider
 }
 
 const integrations: Integration[] = [
@@ -47,6 +51,7 @@ const integrations: Integration[] = [
     icon: "https://www.google.com/favicon.ico",
     category: "productivity",
     status: "disconnected",
+    oauthProvider: "google",
     features: ["Gmail sync", "Calendar integration", "Drive storage", "Docs collaboration"],
     popular: true,
   },
@@ -57,6 +62,7 @@ const integrations: Integration[] = [
     icon: "https://www.microsoft.com/favicon.ico",
     category: "productivity",
     status: "disconnected",
+    oauthProvider: "microsoft",
     features: ["Outlook email", "Teams messaging", "OneDrive storage", "Office apps"],
     popular: true,
   },
@@ -67,6 +73,7 @@ const integrations: Integration[] = [
     icon: "https://slack.com/favicon.ico",
     category: "communication",
     status: "disconnected",
+    oauthProvider: "slack",
     features: ["Channel notifications", "Direct messages", "File sharing", "Workflow automation"],
   },
   {
@@ -87,6 +94,7 @@ const integrations: Integration[] = [
     icon: "https://quickbooks.intuit.com/favicon.ico",
     category: "finance",
     status: "disconnected",
+    oauthProvider: "quickbooks",
     features: ["Invoice sync", "Expense tracking", "Financial reports", "Tax preparation"],
     popular: true,
   },
@@ -165,6 +173,7 @@ const integrations: Integration[] = [
     icon: "https://www.hubspot.com/favicon.ico",
     category: "crm",
     status: "disconnected",
+    oauthProvider: "hubspot",
     features: ["CRM", "Email marketing", "Lead tracking", "Analytics"],
     popular: true,
   },
@@ -194,12 +203,14 @@ const statusConfig = {
   connected: { label: "Connected", icon: CheckCircle2, color: "text-success" },
   disconnected: { label: "Not Connected", icon: AlertCircle, color: "text-muted-foreground" },
   pending: { label: "Pending", icon: Clock, color: "text-warning" },
+  needs_setup: { label: "Setup Required", icon: Wrench, color: "text-amber-500" },
 };
 
 export default function Integrations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const queryClient = useQueryClient();
+  const { isOwner } = useAuth();
   
   // Fetch real integration statuses from database
   const { data: connectedIntegrations, isLoading } = useQuery({
@@ -210,6 +221,21 @@ export default function Integrations() {
         .select("provider, connected_account, health, last_synced_at");
       
       if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch configured integrations (which OAuth providers have credentials set up)
+  const { data: configuredProviders } = useQuery({
+    queryKey: ["integration-configs-public"],
+    queryFn: async () => {
+      // This query only works for owners due to RLS, but we'll handle the error gracefully
+      const { data, error } = await supabase
+        .from("integration_configs")
+        .select("provider, enabled");
+      
+      // Non-owners will get an empty array due to RLS
+      if (error) return [];
       return data || [];
     },
   });
@@ -238,6 +264,18 @@ export default function Integrations() {
         lastSynced: connected.last_synced_at || undefined,
         health: connected.health || undefined,
       };
+    }
+
+    // Check if this integration has OAuth and if it's configured
+    if (integration.oauthProvider) {
+      const config = configuredProviders?.find((c) => c.provider === integration.oauthProvider);
+      if (!config || !config.enabled) {
+        // Only show "needs_setup" to owners, others see "disconnected"
+        return {
+          ...integration,
+          status: isOwner ? ("needs_setup" as const) : ("disconnected" as const),
+        };
+      }
     }
     
     return integration;
@@ -356,11 +394,14 @@ export default function Integrations() {
           >
             {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-xl bg-primary/10">
-                  <Link2 className="w-6 h-6 text-primary" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <Link2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <h1 className="text-3xl font-bold text-foreground">Integrations</h1>
                 </div>
-                <h1 className="text-3xl font-bold text-foreground">Integrations</h1>
+                {isOwner && <IntegrationSettingsDialog />}
               </div>
               <p className="text-muted-foreground">
                 Connect your favorite tools and services to streamline your workflow
@@ -573,6 +614,16 @@ function IntegrationCard({
                   <Settings className="w-4 h-4" />
                 </Button>
               </>
+            ) : integration.status === "needs_setup" ? (
+              <Button 
+                size="sm" 
+                className="flex-1"
+                variant="outline"
+                disabled
+              >
+                <Wrench className="w-4 h-4 mr-2" />
+                Configure First
+              </Button>
             ) : (
               <Button 
                 size="sm" 

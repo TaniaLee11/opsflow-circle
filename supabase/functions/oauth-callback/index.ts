@@ -9,33 +9,21 @@ const corsHeaders = {
 // Token endpoints for each provider
 const TOKEN_CONFIGS: Record<string, {
   tokenUrl: string;
-  clientIdEnv: string;
-  clientSecretEnv: string;
 }> = {
   google: {
     tokenUrl: "https://oauth2.googleapis.com/token",
-    clientIdEnv: "GOOGLE_CLIENT_ID",
-    clientSecretEnv: "GOOGLE_CLIENT_SECRET",
   },
   microsoft: {
     tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-    clientIdEnv: "MICROSOFT_CLIENT_ID",
-    clientSecretEnv: "MICROSOFT_CLIENT_SECRET",
   },
   quickbooks: {
     tokenUrl: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
-    clientIdEnv: "QUICKBOOKS_CLIENT_ID",
-    clientSecretEnv: "QUICKBOOKS_CLIENT_SECRET",
   },
   slack: {
     tokenUrl: "https://slack.com/api/oauth.v2.access",
-    clientIdEnv: "SLACK_CLIENT_ID",
-    clientSecretEnv: "SLACK_CLIENT_SECRET",
   },
   hubspot: {
     tokenUrl: "https://api.hubapi.com/oauth/v1/token",
-    clientIdEnv: "HUBSPOT_CLIENT_ID",
-    clientSecretEnv: "HUBSPOT_CLIENT_SECRET",
   },
 };
 
@@ -96,12 +84,20 @@ serve(async (req) => {
       }
     }
 
-    // Get credentials
-    const clientId = Deno.env.get(config.clientIdEnv);
-    const clientSecret = Deno.env.get(config.clientSecretEnv);
-    
-    if (!clientId || !clientSecret) {
-      throw new Error(`${provider} credentials not configured`);
+    // Get credentials from integration_configs table
+    const { data: integrationConfig, error: configError } = await supabaseClient
+      .from("integration_configs")
+      .select("client_id, client_secret")
+      .eq("provider", provider)
+      .maybeSingle();
+
+    if (configError) {
+      logStep("Error fetching integration config", { error: configError.message });
+      throw new Error("Failed to retrieve integration configuration");
+    }
+
+    if (!integrationConfig || !integrationConfig.client_id || !integrationConfig.client_secret) {
+      throw new Error(`${provider} credentials not configured by platform owner`);
     }
 
     // Build redirect URI
@@ -113,8 +109,8 @@ serve(async (req) => {
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri,
-      client_id: clientId,
-      client_secret: clientSecret,
+      client_id: integrationConfig.client_id,
+      client_secret: integrationConfig.client_secret,
     });
 
     const tokenResponse = await fetch(config.tokenUrl, {
