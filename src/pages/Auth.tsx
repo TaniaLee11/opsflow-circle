@@ -25,14 +25,23 @@ export default function Auth() {
         navigate("/dashboard");
         return;
       }
-      // Check if user needs tier selection
+      // Check if user needs onboarding (no tier selected)
       if (!user.tierSelected) {
-        navigate("/select-tier");
+        navigate("/onboarding");
       } else {
         navigate("/dashboard");
       }
     }
   }, [isAuthenticated, user, authLoading, isOwner, navigate]);
+
+  // Check for mode from URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const modeParam = params.get("mode");
+    if (modeParam === "signup") {
+      setMode("signup");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
