@@ -19,6 +19,8 @@ import Studio from "./pages/Studio";
 import Integrations from "./pages/Integrations";
 import VOPSy from "./pages/VOPSy";
 import Vault from "./pages/Vault";
+import UserPortal from "./pages/UserPortal";
+import IntegrationCallback from "./pages/IntegrationCallback";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,7 @@ const App = () => (
               <Route path="/select-tier" element={<TierSelection />} />
               <Route path="/select-product" element={<ProductSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/portal/:tierId" element={<UserPortal />} />
               <Route path="/vopsy" element={<VOPSy />} />
               <Route path="/vault" element={<Vault />} />
               <Route path="/studio" element={<Studio />} />
@@ -42,7 +45,7 @@ const App = () => (
               <Route path="/academy" element={<Academy />} />
               <Route path="/financial" element={<FinancialHub />} />
               <Route path="/integrations" element={<Integrations />} />
-              <Route path="/autoresponder" element={<Dashboard />} />
+              <Route path="/integrations/callback" element={<IntegrationCallback />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-canceled" element={<PaymentCanceled />} />
               <Route path="*" element={<NotFound />} />
