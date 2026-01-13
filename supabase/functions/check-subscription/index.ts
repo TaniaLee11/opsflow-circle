@@ -12,11 +12,24 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product ID to tier mapping
-const TIER_MAP: Record<string, string> = {
-  "prod_TeJjJw05IhMkRb": "assistant",
-  "prod_TeJnNlrcJH3XfS": "operations",
-  "prod_TeK75lsD5x4Pch": "enterprise",
+// Price ID to tier mapping
+const PRICE_TO_TIER: Record<string, string> = {
+  "price_1Sk4YLJ3R9oDKFd4mgxV1oiw": "free",
+  "price_1Sh16AJ3R9oDKFd40hVGZlfE": "ai_assistant",
+  "price_1Sh19gJ3R9oDKFd4ftPwaGcS": "ai_operations",
+  "price_1Sh1TfJ3R9oDKFd4DcGU9izr": "ai_enterprise",
+  "price_1Sox4DJ3R9oDKFd4uzradhaH": "ai_advisory",
+  "price_1Sox4MJ3R9oDKFd4RdC2PcGv": "ai_advisory",
+  "price_1Sk56qJ3R9oDKFd4xzJQi6Ch": "ai_tax",
+  "price_1Sk588J3R9oDKFd47tkpsRsM": "ai_compliance",
+  "price_1Sk59VJ3R9oDKFd4YXwHdTa9": "ai_tax",
+};
+
+// Product ID to tier mapping (fallback)
+const PRODUCT_TO_TIER: Record<string, string> = {
+  "prod_TeJjJw05IhMkRb": "ai_assistant",
+  "prod_TeJnNlrcJH3XfS": "ai_operations",
+  "prod_TeK75lsD5x4Pch": "ai_enterprise",
   "prod_ThTVDIyIHX9EaD": "free",
 };
 
@@ -48,16 +61,98 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // First check database profile for subscription status
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("subscription_confirmed, subscription_tier, selected_tier, role")
+      .eq("user_id", user.id)
+      .single();
+
+    // Check for active cohort membership
+    const { data: cohortMembership } = await supabaseClient
+      .from("cohort_memberships")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .single();
+
+    // Platform owner always has full access
+    if (profile?.role === "owner") {
+      logStep("User is platform owner - full access");
+      return new Response(JSON.stringify({
+        subscribed: true,
+        tier: "owner",
+        has_access: true,
+        access_type: "owner",
+        subscription_end: null,
+        product_id: null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Cohort members have access during cohort period
+    if (cohortMembership) {
+      logStep("User has active cohort membership", { expiresAt: cohortMembership.expires_at });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        tier: "cohort",
+        has_access: true,
+        access_type: "cohort",
+        subscription_end: cohortMembership.expires_at,
+        product_id: null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Free tier always has access
+    if (profile?.selected_tier === "free") {
+      logStep("User is on free tier - access granted");
+      return new Response(JSON.stringify({
+        subscribed: false,
+        tier: "free",
+        has_access: true,
+        access_type: "free",
+        subscription_end: null,
+        product_id: null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Check Stripe for active subscription
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    
-    // Find customer by email
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No Stripe customer found");
+      logStep("No Stripe customer found - checking profile subscription_confirmed");
+      
+      // If subscription was confirmed via webhook, grant access
+      if (profile?.subscription_confirmed && profile?.subscription_tier) {
+        return new Response(JSON.stringify({
+          subscribed: true,
+          tier: profile.subscription_tier,
+          has_access: true,
+          access_type: "confirmed",
+          subscription_end: null,
+          product_id: null,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
       return new Response(JSON.stringify({ 
         subscribed: false,
-        tier: "free",
+        tier: "pending",
+        has_access: false,
+        access_type: "none",
+        selected_tier: profile?.selected_tier || null,
         subscription_end: null,
         product_id: null,
       }), {
@@ -77,10 +172,29 @@ serve(async (req) => {
     });
 
     if (subscriptions.data.length === 0) {
-      logStep("No active subscription");
+      logStep("No active Stripe subscription");
+      
+      // Check for confirmed one-time payments in profile
+      if (profile?.subscription_confirmed && profile?.subscription_tier) {
+        return new Response(JSON.stringify({
+          subscribed: true,
+          tier: profile.subscription_tier,
+          has_access: true,
+          access_type: "one_time",
+          subscription_end: null,
+          product_id: null,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
       return new Response(JSON.stringify({
         subscribed: false,
-        tier: "free",
+        tier: "pending",
+        has_access: false,
+        access_type: "none",
+        selected_tier: profile?.selected_tier || null,
         subscription_end: null,
         product_id: null,
       }), {
@@ -90,20 +204,34 @@ serve(async (req) => {
     }
 
     const subscription = subscriptions.data[0];
+    const priceId = subscription.items.data[0]?.price?.id;
     const productId = subscription.items.data[0]?.price?.product as string;
-    const tier = TIER_MAP[productId] || "unknown";
+    const tier = PRICE_TO_TIER[priceId] || PRODUCT_TO_TIER[productId] || "unknown";
     const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
     logStep("Active subscription found", {
       subscriptionId: subscription.id,
       productId,
+      priceId,
       tier,
       endDate: subscriptionEnd,
     });
 
+    // Update profile with confirmed subscription status
+    await supabaseClient
+      .from("profiles")
+      .update({
+        subscription_confirmed: true,
+        subscription_tier: tier,
+        stripe_subscription_id: subscription.id,
+      })
+      .eq("user_id", user.id);
+
     return new Response(JSON.stringify({
       subscribed: true,
       tier,
+      has_access: true,
+      access_type: "subscription",
       product_id: productId,
       subscription_end: subscriptionEnd,
       cancel_at_period_end: subscription.cancel_at_period_end,

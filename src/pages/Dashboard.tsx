@@ -8,9 +8,9 @@ import { TierSelector } from "@/components/tier/TierSelector";
 import { TierMetrics } from "@/components/dashboard/TierMetrics";
 import { CohortBanner } from "@/components/tier/CohortBanner";
 import { CohortInvitePanel } from "@/components/cohort/CohortInvitePanel";
+import { AccessGate } from "@/components/access/AccessGate";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTier } from "@/contexts/UserTierContext";
-import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Users, 
@@ -58,13 +58,9 @@ const alerts = [
   }
 ];
 
-export default function Dashboard() {
-  const { user, isAuthenticated, isOwner } = useAuth();
-  const { currentTier, isCohort } = useUserTier();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
+function DashboardContent() {
+  const { user, isOwner, accessType, currentTier } = useAuth();
+  const { isCohort } = useUserTier();
 
   const userMessages = userTypeMessages[user?.userType || "entrepreneur"];
 
@@ -261,5 +257,13 @@ export default function Dashboard() {
       {/* VOPSy Agent */}
       <VOPSyAgent />
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <AccessGate>
+      <DashboardContent />
+    </AccessGate>
   );
 }
