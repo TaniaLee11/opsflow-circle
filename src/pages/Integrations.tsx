@@ -307,7 +307,7 @@ export default function Integrations() {
       return;
     }
     
-  // Map integration IDs to provider names
+    // Map integration IDs to provider names
     const providerMap: Record<string, string> = {
       "google-workspace": "google",
       "microsoft-365": "microsoft",
@@ -325,37 +325,31 @@ export default function Integrations() {
       return;
     }
 
-    toast.loading(`Connecting to ${integration.name}...`);
-
     try {
       const { data, error } = await supabase.functions.invoke("oauth-start", {
         body: { provider },
       });
 
-      // Supabase returns non-2xx responses as `error`, but the response body may still
-      // contain a useful JSON payload (e.g. { needsConfiguration: true, error: "..." }).
-      let body: any = data;
-      if (!body && error && typeof (error as any).context?.json === "function") {
-        body = await (error as any).context.json().catch(() => null);
-      }
+      if (error) throw error;
 
-      if (body?.needsConfiguration) {
-        toast.dismiss();
-        toast.error(body.error || "Integration requires configuration.");
+      // Handle consistent status responses
+      if (data?.status === "needs_configuration") {
+        toast.warning(data.message || "Admin setup required before authorization can begin.");
         return;
       }
 
-      if (error) throw error;
+      if (data?.status === "disabled") {
+        toast.warning(data.message || "This integration is currently disabled.");
+        return;
+      }
 
-      if (body?.url) {
-        toast.dismiss();
-        window.location.href = body.url;
+      if (data?.status === "ok" && data?.url) {
+        // Immediate redirect - no loading state
+        window.location.href = data.url;
       } else {
-        toast.dismiss();
         toast.error("No authorization URL returned.");
       }
     } catch (err) {
-      toast.dismiss();
       toast.error(err instanceof Error ? err.message : "Failed to start connection");
     }
   };
@@ -640,8 +634,8 @@ function IntegrationCard({
 
           {integration.status === "needs_setup" && (
             <div className="pt-1">
-              <Badge variant="outline" className="text-[10px] font-normal">
-                Admin setup required (credentials missing)
+              <Badge variant="outline" className="text-[10px] font-normal text-amber-600 border-amber-300 bg-amber-50">
+                Admin setup required before authorization
               </Badge>
             </div>
           )}
