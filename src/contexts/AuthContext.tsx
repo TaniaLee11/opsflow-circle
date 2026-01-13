@@ -49,6 +49,7 @@ interface AuthContextType {
   // Actions
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
 }
@@ -231,6 +232,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  };
+
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -258,6 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isCheckingSubscription,
       login,
       signup,
+      loginWithGoogle,
       logout,
       refreshSubscription,
     }}>
