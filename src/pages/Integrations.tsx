@@ -504,9 +504,13 @@ function IntegrationCard({
                   alt={integration.name}
                   className="w-8 h-8 object-contain"
                   onError={(e) => {
-                    e.currentTarget.src = "";
-                    e.currentTarget.style.display = "none";
-                    e.currentTarget.parentElement!.innerHTML = `<span class="text-xl font-bold text-muted-foreground">${integration.name[0]}</span>`;
+                    const target = e.currentTarget;
+                    target.style.display = "none";
+                    // Create fallback span
+                    const fallback = document.createElement("span");
+                    fallback.className = "text-xl font-bold text-muted-foreground";
+                    fallback.textContent = integration.name[0];
+                    target.parentElement?.appendChild(fallback);
                   }}
                 />
               </div>
