@@ -10,6 +10,7 @@ const corsHeaders = {
 const OAUTH_CONFIGS: Record<string, {
   authUrl: string;
   scopes: string[];
+  extraParams?: Record<string, string>;
 }> = {
   google: {
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
@@ -41,6 +42,20 @@ const OAUTH_CONFIGS: Record<string, {
   hubspot: {
     authUrl: "https://app.hubspot.com/oauth/authorize",
     scopes: ["crm.objects.contacts.read", "crm.objects.companies.read"],
+  },
+  stripe: {
+    authUrl: "https://connect.stripe.com/oauth/authorize",
+    scopes: ["read_write"],
+    extraParams: { response_type: "code" },
+  },
+  dropbox: {
+    authUrl: "https://www.dropbox.com/oauth2/authorize",
+    scopes: [],
+    extraParams: { token_access_type: "offline" },
+  },
+  xero: {
+    authUrl: "https://login.xero.com/identity/connect/authorize",
+    scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts"],
   },
 };
 
@@ -147,11 +162,16 @@ serve(async (req) => {
       client_id: integrationConfig.client_id,
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: config.scopes.join(" "),
       state: `${state}:${provider}`,
       access_type: "offline",
       prompt: "consent",
+      ...config.extraParams,
     });
+
+    // Add scopes (some providers like Stripe use scope differently)
+    if (config.scopes.length > 0) {
+      authParams.set("scope", config.scopes.join(" "));
+    }
 
     const oauthUrl = `${config.authUrl}?${authParams.toString()}`;
     logStep("OAuth URL generated", { provider, url: oauthUrl.substring(0, 100) + "..." });

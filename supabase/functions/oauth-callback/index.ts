@@ -9,6 +9,8 @@ const corsHeaders = {
 // Token endpoints for each provider
 const TOKEN_CONFIGS: Record<string, {
   tokenUrl: string;
+  usesBasicAuth?: boolean;
+  customParams?: (code: string, clientId: string, clientSecret: string, redirectUri: string) => Record<string, string>;
 }> = {
   google: {
     tokenUrl: "https://oauth2.googleapis.com/token",
@@ -18,12 +20,23 @@ const TOKEN_CONFIGS: Record<string, {
   },
   quickbooks: {
     tokenUrl: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+    usesBasicAuth: true,
   },
   slack: {
     tokenUrl: "https://slack.com/api/oauth.v2.access",
   },
   hubspot: {
     tokenUrl: "https://api.hubapi.com/oauth/v1/token",
+  },
+  stripe: {
+    tokenUrl: "https://connect.stripe.com/oauth/token",
+  },
+  dropbox: {
+    tokenUrl: "https://api.dropboxapi.com/oauth2/token",
+  },
+  xero: {
+    tokenUrl: "https://identity.xero.com/connect/token",
+    usesBasicAuth: true,
   },
 };
 
@@ -104,20 +117,28 @@ serve(async (req) => {
     const siteUrl = Deno.env.get("SITE_URL") || "https://dnntsdncmptuxctbcjsp.lovableproject.com";
     const redirectUri = `${siteUrl}/integrations/callback`;
 
-    // Exchange code for tokens
+    // Build token request
     const tokenParams = new URLSearchParams({
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri,
-      client_id: integrationConfig.client_id,
-      client_secret: integrationConfig.client_secret,
     });
+
+    // Some providers prefer client credentials in body, others via Basic auth
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
+
+    if (config.usesBasicAuth) {
+      headers["Authorization"] = `Basic ${btoa(`${integrationConfig.client_id}:${integrationConfig.client_secret}`)}`;
+    } else {
+      tokenParams.set("client_id", integrationConfig.client_id);
+      tokenParams.set("client_secret", integrationConfig.client_secret);
+    }
 
     const tokenResponse = await fetch(config.tokenUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers,
       body: tokenParams.toString(),
     });
 
