@@ -14,6 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_memberships: {
+        Row: {
+          account_id: string
+          id: string
+          invited_by: string | null
+          joined_at: string
+          role: Database["public"]["Enums"]["membership_role"]
+          status: Database["public"]["Enums"]["membership_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["membership_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["membership_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_memberships_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts: {
+        Row: {
+          address: Json | null
+          company_name: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          name: string
+          phone: string | null
+          settings: Json | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_tier: string | null
+          type: Database["public"]["Enums"]["account_type"]
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: Json | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          name: string
+          phone?: string | null
+          settings?: Json | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_tier?: string | null
+          type?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: Json | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          name?: string
+          phone?: string | null
+          settings?: Json | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_tier?: string | null
+          type?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       cohort_invites: {
         Row: {
           accepted_at: string | null
@@ -252,6 +344,53 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          account_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["membership_role"]
+          status: Database["public"]["Enums"]["invitation_status"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          account_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -361,6 +500,7 @@ export type Database = {
           email: string | null
           id: string
           organization_id: string | null
+          primary_account_id: string | null
           role: string | null
           selected_tier: string | null
           stripe_subscription_id: string | null
@@ -378,6 +518,7 @@ export type Database = {
           email?: string | null
           id?: string
           organization_id?: string | null
+          primary_account_id?: string | null
           role?: string | null
           selected_tier?: string | null
           stripe_subscription_id?: string | null
@@ -395,6 +536,7 @@ export type Database = {
           email?: string | null
           id?: string
           organization_id?: string | null
+          primary_account_id?: string | null
           role?: string | null
           selected_tier?: string | null
           stripe_subscription_id?: string | null
@@ -411,6 +553,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_primary_account_id_fkey"
+            columns: ["primary_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -497,13 +646,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_account_member: {
+        Args: { _account_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_account_primary: {
+        Args: { _account_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_platform_owner: { Args: { _user_id: string }; Returns: boolean }
       user_has_tier_access: {
         Args: { check_user_id: string }
         Returns: boolean
       }
     }
     Enums: {
+      account_type: "individual" | "enterprise"
       app_role: "owner" | "admin" | "operator" | "user"
+      invitation_status: "pending" | "accepted" | "expired" | "cancelled"
+      membership_role: "primary" | "member"
+      membership_status: "active" | "pending" | "suspended" | "removed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -631,7 +793,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["individual", "enterprise"],
       app_role: ["owner", "admin", "operator", "user"],
+      invitation_status: ["pending", "accepted", "expired", "cancelled"],
+      membership_role: ["primary", "member"],
+      membership_status: ["active", "pending", "suspended", "removed"],
     },
   },
 } as const
