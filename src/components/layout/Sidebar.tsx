@@ -56,8 +56,8 @@ const navItems: NavItem[] = [
   // Financial Hub
   { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Finance" },
   
-  // Operations
-  { icon: Workflow, label: "Integrations", href: "/integrations", category: "Integrations" },
+  // Integrations
+  { icon: Workflow, label: "Automations", href: "/integrations", category: "Integrations" },
 ];
 
 export function Sidebar() {
