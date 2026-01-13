@@ -110,10 +110,11 @@ const integrations: Integration[] = [
   {
     id: "stripe",
     name: "Stripe",
-    description: "Payment processing and subscription management",
+    description: "Connect your Stripe account for payment processing",
     icon: "https://stripe.com/favicon.ico",
     category: "finance",
     status: "disconnected",
+    oauthProvider: "stripe",
     features: ["Payment processing", "Subscription billing", "Invoice management", "Revenue analytics"],
     popular: true,
   },
@@ -133,6 +134,7 @@ const integrations: Integration[] = [
     icon: "https://www.xero.com/favicon.ico",
     category: "finance",
     status: "disconnected",
+    oauthProvider: "xero",
     features: ["Bank reconciliation", "Invoicing", "Expense claims", "Multi-currency"],
   },
   
@@ -144,6 +146,7 @@ const integrations: Integration[] = [
     icon: "https://www.dropbox.com/favicon.ico",
     category: "storage",
     status: "disconnected",
+    oauthProvider: "dropbox",
     features: ["File sync", "Sharing", "Version history", "Team folders"],
   },
   {
@@ -304,16 +307,19 @@ export default function Integrations() {
       return;
     }
     
-    // Map integration IDs to provider names
+  // Map integration IDs to provider names
     const providerMap: Record<string, string> = {
       "google-workspace": "google",
       "microsoft-365": "microsoft",
       "quickbooks": "quickbooks",
       "slack": "slack",
       "hubspot": "hubspot",
+      "stripe": "stripe",
+      "dropbox": "dropbox",
+      "xero": "xero",
     };
     
-    const provider = providerMap[integration.id];
+    const provider = integration.oauthProvider || providerMap[integration.id];
     if (!provider) {
       toast.info(`${integration.name} integration coming soon!`);
       return;
