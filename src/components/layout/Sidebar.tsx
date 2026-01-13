@@ -37,6 +37,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  // AI Assistant - VOPSy is the brain that powers it all
+  { icon: Brain, label: "VOPSy", href: "/vopsy", category: "AI Assistant" },
+  
   // Core
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", category: "Core" },
   
