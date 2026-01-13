@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { AccessGate } from "@/components/access/AccessGate";
 import { useAuth } from "@/contexts/AuthContext";
 import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
+import { useClientView } from "@/contexts/ClientViewContext";
 import { useTierPortalData, usePortalUsers } from "@/hooks/useTierMetrics";
 import { 
   ArrowLeft,
@@ -31,7 +32,8 @@ import {
   UserCheck,
   UserX,
   Clock,
-  Search
+  Search,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +41,51 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+
+// Component for viewing client Vault/Academy
+interface ViewClientButtonProps {
+  user: {
+    id: string;
+    displayName: string | null;
+    email: string | null;
+    companyName: string | null;
+  };
+  tierId: string;
+  destination: "vault" | "academy";
+}
+
+function ViewClientButton({ user, tierId, destination }: ViewClientButtonProps) {
+  const navigate = useNavigate();
+  const { setViewedClient } = useClientView();
+  
+  const handleClick = () => {
+    setViewedClient({
+      id: user.id,
+      userId: user.id, // id is already the user_id from PortalUser
+      displayName: user.displayName,
+      email: user.email,
+      companyName: user.companyName,
+      tier: tierId
+    });
+    navigate(`/${destination}`);
+  };
+
+  const Icon = destination === "vault" ? FolderLock : GraduationCap;
+  const label = destination === "vault" ? "Vault" : "Academy";
+  
+  return (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      className="gap-1.5 text-xs"
+      onClick={handleClick}
+    >
+      <Eye className="w-3 h-3" />
+      <Icon className="w-3 h-3" />
+      {label}
+    </Button>
+  );
+}
 
 function PortalContent() {
   const { tierId } = useParams<{ tierId: string }>();
@@ -588,26 +635,16 @@ function PortalContent() {
 
                               {/* Quick Links */}
                               <div className="flex flex-col gap-2 shrink-0">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="gap-1.5 text-xs"
-                                  onClick={() => {/* Would navigate to user's vault view */}}
-                                >
-                                  <FolderLock className="w-3 h-3" />
-                                  Vault
-                                  <ExternalLink className="w-3 h-3" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="gap-1.5 text-xs"
-                                  onClick={() => {/* Would navigate to user's academy view */}}
-                                >
-                                  <GraduationCap className="w-3 h-3" />
-                                  Academy
-                                  <ExternalLink className="w-3 h-3" />
-                                </Button>
+                                <ViewClientButton 
+                                  user={user} 
+                                  tierId={validTierId} 
+                                  destination="vault" 
+                                />
+                                <ViewClientButton 
+                                  user={user} 
+                                  tierId={validTierId} 
+                                  destination="academy" 
+                                />
                               </div>
                             </div>
                           </motion.div>
