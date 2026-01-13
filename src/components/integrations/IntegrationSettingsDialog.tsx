@@ -106,7 +106,8 @@ interface FormData {
 }
 
 export function IntegrationSettingsDialog() {
-  const { isOwner } = useAuth();
+  const { isOwner, currentTier } = useAuth();
+  const isEffectiveOwner = isOwner || currentTier === "owner";
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [activeProvider, setActiveProvider] = useState("google");
@@ -125,7 +126,7 @@ export function IntegrationSettingsDialog() {
       if (error) throw error;
       return data || [];
     },
-    enabled: open && isOwner,
+    enabled: open && isEffectiveOwner,
   });
 
   // Initialize form data from existing configs
@@ -216,7 +217,7 @@ export function IntegrationSettingsDialog() {
     }
   };
 
-  if (!isOwner) return null;
+  if (!isEffectiveOwner) return null;
 
   const getConfigStatus = (providerId: string) => {
     const config = existingConfigs?.find((c) => c.provider === providerId);

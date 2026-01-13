@@ -210,7 +210,12 @@ export default function Integrations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const queryClient = useQueryClient();
-  const { isOwner } = useAuth();
+  const { isOwner, currentTier, user } = useAuth();
+  
+  // Owner is determined by role OR currentTier being "owner"
+  const isEffectiveOwner = isOwner || currentTier === "owner";
+  
+  console.log("[Integrations] Owner check:", { isOwner, currentTier, userRole: user?.role, isEffectiveOwner });
   
   // Fetch real integration statuses from database
   const { data: connectedIntegrations, isLoading } = useQuery({
@@ -273,7 +278,7 @@ export default function Integrations() {
         // Only show "needs_setup" to owners, others see "disconnected"
         return {
           ...integration,
-          status: isOwner ? ("needs_setup" as const) : ("disconnected" as const),
+          status: isEffectiveOwner ? ("needs_setup" as const) : ("disconnected" as const),
         };
       }
     }
@@ -401,7 +406,7 @@ export default function Integrations() {
                   </div>
                   <h1 className="text-3xl font-bold text-foreground">Integrations</h1>
                 </div>
-                {isOwner && <IntegrationSettingsDialog />}
+                {isEffectiveOwner && <IntegrationSettingsDialog />}
               </div>
               <p className="text-muted-foreground">
                 Connect your favorite tools and services to streamline your workflow
