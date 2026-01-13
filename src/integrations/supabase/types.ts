@@ -306,6 +306,10 @@ export type Database = {
           organization_id: string | null
           role: string | null
           selected_tier: string | null
+          stripe_subscription_id: string | null
+          subscription_confirmed: boolean | null
+          subscription_confirmed_at: string | null
+          subscription_tier: string | null
           tier_selected: boolean | null
           updated_at: string
           user_id: string
@@ -319,6 +323,10 @@ export type Database = {
           organization_id?: string | null
           role?: string | null
           selected_tier?: string | null
+          stripe_subscription_id?: string | null
+          subscription_confirmed?: boolean | null
+          subscription_confirmed_at?: string | null
+          subscription_tier?: string | null
           tier_selected?: boolean | null
           updated_at?: string
           user_id: string
@@ -332,6 +340,10 @@ export type Database = {
           organization_id?: string | null
           role?: string | null
           selected_tier?: string | null
+          stripe_subscription_id?: string | null
+          subscription_confirmed?: boolean | null
+          subscription_confirmed_at?: string | null
+          subscription_tier?: string | null
           tier_selected?: boolean | null
           updated_at?: string
           user_id?: string
@@ -416,11 +428,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_effective_tier: {
+        Args: { check_user_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      user_has_tier_access: {
+        Args: { check_user_id: string }
         Returns: boolean
       }
     }
