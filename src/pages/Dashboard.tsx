@@ -4,8 +4,11 @@ import { TaskList } from "@/components/dashboard/TaskList";
 import { TeamActivity } from "@/components/dashboard/TeamActivity";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
-import { VOPSyModeSelector } from "@/components/vopsy/VOPSyModeSelector";
+import { TierSelector } from "@/components/tier/TierSelector";
+import { TierMetrics } from "@/components/dashboard/TierMetrics";
+import { CohortBanner } from "@/components/tier/CohortBanner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserTier } from "@/contexts/UserTierContext";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -56,6 +59,7 @@ const alerts = [
 
 export default function Dashboard() {
   const { user, isAuthenticated, isOwner } = useAuth();
+  const { currentTier, isCohort } = useUserTier();
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -65,6 +69,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Cohort Banner - shows for cohort users */}
+      <CohortBanner />
+      
       <Sidebar />
       
       {/* Main Content */}
@@ -103,7 +110,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-4"
             >
-              <VOPSyModeSelector />
+              <TierSelector />
               <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-sm font-medium">
                 <Calendar className="w-4 h-4" />
                 <span>Last 7 days</span>
@@ -148,6 +155,17 @@ export default function Dashboard() {
               </div>
             </div>
           </motion.div>
+
+          {/* Tier Metrics - Owner Dashboard */}
+          {isOwner && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <TierMetrics />
+            </motion.div>
+          )}
 
           {/* Alerts */}
           {alerts.length > 0 && (
