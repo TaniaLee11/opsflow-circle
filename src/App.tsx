@@ -12,6 +12,8 @@ import Academy from "./pages/Academy";
 import FinancialHub from "./pages/FinancialHub";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCanceled from "./pages/PaymentCanceled";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/marketing" element={<Dashboard />} />
               <Route path="/automations" element={<Dashboard />} />
               <Route path="/messages" element={<Dashboard />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-canceled" element={<PaymentCanceled />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
