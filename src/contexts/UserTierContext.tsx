@@ -32,17 +32,18 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "Free",
     displayName: "AI Free",
     price: null,
-    description: "A guided introduction to smarter business operations — clarity without complexity",
+    description: "Start organized. Move at your own pace.",
     capabilities: [
-      "Basic AI assistant support",
-      "Starter business insights & prompts",
-      "Limited access to operational tools",
-      "Guided recommendations for next steps"
+      "AI Vault — upload & store tax docs, business records",
+      "AI Communications — reminders, prompts, guided steps",
+      "AI LMS — business basics & planning education",
+      "Business Plan Builder (DIY with AI prompts)",
+      "Input → Output (upload docs → generate plans/exports)"
     ],
     limitations: [
-      "No automation features",
-      "No financial tools",
-      "Limited action volume"
+      "No year-round tax prep",
+      "No ongoing advisory",
+      "No compliance execution or filings"
     ],
     icon: "🆓",
     color: "from-gray-500 to-gray-400"
@@ -52,18 +53,19 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "AI Assistant",
     displayName: "AI Assistant",
     price: 34.99,
-    description: "Business plans, pitch decks, compliance checklists, and templates",
+    description: "Guidance while you run the business.",
     capabilities: [
-      "Business plans & pitch decks",
-      "Compliance checklists",
-      "Templates library",
-      "Full LMS access",
-      "Guided single-step AI execution"
+      "Full AI assistant (daily decision support)",
+      "AI Vault (expanded usage)",
+      "AI LMS (role- and stage-based)",
+      "Business planning & document analysis",
+      "Smart reminders (deadlines, renewals, follow-ups)",
+      "Input → Output across finance, admin, ops"
     ],
     limitations: [
       "No automation orchestration",
-      "No multi-step workflows",
-      "Limited action volume"
+      "No operational dashboards",
+      "No tool integrations"
     ],
     icon: "💬",
     color: "from-blue-500 to-cyan-400"
@@ -73,17 +75,19 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "AI Operations",
     displayName: "AI Operations",
     price: 99.99,
-    description: "Multi-step workflows with operational reasoning and automation",
+    description: "Your AI-powered back office.",
     capabilities: [
       "Everything in AI Assistant",
-      "Multi-step workflows",
-      "Automation execution",
-      "Persistent context",
-      "Operational reasoning"
+      "Operational dashboards (cash flow, forecasting)",
+      "Automated workflows (billing, reminders, reporting)",
+      "Tool integrations (accounting, CRM, payroll)",
+      "Compliance tracking (not filing)",
+      "Input → Output across all operational workflows"
     ],
     limitations: [
-      "Standard usage limits",
-      "No specialized advisory features"
+      "Single-entity focus",
+      "No multi-user access",
+      "No advisory sessions included"
     ],
     icon: "⚙️",
     color: "from-purple-500 to-pink-400"
@@ -93,18 +97,18 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "AI Enterprise",
     displayName: "AI Enterprise",
     price: 499,
-    description: "Full-scale operations with organization-wide workflows and priority support",
+    description: "Scalable intelligence for organizations.",
     capabilities: [
-      "Full AI operations functionality",
-      "Full automation availability",
-      "Organization-wide workflows",
-      "Highest usage limits",
-      "Priority support",
-      "Advanced integrations"
+      "Multi-user access & permissions",
+      "Multi-entity management",
+      "Advanced analytics & reporting",
+      "Governance & audit trails",
+      "Enterprise-grade integrations & security",
+      "Priority support"
     ],
     limitations: [
-      "Requires annual commitment",
-      "Custom onboarding required"
+      "Annual commitment required",
+      "Custom onboarding process"
     ],
     icon: "🏢",
     color: "from-primary to-orange-400"
@@ -114,17 +118,18 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "AI Advisory",
     displayName: "AI Advisory",
     price: 199.99,
-    description: "Strategic business advisory with AI-powered insights and recommendations",
+    description: "Human expertise, strategically deployed.",
     capabilities: [
-      "Strategic business planning",
-      "Growth recommendations",
-      "Market analysis tools",
-      "Advisory dashboards",
-      "Quarterly business reviews"
+      "Scheduled advisory sessions",
+      "AI-prepared briefs for advisors",
+      "Strategic planning & decision support",
+      "Board-ready reports and summaries",
+      "Growth & expansion guidance"
     ],
     limitations: [
       "No tax preparation",
-      "No compliance filings"
+      "No compliance filings",
+      "Session limits apply"
     ],
     icon: "📊",
     color: "from-emerald-500 to-teal-400"
@@ -134,17 +139,18 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "AI Tax",
     displayName: "AI Tax",
     price: 149.99,
-    description: "Automated tax preparation, planning, and filing assistance",
+    description: "One meeting. One year. Fully prepared.",
     capabilities: [
-      "Tax preparation workflows",
-      "Quarterly tax estimates",
-      "Deduction tracking",
-      "Tax document vault",
-      "Filing reminders & alerts"
+      "AI Vault (Tax-Centered) — year-round doc organization",
+      "AI Communications — prep reminders, doc requests",
+      "One (1) Annual Virtual Tax Prep Meeting",
+      "Human-led, AI-supported tax prep",
+      "Tax document summaries & exports"
     ],
     limitations: [
-      "Does not include CPA review",
-      "State-specific limitations may apply"
+      "No ongoing advisory outside annual meeting",
+      "No year-round tax support",
+      "State limitations may apply"
     ],
     icon: "📋",
     color: "from-amber-500 to-yellow-400"
@@ -154,17 +160,18 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     name: "AI Compliance",
     displayName: "AI Compliance",
     price: 179.99,
-    description: "Regulatory compliance monitoring, checklists, and automated alerts",
+    description: "Stay compliant without chasing deadlines.",
     capabilities: [
-      "Compliance monitoring",
-      "Regulatory checklists",
-      "Audit preparation",
-      "Policy management",
-      "Compliance calendar & alerts"
+      "Compliance-aware AI monitoring",
+      "Filing calendars & alerts",
+      "Risk flags & remediation guidance",
+      "Audit and reporting readiness",
+      "Document input → compliance outputs"
     ],
     limitations: [
       "Industry-specific modules sold separately",
-      "Does not include legal review"
+      "Does not include legal review",
+      "No direct filing submissions"
     ],
     icon: "🛡️",
     color: "from-rose-500 to-red-400"

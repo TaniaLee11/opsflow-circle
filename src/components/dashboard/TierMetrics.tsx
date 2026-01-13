@@ -1,133 +1,166 @@
 import { motion } from "framer-motion";
-import { useUserTier, USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
-import { Users, Zap, TrendingUp, Clock, DollarSign, ArrowUpRight, Activity } from "lucide-react";
+import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
+import { 
+  Users, 
+  TrendingUp, 
+  DollarSign, 
+  ArrowUpRight, 
+  Activity,
+  FileText,
+  Calendar,
+  Target,
+  Clock,
+  BarChart3,
+  UserPlus,
+  Repeat,
+  AlertCircle
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface TierMetric {
-  tierId: UserTierId;
-  tierName: string;
-  activeUsers: number;
-  mrr: number; // Monthly Recurring Revenue
-  churnRate: number;
-  avgSessionTime: string;
-  growthRate: number;
-  conversionRate: number;
-  totalActions: number;
-  icon: string;
-  color: string;
+interface TierKPI {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  trend?: { value: number; positive: boolean };
 }
 
-// Mock data - in production, this would come from database
-const mockTierMetrics: TierMetric[] = [
+interface TierMetricData {
+  tierId: UserTierId;
+  tierName: string;
+  tagline: string;
+  icon: string;
+  color: string;
+  kpis: TierKPI[];
+}
+
+// Mock data matching the specified owner dashboard KPIs per tier
+const tierMetrics: TierMetricData[] = [
   {
     tierId: "free",
     tierName: "AI Free",
-    activeUsers: 1247,
-    mrr: 0,
-    churnRate: 8.2,
-    avgSessionTime: "4m 32s",
-    growthRate: 12.5,
-    conversionRate: 4.8,
-    totalActions: 8420,
+    tagline: "Start organized. Move at your own pace.",
     icon: USER_TIERS.free.icon,
-    color: USER_TIERS.free.color
+    color: USER_TIERS.free.color,
+    kpis: [
+      { label: "Active Users", value: "1,247", icon: <Users className="w-3 h-3" />, trend: { value: 12.5, positive: true } },
+      { label: "Vault Adoption", value: "68%", icon: <FileText className="w-3 h-3" />, trend: { value: 4.2, positive: true } },
+      { label: "Plan Starts", value: "892", icon: <Target className="w-3 h-3" /> },
+      { label: "Plan Completions", value: "341", icon: <Activity className="w-3 h-3" /> },
+      { label: "Free→Paid Conv.", value: "4.8%", icon: <ArrowUpRight className="w-3 h-3" />, trend: { value: 0.6, positive: true } },
+      { label: "Docs/User", value: "8.3", icon: <FileText className="w-3 h-3" /> }
+    ]
   },
   {
     tierId: "ai_assistant",
     tierName: "AI Assistant",
-    activeUsers: 384,
-    mrr: 13436,
-    churnRate: 3.1,
-    avgSessionTime: "12m 18s",
-    growthRate: 8.3,
-    conversionRate: 12.4,
-    totalActions: 15680,
+    tagline: "Guidance while you run the business.",
     icon: USER_TIERS.ai_assistant.icon,
-    color: USER_TIERS.ai_assistant.color
+    color: USER_TIERS.ai_assistant.color,
+    kpis: [
+      { label: "Active Users", value: "384", icon: <Users className="w-3 h-3" />, trend: { value: 8.3, positive: true } },
+      { label: "Avg Interactions", value: "24.6/wk", icon: <Activity className="w-3 h-3" />, trend: { value: 3.1, positive: true } },
+      { label: "Retention Rate", value: "89%", icon: <Repeat className="w-3 h-3" /> },
+      { label: "Feature Depth", value: "72%", icon: <BarChart3 className="w-3 h-3" /> },
+      { label: "→Operations", value: "12.4%", icon: <ArrowUpRight className="w-3 h-3" />, trend: { value: 1.8, positive: true } },
+      { label: "MRR", value: "$13,436", icon: <DollarSign className="w-3 h-3" /> }
+    ]
   },
   {
     tierId: "ai_operations",
     tierName: "AI Operations",
-    activeUsers: 156,
-    mrr: 15599,
-    churnRate: 2.4,
-    avgSessionTime: "28m 45s",
-    growthRate: 15.7,
-    conversionRate: 18.2,
-    totalActions: 42350,
+    tagline: "Your AI-powered back office.",
     icon: USER_TIERS.ai_operations.icon,
-    color: USER_TIERS.ai_operations.color
+    color: USER_TIERS.ai_operations.color,
+    kpis: [
+      { label: "Subscribers", value: "156", icon: <Users className="w-3 h-3" />, trend: { value: 15.7, positive: true } },
+      { label: "Workflow Usage", value: "89%", icon: <Activity className="w-3 h-3" /> },
+      { label: "ARPU", value: "$112", icon: <DollarSign className="w-3 h-3" />, trend: { value: 8.2, positive: true } },
+      { label: "Churn Rate", value: "2.4%", icon: <AlertCircle className="w-3 h-3" />, trend: { value: 0.3, positive: true } },
+      { label: "Task Reduction", value: "64%", icon: <TrendingUp className="w-3 h-3" /> },
+      { label: "MRR", value: "$15,599", icon: <DollarSign className="w-3 h-3" /> }
+    ]
   },
   {
     tierId: "ai_enterprise",
     tierName: "AI Enterprise",
-    activeUsers: 47,
-    mrr: 23453,
-    churnRate: 1.2,
-    avgSessionTime: "1h 12m",
-    growthRate: 22.4,
-    conversionRate: 34.5,
-    totalActions: 89720,
+    tagline: "Scalable intelligence for organizations.",
     icon: USER_TIERS.ai_enterprise.icon,
-    color: USER_TIERS.ai_enterprise.color
+    color: USER_TIERS.ai_enterprise.color,
+    kpis: [
+      { label: "Accounts", value: "47", icon: <Users className="w-3 h-3" />, trend: { value: 22.4, positive: true } },
+      { label: "Seats/Account", value: "8.4", icon: <UserPlus className="w-3 h-3" /> },
+      { label: "ACV", value: "$5,988", icon: <DollarSign className="w-3 h-3" /> },
+      { label: "Expansion Rev", value: "+18%", icon: <ArrowUpRight className="w-3 h-3" />, trend: { value: 4.2, positive: true } },
+      { label: "Renewal Rate", value: "94%", icon: <Repeat className="w-3 h-3" /> },
+      { label: "MRR", value: "$23,453", icon: <DollarSign className="w-3 h-3" /> }
+    ]
   },
   {
     tierId: "ai_advisory",
     tierName: "AI Advisory",
-    activeUsers: 89,
-    mrr: 17799,
-    churnRate: 2.8,
-    avgSessionTime: "42m 15s",
-    growthRate: 18.9,
-    conversionRate: 21.3,
-    totalActions: 32450,
+    tagline: "Human expertise, strategically deployed.",
     icon: USER_TIERS.ai_advisory.icon,
-    color: USER_TIERS.ai_advisory.color
+    color: USER_TIERS.ai_advisory.color,
+    kpis: [
+      { label: "Subscribers", value: "89", icon: <Users className="w-3 h-3" />, trend: { value: 18.9, positive: true } },
+      { label: "Sessions/Client", value: "3.2/qtr", icon: <Calendar className="w-3 h-3" /> },
+      { label: "Advisor Util.", value: "78%", icon: <Clock className="w-3 h-3" /> },
+      { label: "Rev/User", value: "$224", icon: <DollarSign className="w-3 h-3" />, trend: { value: 6.1, positive: true } },
+      { label: "Satisfaction", value: "4.8/5", icon: <Target className="w-3 h-3" /> },
+      { label: "MRR", value: "$17,799", icon: <DollarSign className="w-3 h-3" /> }
+    ]
   },
   {
     tierId: "ai_tax",
     tierName: "AI Tax",
-    activeUsers: 234,
-    mrr: 35097,
-    churnRate: 4.5,
-    avgSessionTime: "18m 32s",
-    growthRate: 28.6,
-    conversionRate: 15.7,
-    totalActions: 28900,
+    tagline: "One meeting. One year. Fully prepared.",
     icon: USER_TIERS.ai_tax.icon,
-    color: USER_TIERS.ai_tax.color
+    color: USER_TIERS.ai_tax.color,
+    kpis: [
+      { label: "Clients", value: "234", icon: <Users className="w-3 h-3" />, trend: { value: 28.6, positive: true } },
+      { label: "Doc Readiness", value: "82%", icon: <FileText className="w-3 h-3" />, trend: { value: 5.4, positive: true } },
+      { label: "Meeting Compl.", value: "96%", icon: <Calendar className="w-3 h-3" /> },
+      { label: "Seasonal Ret.", value: "87%", icon: <Repeat className="w-3 h-3" /> },
+      { label: "Cross-sell", value: "15.7%", icon: <ArrowUpRight className="w-3 h-3" /> },
+      { label: "MRR", value: "$35,097", icon: <DollarSign className="w-3 h-3" /> }
+    ]
   },
   {
     tierId: "ai_compliance",
     tierName: "AI Compliance",
-    activeUsers: 112,
-    mrr: 20159,
-    churnRate: 2.1,
-    avgSessionTime: "35m 48s",
-    growthRate: 14.2,
-    conversionRate: 19.8,
-    totalActions: 45670,
+    tagline: "Stay compliant without chasing deadlines.",
     icon: USER_TIERS.ai_compliance.icon,
-    color: USER_TIERS.ai_compliance.color
+    color: USER_TIERS.ai_compliance.color,
+    kpis: [
+      { label: "Subscribers", value: "112", icon: <Users className="w-3 h-3" />, trend: { value: 14.2, positive: true } },
+      { label: "Active Tasks", value: "847", icon: <Activity className="w-3 h-3" /> },
+      { label: "Risk Flags/Acct", value: "2.1", icon: <AlertCircle className="w-3 h-3" />, trend: { value: 0.4, positive: true } },
+      { label: "Retention", value: "91%", icon: <Repeat className="w-3 h-3" /> },
+      { label: "Enterprise Att.", value: "24%", icon: <ArrowUpRight className="w-3 h-3" /> },
+      { label: "MRR", value: "$20,159", icon: <DollarSign className="w-3 h-3" /> }
+    ]
   }
 ];
 
-// Calculate totals for summary
-const totalMRR = mockTierMetrics.reduce((sum, m) => sum + m.mrr, 0);
-const totalUsers = mockTierMetrics.reduce((sum, m) => sum + m.activeUsers, 0);
-const avgChurn = mockTierMetrics.reduce((sum, m) => sum + m.churnRate, 0) / mockTierMetrics.length;
+// Calculate platform totals
+const totalMRR = 125543; // Sum of all tier MRRs
+const totalUsers = 2269;
+const avgRetention = 88.7;
 
 export function TierMetrics() {
   return (
     <div className="space-y-6">
-      {/* Summary Row */}
+      {/* Platform Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
             <DollarSign className="w-4 h-4" />
-            <span className="text-xs uppercase tracking-wide">Total MRR</span>
+            <span className="text-xs uppercase tracking-wide">Platform MRR</span>
           </div>
           <p className="text-2xl font-bold text-foreground">${totalMRR.toLocaleString()}</p>
+          <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
+            <TrendingUp className="w-3 h-3" /> +12.4% vs last month
+          </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
@@ -135,20 +168,23 @@ export function TierMetrics() {
             <span className="text-xs uppercase tracking-wide">Total Users</span>
           </div>
           <p className="text-2xl font-bold text-foreground">{totalUsers.toLocaleString()}</p>
+          <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
+            <TrendingUp className="w-3 h-3" /> +186 this month
+          </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
-            <Activity className="w-4 h-4" />
-            <span className="text-xs uppercase tracking-wide">Avg Churn</span>
+            <Repeat className="w-4 h-4" />
+            <span className="text-xs uppercase tracking-wide">Avg Retention</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{avgChurn.toFixed(1)}%</p>
+          <p className="text-2xl font-bold text-foreground">{avgRetention}%</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
-            <ArrowUpRight className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4" />
             <span className="text-xs uppercase tracking-wide">Product Types</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{mockTierMetrics.length}</p>
+          <p className="text-2xl font-bold text-foreground">{tierMetrics.length}</p>
         </div>
       </div>
 
@@ -156,7 +192,7 @@ export function TierMetrics() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-foreground">User Type Portals</h3>
-          <p className="text-sm text-muted-foreground">SaaS KPIs by product type / purchasable tier</p>
+          <p className="text-sm text-muted-foreground">Owner Dashboard KPIs by product tier</p>
         </div>
         <button className="text-xs text-primary hover:text-primary/80 font-medium">
           View Full Report →
@@ -164,102 +200,97 @@ export function TierMetrics() {
       </div>
 
       {/* Tier Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {mockTierMetrics.map((metric, index) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+        {tierMetrics.map((tier, index) => (
           <motion.div
-            key={metric.tierId}
+            key={tier.tierId}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="relative overflow-hidden rounded-xl border border-border bg-card p-4 hover:shadow-lg transition-shadow cursor-pointer"
+            className="relative overflow-hidden rounded-xl border border-border bg-card hover:shadow-lg transition-all cursor-pointer group"
           >
             {/* Header */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className={cn(
-                "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-lg",
-                metric.color
-              )}>
-                {metric.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-foreground truncate">{metric.tierName}</h4>
-                <div className="flex items-center gap-1 text-xs">
-                  <TrendingUp className="w-3 h-3 text-green-500" />
-                  <span className="text-green-500">+{metric.growthRate}%</span>
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-lg",
+                  tier.color
+                )}>
+                  {tier.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-foreground">{tier.tierName}</h4>
+                  <p className="text-[11px] text-muted-foreground truncate">{tier.tagline}</p>
                 </div>
               </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
-                  <Users className="w-3 h-3" />
-                  <span className="text-[10px] uppercase tracking-wide">Users</span>
+            {/* KPIs Grid */}
+            <div className="p-3 grid grid-cols-2 gap-2">
+              {tier.kpis.map((kpi, kpiIndex) => (
+                <div 
+                  key={kpiIndex} 
+                  className="p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+                    {kpi.icon}
+                    <span className="text-[9px] uppercase tracking-wide truncate">{kpi.label}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-foreground text-sm">
+                      {kpi.value}
+                    </p>
+                    {kpi.trend && (
+                      <span className={cn(
+                        "text-[10px] flex items-center gap-0.5",
+                        kpi.trend.positive ? "text-green-500" : "text-red-500"
+                      )}>
+                        <TrendingUp className="w-2.5 h-2.5" />
+                        {kpi.trend.value}%
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="font-semibold text-foreground">
-                  {metric.activeUsers.toLocaleString()}
-                </p>
-              </div>
-              
-              <div>
-                <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
-                  <DollarSign className="w-3 h-3" />
-                  <span className="text-[10px] uppercase tracking-wide">MRR</span>
-                </div>
-                <p className="font-semibold text-foreground">
-                  ${metric.mrr.toLocaleString()}
-                </p>
-              </div>
-              
-              <div>
-                <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
-                  <Activity className="w-3 h-3" />
-                  <span className="text-[10px] uppercase tracking-wide">Churn</span>
-                </div>
-                <p className="font-semibold text-foreground">
-                  {metric.churnRate}%
-                </p>
-              </div>
-              
-              <div>
-                <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
-                  <ArrowUpRight className="w-3 h-3" />
-                  <span className="text-[10px] uppercase tracking-wide">Conv.</span>
-                </div>
-                <p className="font-semibold text-foreground">
-                  {metric.conversionRate}%
-                </p>
-              </div>
-              
-              <div>
-                <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
-                  <Clock className="w-3 h-3" />
-                  <span className="text-[10px] uppercase tracking-wide">Session</span>
-                </div>
-                <p className="font-semibold text-foreground text-xs">
-                  {metric.avgSessionTime}
-                </p>
-              </div>
-              
-              <div>
-                <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
-                  <Zap className="w-3 h-3" />
-                  <span className="text-[10px] uppercase tracking-wide">Actions</span>
-                </div>
-                <p className="font-semibold text-foreground text-xs">
-                  {metric.totalActions.toLocaleString()}
-                </p>
-              </div>
+              ))}
             </div>
 
             {/* Gradient overlay */}
             <div className={cn(
-              "absolute inset-0 opacity-5 bg-gradient-to-br pointer-events-none",
-              metric.color
+              "absolute inset-0 opacity-5 bg-gradient-to-br pointer-events-none group-hover:opacity-10 transition-opacity",
+              tier.color
             )} />
           </motion.div>
         ))}
+      </div>
+
+      {/* Platform Rules Notice */}
+      <div className="p-4 rounded-xl bg-muted/30 border border-border">
+        <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-primary" />
+          Global Platform Capabilities (All Tiers)
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Document Input
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            AI-Assisted Output
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            AI Vault
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            AI Communications
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            AI LMS Access
+          </div>
+        </div>
       </div>
     </div>
   );
