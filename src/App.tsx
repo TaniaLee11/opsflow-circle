@@ -7,7 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { UserTierProvider } from "@/contexts/UserTierContext";
 import { ClientViewProvider } from "@/contexts/ClientViewContext";
 import { ClientViewBanner } from "@/components/client-view/ClientViewBanner";
+import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import AIStudio from "./pages/AIStudio";
 import Academy from "./pages/Academy";
@@ -24,6 +26,7 @@ import Vault from "./pages/Vault";
 import UserPortal from "./pages/UserPortal";
 import IntegrationCallback from "./pages/IntegrationCallback";
 import Workflows from "./pages/Workflows";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -38,7 +41,9 @@ const App = () => (
             <BrowserRouter>
               <ClientViewBanner />
               <Routes>
-                <Route path="/" element={<Auth />} />
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/select-tier" element={<TierSelection />} />
                 <Route path="/select-product" element={<ProductSelection />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -52,6 +57,7 @@ const App = () => (
                 <Route path="/integrations" element={<Integrations />} />
                 <Route path="/integrations/callback" element={<IntegrationCallback />} />
                 <Route path="/workflows" element={<Workflows />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-canceled" element={<PaymentCanceled />} />
                 <Route path="*" element={<NotFound />} />
