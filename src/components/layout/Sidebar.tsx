@@ -47,8 +47,7 @@ const navItems: NavItem[] = [
   { icon: Sparkles, label: "Studio", href: "/studio", category: "Creative" },
   
   // Operations
-  { icon: Send, label: "Auto Responder", href: "/autoresponder", category: "Operations" },
-  { icon: Workflow, label: "Automations", href: "/automations", category: "Integrations" },
+  { icon: Workflow, label: "Integrations", href: "/integrations", category: "Integrations" },
   
   // Learning
   { icon: GraduationCap, label: "Academy", href: "/academy", category: "Learning" },
