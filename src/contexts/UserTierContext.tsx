@@ -18,7 +18,8 @@ export interface UserTier {
   id: UserTierId;
   name: string;
   displayName: string;
-  price: number | null; // null for free
+  price: number | null; // null for free or variable pricing
+  priceLabel?: string; // For variable pricing display (e.g., "From $125/hr")
   description: string;
   capabilities: string[];
   limitations: string[];
@@ -117,7 +118,8 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     id: "ai_advisory",
     name: "AI Advisory",
     displayName: "AI Advisory",
-    price: 199.99,
+    price: null, // Variable pricing
+    priceLabel: "From $125/hr",
     description: "Human expertise, strategically deployed.",
     capabilities: [
       "Scheduled advisory sessions",
@@ -138,7 +140,8 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     id: "ai_tax",
     name: "AI Tax",
     displayName: "AI Tax",
-    price: 149.99,
+    price: null, // Variable pricing
+    priceLabel: "From $125",
     description: "One meeting. One year. Fully prepared.",
     capabilities: [
       "AI Vault (Tax-Centered) — year-round doc organization",
@@ -159,7 +162,8 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     id: "ai_compliance",
     name: "AI Compliance",
     displayName: "AI Compliance",
-    price: 179.99,
+    price: null, // Variable pricing
+    priceLabel: "From $175",
     description: "Stay compliant without chasing deadlines.",
     capabilities: [
       "Compliance-aware AI monitoring",

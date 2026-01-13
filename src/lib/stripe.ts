@@ -29,10 +29,10 @@ export const FREE_TIERS: UserTierId[] = ["free"];
 export const SUBSCRIPTION_TIERS: UserTierId[] = ["ai_assistant", "ai_operations", "ai_enterprise"];
 
 // Tiers that are one-time payments
-export const ONETIME_TIERS: UserTierId[] = ["ai_tax", "ai_compliance"];
+export const ONETIME_TIERS: UserTierId[] = [];
 
-// Tiers that are hourly/custom (require special handling)
-export const HOURLY_TIERS: UserTierId[] = ["ai_advisory"];
+// Tiers that have variable pricing (require product selection)
+export const VARIABLE_PRICING_TIERS: UserTierId[] = ["ai_advisory", "ai_tax", "ai_compliance"];
 
 export const TIER_NAMES: Record<string, string> = {
   free: "AI Free",
