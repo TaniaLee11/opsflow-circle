@@ -39,32 +39,19 @@ interface NavItem {
 const navItems: NavItem[] = [
   // Core
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", category: "Core" },
-  { icon: FolderKanban, label: "Projects", href: "/projects", badge: 3, category: "Core" },
-  { icon: Users, label: "Team", href: "/team", category: "Core" },
   
-  // Creative
+  // Creative - Studio for content creation and marketing
   { icon: Sparkles, label: "Studio", href: "/studio", category: "Creative" },
   
-  // Financial Hub
-  { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Finance" },
-  { icon: FileText, label: "Invoicing", href: "/invoicing", category: "Finance" },
-  
   // Operations
-  { icon: Send, label: "Autoresponder", href: "/autoresponder", category: "Operations" },
-  { icon: BarChart3, label: "Marketing", href: "/marketing", category: "Operations" },
-  { icon: Workflow, label: "Automations", href: "/automations", category: "Operations" },
+  { icon: Send, label: "Auto Responder", href: "/autoresponder", category: "Operations" },
+  { icon: Workflow, label: "Automations", href: "/automations", category: "Integrations" },
   
   // Learning
   { icon: GraduationCap, label: "Academy", href: "/academy", category: "Learning" },
   
-  // AI & Admin (Restricted)
-  { icon: Brain, label: "AI Studio", href: "/ai-studio", adminOnly: true, category: "Admin" },
-  
-  // Messages
-  { icon: MessageSquare, label: "Messages", href: "/messages", badge: 5, category: "Communication" },
-  
-  // Settings
-  { icon: Settings, label: "Settings", href: "/settings", category: "System" },
+  // Financial Hub
+  { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Finance" },
 ];
 
 export function Sidebar() {
