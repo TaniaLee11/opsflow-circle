@@ -65,14 +65,30 @@ export default function TierSelection() {
       };
       localStorage.setItem(`vopsy_profile_${user.id}`, JSON.stringify(profileData));
 
+      // Also save to database
+      const { supabase } = await import("@/integrations/supabase/client");
+      await supabase
+        .from("profiles")
+        .update({
+          selected_tier: selectedTier,
+          tier_selected: true,
+          // For free tier, also confirm subscription immediately
+          subscription_confirmed: FREE_TIERS.includes(selectedTier),
+          subscription_tier: FREE_TIERS.includes(selectedTier) ? selectedTier : null,
+        })
+        .eq("user_id", user.id);
+
       // If free tier, go directly to dashboard
       if (FREE_TIERS.includes(selectedTier)) {
+        toast.success("Welcome! You're all set with the Free tier.");
+        setIsLoading(false);
         navigate("/dashboard");
         return;
       }
 
       // If variable pricing tier, redirect to product selection
       if (VARIABLE_PRICING_TIERS.includes(selectedTier)) {
+        setIsLoading(false);
         navigate(`/select-product?tier=${selectedTier}`);
         return;
       }
