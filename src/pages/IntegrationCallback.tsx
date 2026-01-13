@@ -45,21 +45,29 @@ export default function IntegrationCallback() {
       try {
         setMessage(`Connecting to ${provider}...`);
 
-        // Exchange code for tokens via edge function
-        const { data, error: fnError } = await supabase.functions.invoke('oauth-callback', {
+        const { data, error: fnError } = await supabase.functions.invoke("oauth-callback", {
           body: { code, state: stateId, provider },
         });
 
+        // Like oauth-start, oauth-callback can return non-2xx with a JSON body.
+        let body: any = data;
+        if (!body && fnError && typeof (fnError as any).context?.json === "function") {
+          body = await (fnError as any).context.json().catch(() => null);
+        }
+
+        if (body?.error) {
+          throw new Error(body.error);
+        }
         if (fnError) throw fnError;
 
-        setStatus('success');
+        setStatus("success");
         setMessage(`Successfully connected to ${provider}!`);
         toast.success(`Connected to ${provider}`);
-        
+
         setTimeout(() => navigate("/integrations"), 2000);
       } catch (err) {
         console.error("OAuth callback error:", err);
-        setStatus('error');
+        setStatus("error");
         setMessage(err instanceof Error ? err.message : "Failed to complete connection");
         toast.error("Failed to connect integration");
         setTimeout(() => navigate("/integrations"), 3000);

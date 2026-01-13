@@ -105,7 +105,7 @@ const integrations: Integration[] = [
     description: "Payment processing and subscription management",
     icon: "https://stripe.com/favicon.ico",
     category: "finance",
-    status: "connected",
+    status: "disconnected",
     features: ["Payment processing", "Subscription billing", "Invoice management", "Revenue analytics"],
     popular: true,
   },
@@ -277,23 +277,33 @@ export default function Integrations() {
     }
 
     toast.loading(`Connecting to ${integration.name}...`);
-    
+
     try {
-      const { data, error } = await supabase.functions.invoke('oauth-start', {
+      const { data, error } = await supabase.functions.invoke("oauth-start", {
         body: { provider },
       });
-      
-      if (error) throw error;
-      
-      if (data.needsConfiguration) {
+
+      // Supabase returns non-2xx responses as `error`, but the response body may still
+      // contain a useful JSON payload (e.g. { needsConfiguration: true, error: "..." }).
+      let body: any = data;
+      if (!body && error && typeof (error as any).context?.json === "function") {
+        body = await (error as any).context.json().catch(() => null);
+      }
+
+      if (body?.needsConfiguration) {
         toast.dismiss();
-        toast.error(data.error);
+        toast.error(body.error || "Integration requires configuration.");
         return;
       }
-      
-      if (data.url) {
+
+      if (error) throw error;
+
+      if (body?.url) {
         toast.dismiss();
-        window.location.href = data.url;
+        window.location.href = body.url;
+      } else {
+        toast.dismiss();
+        toast.error("No authorization URL returned.");
       }
     } catch (err) {
       toast.dismiss();
