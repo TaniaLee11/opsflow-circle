@@ -7,6 +7,7 @@ import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
 import { createCheckout, STRIPE_PRICES, FREE_TIERS, SUBSCRIPTION_TIERS, VARIABLE_PRICING_TIERS } from "@/lib/stripe";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const tierIcons: Record<UserTierId, React.ReactNode> = {
   free: <Gift className="w-6 h-6" />,
@@ -22,7 +23,7 @@ export default function TierSelection() {
   const [selectedTier, setSelectedTier] = useState<UserTierId | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, refreshSubscription } = useAuth();
 
   const openCheckout = (url: string) => {
     // In embedded previews (iframes), top-level navigation can be blocked.
@@ -58,24 +59,33 @@ export default function TierSelection() {
     setIsLoading(true);
 
     try {
-      // Import supabase client
-      const { supabase } = await import("@/integrations/supabase/client");
-      
-      // First ensure profile exists (in case trigger didn't fire)
-      const { data: existingProfile } = await supabase
+      // Ensure profile exists (fallback for any trigger issues)
+      const { data: existingProfile, error: existingProfileError } = await supabase
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
-        .single();
-      
+        .maybeSingle();
+
+      if (existingProfileError) {
+        console.warn("[TierSelection] profile lookup error:", existingProfileError);
+      }
+
       if (!existingProfile) {
-        // Create profile if it doesn't exist
-        await supabase.from("profiles").insert({
-          user_id: user.id,
-          email: user.email,
-          display_name: user.name,
-          role: "user",
-        });
+        const { error: createProfileError } = await supabase
+          .from("profiles")
+          .upsert(
+            {
+              user_id: user.id,
+              email: user.email,
+              display_name: user.name,
+              role: "user",
+            },
+            { onConflict: "user_id" }
+          );
+
+        if (createProfileError) {
+          throw createProfileError;
+        }
       }
 
       // Save selected tier to localStorage with user ID
@@ -97,6 +107,9 @@ export default function TierSelection() {
             subscription_tier: selectedTier,
           })
           .eq("user_id", user.id);
+
+        // Sync AuthContext state BEFORE we route to /dashboard (avoids AccessGate showing "No Active Subscription")
+        await refreshSubscription();
 
         toast.success("Welcome! You're all set with the Free tier.");
         setIsLoading(false);

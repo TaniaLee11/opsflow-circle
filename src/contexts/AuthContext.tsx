@@ -87,16 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check subscription status
   const refreshSubscription = async () => {
     if (!session) return;
-    
+
     setIsCheckingSubscription(true);
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
-      
+
       if (error) {
         console.error("Error checking subscription:", error);
         return;
       }
-      
+
+      console.log("[Auth] check-subscription result:", data);
       setSubscriptionStatus(data as SubscriptionStatus);
     } catch (error) {
       console.error("Error checking subscription:", error);
