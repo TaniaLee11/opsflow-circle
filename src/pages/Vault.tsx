@@ -22,7 +22,8 @@ import {
   Users,
   Lock,
   FileCheck,
-  Sparkles
+  Sparkles,
+  Eye
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useClientView } from "@/contexts/ClientViewContext";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 
 // Mock data for documents
@@ -173,6 +175,7 @@ function VaultContent() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState("my-files");
   const { isOwner } = useAuth();
+  const { viewedClient, isViewingClient } = useClientView();
 
   const filteredDocuments = documents.filter(doc =>
     doc.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -183,8 +186,11 @@ function VaultContent() {
     template.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Determine if we're in read-only mode (owner viewing client data)
+  const isReadOnly = isOwner && isViewingClient;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
       <Sidebar />
       
       <main className="pl-64 min-h-screen">
@@ -196,23 +202,35 @@ function VaultContent() {
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <FolderLock className="w-5 h-5 text-primary" />
                 </div>
-                <h1 className="text-3xl font-bold text-foreground">Vault</h1>
+                <h1 className="text-3xl font-bold text-foreground">
+                  {isReadOnly ? `${viewedClient?.displayName || viewedClient?.companyName || "Client"}'s Vault` : "Vault"}
+                </h1>
+                {isReadOnly && (
+                  <Badge className="bg-warning/20 text-warning border-0 gap-1">
+                    <Eye className="w-3 h-3" />
+                    Read Only
+                  </Badge>
+                )}
               </div>
               <p className="text-muted-foreground">
-                Secure document storage shared between you and your advisor
+                {isReadOnly 
+                  ? `Viewing documents for ${viewedClient?.email || "this client"}`
+                  : "Secure document storage shared between you and your advisor"}
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button variant="outline" className="gap-2">
-                <Filter className="w-4 h-4" />
-                Filter
-              </Button>
-              <Button className="gap-2 bg-primary hover:bg-primary/90">
-                <Upload className="w-4 h-4" />
-                Upload
-              </Button>
-            </div>
+            {!isReadOnly && (
+              <div className="flex items-center gap-3">
+                <Button variant="outline" className="gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filter
+                </Button>
+                <Button className="gap-2 bg-primary hover:bg-primary/90">
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Search and View Toggle */}

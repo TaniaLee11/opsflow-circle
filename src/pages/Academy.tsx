@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useClientView } from "@/contexts/ClientViewContext";
 import { 
   GraduationCap, 
   Plus, 
@@ -19,9 +20,11 @@ import {
   Heart,
   Sparkles,
   Trophy,
-  Target
+  Target,
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface Course {
   id: string;
@@ -112,6 +115,7 @@ const userTypeConfig = {
 
 export default function Academy() {
   const { canCreateCourses, user } = useAuth();
+  const { viewedClient, isViewingClient } = useClientView();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -128,8 +132,10 @@ export default function Academy() {
   const recommendedCourses = courses.filter(c => c.recommended);
   const completedCourses = courses.filter(c => c.progress === 100);
 
+  const isReadOnly = isViewingClient;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
       <Sidebar />
       
       <main className="ml-64 min-h-screen">
@@ -140,13 +146,25 @@ export default function Academy() {
               <div className="p-3 rounded-xl bg-primary/10 text-primary">
                 <GraduationCap className="w-6 h-6" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Academy</h1>
-                <p className="text-muted-foreground">Learn to run your operations with confidence</p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {isReadOnly ? `${viewedClient?.displayName || "Client"}'s Academy` : "Academy"}
+                  </h1>
+                  <p className="text-muted-foreground">
+                    {isReadOnly ? `Viewing progress for ${viewedClient?.email}` : "Learn to run your operations with confidence"}
+                  </p>
+                </div>
+                {isReadOnly && (
+                  <Badge className="bg-warning/20 text-warning border-0 gap-1">
+                    <Eye className="w-3 h-3" />
+                    Read Only
+                  </Badge>
+                )}
               </div>
             </div>
             
-            {canCreateCourses && (
+            {canCreateCourses && !isReadOnly && (
               <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium flex items-center gap-2 glow-primary-sm">
                 <Plus className="w-4 h-4" />
                 Create Course
