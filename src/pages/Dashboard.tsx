@@ -108,12 +108,18 @@ function DashboardContent() {
               className="flex items-center gap-4"
             >
               <TierSelector />
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-sm font-medium">
+              <button 
+                onClick={() => window.location.href = '/workflows?tab=calendar'}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-sm font-medium"
+              >
                 <Calendar className="w-4 h-4" />
                 <span>Last 7 days</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
-              <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium glow-primary-sm">
+              <button 
+                onClick={() => window.location.href = '/workflows'}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium glow-primary-sm"
+              >
                 + New Project
               </button>
             </motion.div>
