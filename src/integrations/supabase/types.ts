@@ -14,7 +14,291 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+          vopsy_mode: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          vopsy_mode?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          vopsy_mode?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hour_purchases: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          hours: number
+          id: string
+          organization_id: string
+          stripe_payment_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          hours: number
+          id?: string
+          organization_id: string
+          stripe_payment_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          hours?: number
+          id?: string
+          organization_id?: string
+          stripe_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hour_purchases_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          access_token: string | null
+          connected_account: string | null
+          created_at: string
+          health: string | null
+          id: string
+          last_synced_at: string | null
+          org_id: string
+          provider: string
+          refresh_token: string | null
+          scopes: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected_account?: string | null
+          created_at?: string
+          health?: string | null
+          id?: string
+          last_synced_at?: string | null
+          org_id: string
+          provider: string
+          refresh_token?: string | null
+          scopes?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          connected_account?: string | null
+          created_at?: string
+          health?: string | null
+          id?: string
+          last_synced_at?: string | null
+          org_id?: string
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          cohort_expires_at: string | null
+          created_at: string
+          hours_purchased: number | null
+          hours_used: number | null
+          id: string
+          name: string
+          slug: string | null
+          stripe_customer_id: string | null
+          subscription_tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          cohort_expires_at?: string | null
+          created_at?: string
+          hours_purchased?: number | null
+          hours_used?: number | null
+          id?: string
+          name: string
+          slug?: string | null
+          stripe_customer_id?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cohort_expires_at?: string | null
+          created_at?: string
+          hours_purchased?: number | null
+          hours_used?: number | null
+          id?: string
+          name?: string
+          slug?: string | null
+          stripe_customer_id?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          organization_id: string | null
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          organization_id?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          organization_id?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_events: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          currency: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          organization_id: string
+          stripe_invoice_id: string | null
+          stripe_subscription_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          organization_id: string
+          stripe_invoice_id?: string | null
+          stripe_subscription_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          organization_id?: string
+          stripe_invoice_id?: string | null
+          stripe_subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
