@@ -58,22 +58,54 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Platform owner email
 const PLATFORM_OWNER_EMAIL = "tania@virtualopsassist.com";
 
-function mapSupabaseUserToUser(supabaseUser: SupabaseUser): User {
-  const isOwner = supabaseUser.email?.toLowerCase() === PLATFORM_OWNER_EMAIL.toLowerCase();
-  
+function buildUserFallback(supabaseUser: SupabaseUser): User {
+  const emailIsOwner = supabaseUser.email?.toLowerCase() === PLATFORM_OWNER_EMAIL.toLowerCase();
+
   // Check localStorage for additional user data (tier selection, etc.)
   const storedData = localStorage.getItem(`vopsy_profile_${supabaseUser.id}`);
   const profileData = storedData ? JSON.parse(storedData) : {};
-  
+
   return {
     id: supabaseUser.id,
     email: supabaseUser.email || "",
     name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "User",
-    organization: isOwner ? "Virtual OPS LLC" : undefined,
-    role: isOwner ? "owner" : "user",
+    organization: emailIsOwner ? "Virtual OPS LLC" : undefined,
+    role: emailIsOwner ? "owner" : "user",
     userType: "entrepreneur",
-    tierSelected: isOwner ? true : profileData.tierSelected || false,
-    selectedTier: isOwner ? null : profileData.selectedTier || undefined,
+    tierSelected: profileData.tierSelected || false,
+    selectedTier: profileData.selectedTier || null,
+  };
+}
+
+async function buildUserFromBackend(supabaseUser: SupabaseUser): Promise<User> {
+  const base = buildUserFallback(supabaseUser);
+
+  const [{ data: profile }, { data: roles }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name, email, role, tier_selected, selected_tier")
+      .eq("user_id", supabaseUser.id)
+      .maybeSingle(),
+    supabase.from("user_roles").select("role").eq("user_id", supabaseUser.id),
+  ]);
+
+  const hasOwnerRole = (roles || []).some((r) => r.role === "owner");
+  const hasAdminRole = (roles || []).some((r) => r.role === "admin");
+
+  const emailIsOwner = supabaseUser.email?.toLowerCase() === PLATFORM_OWNER_EMAIL.toLowerCase();
+  const profileIsOwner = profile?.role === "owner" || profile?.role === "platform_owner";
+  const isOwner = emailIsOwner || hasOwnerRole || profileIsOwner;
+
+  const resolvedRole: UserRole = isOwner ? "owner" : hasAdminRole ? "admin" : "user";
+
+  return {
+    ...base,
+    email: profile?.email ?? base.email,
+    name: profile?.display_name ?? base.name,
+    role: resolvedRole,
+    tierSelected: profile?.tier_selected ?? base.tierSelected,
+    selectedTier: profile?.selected_tier ?? base.selectedTier,
+    organization: isOwner ? "Virtual OPS LLC" : base.organization,
   };
 }
 
@@ -107,34 +139,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    const setUserForSession = async (session: Session | null) => {
+      if (session?.user) {
+        try {
+          const hydrated = await buildUserFromBackend(session.user);
+          setUser(hydrated);
+        } catch (error) {
+          console.error("[Auth] Failed to hydrate user from backend:", error);
+          setUser(buildUserFallback(session.user));
+        }
+
+        // Defer subscription check to avoid deadlock
+        setTimeout(() => {
+          refreshSubscription();
+        }, 0);
+      } else {
+        setUser(null);
+        setSubscriptionStatus(null);
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
+        setIsLoading(true);
         setSession(session);
-        if (session?.user) {
-          setUser(mapSupabaseUserToUser(session.user));
-          // Defer subscription check to avoid deadlock
-          setTimeout(() => {
-            refreshSubscription();
-          }, 0);
-        } else {
-          setUser(null);
-          setSubscriptionStatus(null);
-        }
-        setIsLoading(false);
+        setUserForSession(session).finally(() => setIsLoading(false));
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setIsLoading(true);
       setSession(session);
-      if (session?.user) {
-        setUser(mapSupabaseUserToUser(session.user));
-        // Check subscription after session is set
-        setTimeout(() => {
-          refreshSubscription();
-        }, 0);
-      }
+      await setUserForSession(session);
       setIsLoading(false);
     });
 
