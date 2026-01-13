@@ -14,7 +14,10 @@ import {
   TrendingUp,
   FileText,
   Target,
-  BookOpen
+  BookOpen,
+  Mic,
+  MicOff,
+  Volume2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -23,7 +26,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useVOPSyChat } from "@/hooks/useVOPSyChat";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 const quickActions = [
   { icon: TrendingUp, label: "Cash flow analysis", prompt: "Analyze my cash flow and runway. What's my current financial position?", category: "Finance" },
@@ -83,6 +88,39 @@ export default function VOPSy() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { toast } = useToast();
+
+  // Voice input hook
+  const {
+    isListening,
+    isSupported: isVoiceSupported,
+    interimTranscript,
+    error: voiceError,
+    toggleListening,
+    stopListening,
+  } = useVoiceInput({
+    onTranscript: (text) => {
+      // When we get final transcript, add to input or send directly
+      if (text.trim()) {
+        setInput(prev => prev + (prev ? ' ' : '') + text);
+      }
+    },
+    onInterimTranscript: (text) => {
+      // Show interim results in real-time
+      console.log('Interim:', text);
+    },
+  });
+
+  // Show voice error as toast
+  useEffect(() => {
+    if (voiceError) {
+      toast({
+        variant: "destructive",
+        title: "Voice Input Error",
+        description: voiceError,
+      });
+    }
+  }, [voiceError, toast]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -93,6 +131,7 @@ export default function VOPSy() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+    stopListening(); // Stop voice if active
     const message = input.trim();
     setInput("");
     await sendMessage(message);
@@ -100,7 +139,20 @@ export default function VOPSy() {
   };
 
   const handleQuickAction = async (prompt: string) => {
+    stopListening(); // Stop voice if active
     await sendMessage(prompt);
+  };
+
+  const handleVoiceToggle = () => {
+    if (!isVoiceSupported) {
+      toast({
+        variant: "destructive",
+        title: "Voice Not Supported",
+        description: "Your browser doesn't support voice input. Try Chrome or Edge.",
+      });
+      return;
+    }
+    toggleListening();
   };
 
   return (
@@ -236,21 +288,81 @@ export default function VOPSy() {
             {/* Input Area */}
             <div className="p-6 border-t border-border bg-card shrink-0">
               <div className="max-w-3xl mx-auto">
+                {/* Voice listening indicator */}
+                <AnimatePresence>
+                  {isListening && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-3"
+                    >
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20">
+                        <div className="relative">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Volume2 className="w-4 h-4 text-primary animate-pulse" />
+                          </div>
+                          <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-primary">Listening...</p>
+                          {interimTranscript && (
+                            <p className="text-xs text-muted-foreground italic">"{interimTranscript}"</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={stopListening}
+                          className="text-primary hover:text-primary hover:bg-primary/20"
+                        >
+                          Stop
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="flex gap-3">
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder="Ask VOPSy anything... (e.g., 'What are my priorities today?' or 'Help me with tax planning')"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    className="min-h-[60px] max-h-[120px] resize-none bg-background"
-                    disabled={isLoading}
-                  />
+                  <div className="flex-1 relative">
+                    <Textarea
+                      ref={textareaRef}
+                      placeholder={isListening ? "Speak now..." : "Ask VOPSy anything... (or click the mic to speak)"}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      className={cn(
+                        "min-h-[60px] max-h-[120px] resize-none bg-background pr-12",
+                        isListening && "border-primary ring-1 ring-primary"
+                      )}
+                      disabled={isLoading}
+                    />
+                    {/* Voice button inside textarea */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleVoiceToggle}
+                      disabled={isLoading}
+                      className={cn(
+                        "absolute right-2 top-2 p-2 h-8 w-8",
+                        isListening 
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      )}
+                    >
+                      {isListening ? (
+                        <MicOff className="w-4 h-4" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                   <Button 
                     size="lg" 
                     className="px-6 shrink-0"
@@ -265,7 +377,10 @@ export default function VOPSy() {
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2 text-center">
-                  VOPSy can help with finance, operations, marketing, compliance, and education • Powered by AI
+                  {isVoiceSupported 
+                    ? "💬 Type or 🎤 speak to VOPSy • Powered by AI"
+                    : "VOPSy can help with finance, operations, marketing, compliance, and education • Powered by AI"
+                  }
                 </p>
               </div>
             </div>
