@@ -58,6 +58,26 @@ export default function TierSelection() {
     setIsLoading(true);
 
     try {
+      // Import supabase client
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      // First ensure profile exists (in case trigger didn't fire)
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!existingProfile) {
+        // Create profile if it doesn't exist
+        await supabase.from("profiles").insert({
+          user_id: user.id,
+          email: user.email,
+          display_name: user.name,
+          role: "user",
+        });
+      }
+
       // Save selected tier to localStorage with user ID
       const profileData = {
         tierSelected: true,
@@ -65,35 +85,44 @@ export default function TierSelection() {
       };
       localStorage.setItem(`vopsy_profile_${user.id}`, JSON.stringify(profileData));
 
-      // Also save to database
-      const { supabase } = await import("@/integrations/supabase/client");
-      await supabase
-        .from("profiles")
-        .update({
-          selected_tier: selectedTier,
-          tier_selected: true,
-          // For free tier, also confirm subscription immediately
-          subscription_confirmed: FREE_TIERS.includes(selectedTier),
-          subscription_tier: FREE_TIERS.includes(selectedTier) ? selectedTier : null,
-        })
-        .eq("user_id", user.id);
-
-      // If free tier, go directly to dashboard
+      // Handle FREE tiers - immediate access
       if (FREE_TIERS.includes(selectedTier)) {
+        // Update profile with free tier - gets immediate access
+        await supabase
+          .from("profiles")
+          .update({
+            selected_tier: selectedTier,
+            tier_selected: true,
+            subscription_confirmed: true,
+            subscription_tier: selectedTier,
+          })
+          .eq("user_id", user.id);
+
         toast.success("Welcome! You're all set with the Free tier.");
         setIsLoading(false);
         navigate("/dashboard");
         return;
       }
 
-      // If variable pricing tier, redirect to product selection
+      // For PAID tiers - update profile with selected tier but NOT confirmed yet
+      await supabase
+        .from("profiles")
+        .update({
+          selected_tier: selectedTier,
+          tier_selected: true,
+          subscription_confirmed: false, // NOT confirmed until Stripe payment
+          subscription_tier: null, // Will be set after payment
+        })
+        .eq("user_id", user.id);
+
+      // Handle VARIABLE PRICING tiers - redirect to product selection
       if (VARIABLE_PRICING_TIERS.includes(selectedTier)) {
         setIsLoading(false);
         navigate(`/select-product?tier=${selectedTier}`);
         return;
       }
 
-      // Get the price ID for the selected tier
+      // Handle SUBSCRIPTION and ONE-TIME PAYMENT tiers - go to Stripe
       const priceId = STRIPE_PRICES[selectedTier];
       if (!priceId) {
         toast.error("Price not configured for this tier");
@@ -115,7 +144,7 @@ export default function TierSelection() {
       }
     } catch (error) {
       console.error("Checkout error:", error);
-      toast.error("Failed to start checkout. Please try again.");
+      toast.error("Failed to process. Please try again.");
       setIsLoading(false);
     }
   };
