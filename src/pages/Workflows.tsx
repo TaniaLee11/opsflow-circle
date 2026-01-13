@@ -185,15 +185,15 @@ function WorkflowsContent() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       
-      <main className="ml-64 min-h-screen">
+      <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-8 py-4">
-          <div className="flex items-center justify-between">
+        <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <motion.h1 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-2xl font-bold text-foreground"
+                className="text-xl sm:text-2xl font-bold text-foreground"
               >
                 Workflows
               </motion.h1>
@@ -201,7 +201,7 @@ function WorkflowsContent() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="text-muted-foreground"
+                className="text-xs sm:text-sm text-muted-foreground"
               >
                 Manage your projects and schedule
               </motion.p>
@@ -210,16 +210,17 @@ function WorkflowsContent() {
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-2 sm:gap-3"
             >
               <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-2 glow-primary-sm">
+                  <Button className="gap-2 glow-primary-sm text-sm">
                     <Plus className="w-4 h-4" />
-                    New Project
+                    <span className="hidden sm:inline">New Project</span>
+                    <span className="sm:hidden">New</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[90vw] sm:max-w-lg">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <FolderPlus className="w-5 h-5 text-primary" />
@@ -262,23 +263,22 @@ function WorkflowsContent() {
         </header>
 
         {/* Content */}
-        <div className="p-8">
-          <Tabs defaultValue="projects" className="space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <Tabs defaultValue="projects" className="space-y-4 sm:space-y-6">
             <TabsList className="bg-secondary/50">
-              <TabsTrigger value="projects" className="gap-2">
-                <FolderPlus className="w-4 h-4" />
+              <TabsTrigger value="projects" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                <FolderPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Projects
               </TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-2">
-                <Calendar className="w-4 h-4" />
+              <TabsTrigger value="calendar" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Calendar
               </TabsTrigger>
             </TabsList>
 
-            {/* Projects Tab */}
-            <TabsContent value="projects" className="space-y-6">
+            <TabsContent value="projects" className="space-y-4 sm:space-y-6">
               {/* Projects Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {projects.map((project, index) => (
                   <motion.div
                     key={project.id}

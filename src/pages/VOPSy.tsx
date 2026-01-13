@@ -160,23 +160,23 @@ export default function VOPSy() {
       <div className="min-h-screen flex bg-background">
         <Sidebar />
         
-        <main className="flex-1 ml-64 flex flex-col h-screen">
+        <main className="flex-1 lg:ml-64 flex flex-col h-screen pt-14 lg:pt-0">
           {/* Header */}
-          <div className="p-6 border-b border-border bg-card/50 shrink-0">
+          <div className="p-4 sm:p-6 border-b border-border bg-card/50 shrink-0">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="relative">
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-primary to-orange-500 shadow-lg">
-                    <Brain className="w-8 h-8 text-primary-foreground" />
+                  <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-orange-500 shadow-lg">
+                    <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-card animate-pulse" />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-success rounded-full border-2 border-card animate-pulse" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <h1 className="text-lg sm:text-2xl font-bold text-foreground flex items-center gap-2">
                     VOPSy
-                    <Badge variant="secondary" className="text-xs">AI Assistant</Badge>
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs">AI Assistant</Badge>
                   </h1>
-                  <p className="text-sm text-muted-foreground">Your Virtual Operations Intelligence</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Your Virtual Operations Intelligence</p>
                 </div>
               </div>
               
@@ -184,10 +184,10 @@ export default function VOPSy() {
                 variant="outline"
                 size="sm"
                 onClick={clearHistory}
-                className="gap-2"
+                className="gap-1 sm:gap-2 text-xs sm:text-sm"
               >
-                <RefreshCw className="w-4 h-4" />
-                New Chat
+                <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">New Chat</span>
               </Button>
             </div>
           </div>
@@ -195,8 +195,8 @@ export default function VOPSy() {
           {/* Chat Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1" ref={scrollRef}>
-              <div className="p-6">
-                <div className="max-w-3xl mx-auto space-y-6">
+              <div className="p-4 sm:p-6">
+                <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
                   <AnimatePresence mode="popLayout">
                     {messages.map((message) => (
                       <motion.div
@@ -206,44 +206,44 @@ export default function VOPSy() {
                         exit={{ opacity: 0, y: -10 }}
                         layout
                         className={cn(
-                          "flex gap-3",
+                          "flex gap-2 sm:gap-3",
                           message.role === "user" ? "justify-end" : "justify-start"
                         )}
                       >
                         {message.role === "vopsy" && (
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shrink-0 mt-1">
-                            <Sparkles className="w-5 h-5 text-white" />
+                          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shrink-0 mt-1">
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                           </div>
                         )}
                         
                         <div
                           className={cn(
-                            "max-w-[80%] rounded-2xl px-5 py-4",
+                            "max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 sm:px-5 py-3 sm:py-4",
                             message.role === "user"
                               ? "bg-primary text-primary-foreground"
                               : "bg-muted"
                           )}
                         >
                           {message.role === "vopsy" && !message.isStreaming && (
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-semibold text-primary">VOPSy</span>
+                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                              <span className="text-[10px] sm:text-xs font-semibold text-primary">VOPSy</span>
                             </div>
                           )}
                           
                           {message.isStreaming ? (
                             <div className="flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                              <span className="text-sm text-muted-foreground">VOPSy is thinking...</span>
+                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-primary" />
+                              <span className="text-xs sm:text-sm text-muted-foreground">VOPSy is thinking...</span>
                             </div>
                           ) : (
-                            <div className="text-sm leading-relaxed">
+                            <div className="text-xs sm:text-sm leading-relaxed">
                               {formatMessage(message.content)}
                             </div>
                           )}
                           
                           {!message.isStreaming && (
                             <p className={cn(
-                              "text-[10px] mt-3",
+                              "text-[9px] sm:text-[10px] mt-2 sm:mt-3",
                               message.role === "user" ? "text-primary-foreground/60" : "text-muted-foreground"
                             )}>
                               {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -252,8 +252,8 @@ export default function VOPSy() {
                         </div>
                         
                         {message.role === "user" && (
-                          <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0 mt-1">
-                            <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-secondary flex items-center justify-center shrink-0 mt-1">
+                            <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
                           </div>
                         )}
                       </motion.div>
@@ -264,21 +264,22 @@ export default function VOPSy() {
             </ScrollArea>
 
             {/* Quick Actions */}
-            <div className="px-6 py-4 border-t border-border bg-card/30 shrink-0">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-card/30 shrink-0">
               <div className="max-w-3xl mx-auto">
-                <p className="text-xs text-muted-foreground mb-3 font-medium">Quick Actions</p>
-                <div className="flex flex-wrap gap-2">
-                  {quickActions.map((action, idx) => (
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3 font-medium">Quick Actions</p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {quickActions.slice(0, 6).map((action, idx) => (
                     <Button
                       key={idx}
                       variant="outline"
                       size="sm"
-                      className="text-xs gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                      className="text-[10px] sm:text-xs gap-1 sm:gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/30 px-2 sm:px-3 py-1 h-auto"
                       onClick={() => handleQuickAction(action.prompt)}
                       disabled={isLoading}
                     >
-                      <action.icon className="w-3.5 h-3.5" />
-                      {action.label}
+                      <action.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span className="hidden sm:inline">{action.label}</span>
+                      <span className="sm:hidden">{action.label.split(' ')[0]}</span>
                     </Button>
                   ))}
                 </div>
@@ -286,7 +287,7 @@ export default function VOPSy() {
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-border bg-card shrink-0">
+            <div className="p-4 sm:p-6 border-t border-border bg-card shrink-0">
               <div className="max-w-3xl mx-auto">
                 {/* Voice listening indicator */}
                 <AnimatePresence>
@@ -297,24 +298,24 @@ export default function VOPSy() {
                       exit={{ opacity: 0, height: 0 }}
                       className="mb-3"
                     >
-                      <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20">
+                      <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-primary/10 border border-primary/20">
                         <div className="relative">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                            <Volume2 className="w-4 h-4 text-primary animate-pulse" />
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 text-primary animate-pulse" />
                           </div>
                           <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-primary">Listening...</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-primary">Listening...</p>
                           {interimTranscript && (
-                            <p className="text-xs text-muted-foreground italic">"{interimTranscript}"</p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground italic truncate">"{interimTranscript}"</p>
                           )}
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={stopListening}
-                          className="text-primary hover:text-primary hover:bg-primary/20"
+                          className="text-primary hover:text-primary hover:bg-primary/20 text-xs"
                         >
                           Stop
                         </Button>
@@ -323,11 +324,11 @@ export default function VOPSy() {
                   )}
                 </AnimatePresence>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <div className="flex-1 relative">
                     <Textarea
                       ref={textareaRef}
-                      placeholder={isListening ? "Speak now..." : "Ask VOPSy anything... (or click the mic to speak)"}
+                      placeholder={isListening ? "Speak now..." : "Ask VOPSy anything..."}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -337,7 +338,7 @@ export default function VOPSy() {
                         }
                       }}
                       className={cn(
-                        "min-h-[60px] max-h-[120px] resize-none bg-background pr-12",
+                        "min-h-[50px] sm:min-h-[60px] max-h-[100px] sm:max-h-[120px] resize-none bg-background pr-10 sm:pr-12 text-sm",
                         isListening && "border-primary ring-1 ring-primary"
                       )}
                       disabled={isLoading}
@@ -350,33 +351,33 @@ export default function VOPSy() {
                       onClick={handleVoiceToggle}
                       disabled={isLoading}
                       className={cn(
-                        "absolute right-2 top-2 p-2 h-8 w-8",
+                        "absolute right-1.5 sm:right-2 top-1.5 sm:top-2 p-1.5 sm:p-2 h-7 w-7 sm:h-8 sm:w-8",
                         isListening 
                           ? "bg-primary text-primary-foreground hover:bg-primary/90" 
                           : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       )}
                     >
                       {isListening ? (
-                        <MicOff className="w-4 h-4" />
+                        <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       ) : (
-                        <Mic className="w-4 h-4" />
+                        <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       )}
                     </Button>
                   </div>
                   <Button 
                     size="lg" 
-                    className="px-6 shrink-0"
+                    className="px-4 sm:px-6 shrink-0 h-auto"
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
                   >
                     {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                     ) : (
-                      <Send className="w-5 h-5" />
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-2 text-center">
                   {isVoiceSupported 
                     ? "💬 Type or 🎤 speak to VOPSy • Powered by AI"
                     : "VOPSy can help with finance, operations, marketing, compliance, and education • Powered by AI"
