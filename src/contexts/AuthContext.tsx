@@ -6,6 +6,8 @@ export type UserRole = "owner" | "admin" | "operator" | "user";
 
 export type UserType = "gig_worker" | "entrepreneur" | "nonprofit";
 
+export type AccessType = "owner" | "cohort" | "free" | "subscription" | "one_time" | "confirmed" | "none" | "pending";
+
 export interface User {
   id: string;
   email: string;
@@ -18,6 +20,17 @@ export interface User {
   selectedTier?: string | null;
 }
 
+export interface SubscriptionStatus {
+  subscribed: boolean;
+  tier: string;
+  has_access: boolean;
+  access_type: AccessType;
+  product_id?: string | null;
+  subscription_end?: string | null;
+  cancel_at_period_end?: boolean;
+  selected_tier?: string | null;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -27,9 +40,17 @@ interface AuthContextType {
   isLoading: boolean;
   canAccessAIStudio: boolean;
   canCreateCourses: boolean;
+  // Subscription/access state
+  subscriptionStatus: SubscriptionStatus | null;
+  hasAccess: boolean;
+  accessType: AccessType;
+  currentTier: string | null;
+  isCheckingSubscription: boolean;
+  // Actions
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,6 +81,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
+
+  // Check subscription status
+  const refreshSubscription = async () => {
+    if (!session) return;
+    
+    setIsCheckingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      
+      if (error) {
+        console.error("Error checking subscription:", error);
+        return;
+      }
+      
+      setSubscriptionStatus(data as SubscriptionStatus);
+    } catch (error) {
+      console.error("Error checking subscription:", error);
+    } finally {
+      setIsCheckingSubscription(false);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -68,8 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         if (session?.user) {
           setUser(mapSupabaseUserToUser(session.user));
+          // Defer subscription check to avoid deadlock
+          setTimeout(() => {
+            refreshSubscription();
+          }, 0);
         } else {
           setUser(null);
+          setSubscriptionStatus(null);
         }
         setIsLoading(false);
       }
@@ -80,6 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       if (session?.user) {
         setUser(mapSupabaseUserToUser(session.user));
+        // Check subscription after session is set
+        setTimeout(() => {
+          refreshSubscription();
+        }, 0);
       }
       setIsLoading(false);
     });
@@ -87,10 +140,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Periodically refresh subscription status (every minute)
+  useEffect(() => {
+    if (!session) return;
+    
+    const interval = setInterval(() => {
+      refreshSubscription();
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, [session]);
+
   const isOwner = user?.role === "owner";
   const isAdmin = user?.role === "admin" || isOwner;
   const canAccessAIStudio = isAdmin;
   const canCreateCourses = isAdmin;
+
+  // Computed access properties
+  const hasAccess = isOwner || (subscriptionStatus?.has_access ?? false);
+  const accessType: AccessType = isOwner ? "owner" : (subscriptionStatus?.access_type ?? "none");
+  const currentTier = isOwner ? "owner" : (subscriptionStatus?.tier ?? null);
 
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -129,21 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(null);
     setSession(null);
-  };
-
-  // Helper function to update user profile data (tier selection, etc.)
-  const updateUserProfile = (updates: Partial<User>) => {
-    if (!user) return;
-    
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    
-    // Store profile data in localStorage keyed by user ID
-    const profileData = {
-      tierSelected: updatedUser.tierSelected,
-      selectedTier: updatedUser.selectedTier,
-    };
-    localStorage.setItem(`vopsy_profile_${user.id}`, JSON.stringify(profileData));
+    setSubscriptionStatus(null);
   };
 
   return (
@@ -156,9 +211,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       canAccessAIStudio,
       canCreateCourses,
+      subscriptionStatus,
+      hasAccess,
+      accessType,
+      currentTier,
+      isCheckingSubscription,
       login,
       signup,
       logout,
+      refreshSubscription,
     }}>
       {children}
     </AuthContext.Provider>
