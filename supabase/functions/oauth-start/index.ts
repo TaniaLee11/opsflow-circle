@@ -100,39 +100,19 @@ serve(async (req) => {
       throw new Error(`Unsupported provider: ${provider}. Supported: ${Object.keys(OAUTH_CONFIGS).join(", ")}`);
     }
 
-    // Get OAuth credentials from integration_configs table (configured by owner)
-    const { data: integrationConfig, error: configError } = await supabaseClient
+    // Get OAuth credentials from integration_configs table
+    const { data: integrationConfig } = await supabaseClient
       .from("integration_configs")
-      .select("client_id, client_secret, enabled")
+      .select("client_id, client_secret")
       .eq("provider", provider)
       .maybeSingle();
 
-    if (configError) {
-      logStep("Error fetching integration config", { error: configError.message });
-    }
-
-    if (!integrationConfig || !integrationConfig.client_id) {
-      logStep("Integration not configured", { provider });
-      return new Response(
-        JSON.stringify({ 
-          status: "needs_configuration",
-          message: "Admin setup required before authorization can begin.",
-          provider 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    if (!integrationConfig.enabled) {
-      logStep("Integration disabled", { provider });
-      return new Response(
-        JSON.stringify({ 
-          status: "disabled",
-          message: "This integration is currently disabled by the administrator.",
-          provider 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+    // Use configured credentials or fall back to environment variables
+    const clientId = integrationConfig?.client_id || Deno.env.get(`${provider.toUpperCase()}_CLIENT_ID`) || "";
+    
+    if (!clientId) {
+      logStep("No client_id available", { provider });
+      throw new Error(`OAuth credentials not configured for ${provider}`);
     }
 
     // Generate state for CSRF protection
@@ -159,7 +139,7 @@ serve(async (req) => {
 
     // Build OAuth URL
     const authParams = new URLSearchParams({
-      client_id: integrationConfig.client_id,
+      client_id: clientId,
       redirect_uri: redirectUri,
       response_type: "code",
       state: `${state}:${provider}`,
@@ -168,16 +148,16 @@ serve(async (req) => {
       ...config.extraParams,
     });
 
-    // Add scopes (some providers like Stripe use scope differently)
+    // Add scopes
     if (config.scopes.length > 0) {
       authParams.set("scope", config.scopes.join(" "));
     }
 
     const oauthUrl = `${config.authUrl}?${authParams.toString()}`;
-    logStep("OAuth URL generated", { provider, url: oauthUrl.substring(0, 100) + "..." });
+    logStep("OAuth URL generated", { provider });
 
     return new Response(
-      JSON.stringify({ status: "ok", url: oauthUrl, provider }),
+      JSON.stringify({ url: oauthUrl, provider }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
