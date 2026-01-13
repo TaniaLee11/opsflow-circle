@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
 import { 
   Link2, 
   Check, 
@@ -11,11 +10,8 @@ import {
   Zap,
   RefreshCw,
   Settings,
-  AlertCircle,
   CheckCircle2,
-  Clock,
-  Loader2,
-  Wrench
+  AlertCircle
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -25,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { IntegrationSettingsDialog } from "@/components/integrations/IntegrationSettingsDialog";
 
 interface Integration {
   id: string;
@@ -33,13 +28,13 @@ interface Integration {
   description: string;
   icon: string;
   category: "productivity" | "finance" | "communication" | "storage" | "marketing" | "crm";
-  status: "connected" | "disconnected" | "pending" | "needs_setup";
+  status: "connected" | "disconnected";
   features: string[];
   popular?: boolean;
   connectedAccount?: string;
   lastSynced?: string;
   health?: string;
-  oauthProvider?: string; // Maps to integration_configs provider
+  oauthProvider?: string;
 }
 
 const integrations: Integration[] = [
@@ -205,20 +200,12 @@ const categoryLabels: Record<string, string> = {
 const statusConfig = {
   connected: { label: "Connected", icon: CheckCircle2, color: "text-success" },
   disconnected: { label: "Not Connected", icon: AlertCircle, color: "text-muted-foreground" },
-  pending: { label: "Pending", icon: Clock, color: "text-warning" },
-  needs_setup: { label: "Setup Required", icon: Wrench, color: "text-amber-500" },
 };
 
 export default function Integrations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const queryClient = useQueryClient();
-  const { isOwner, currentTier, user } = useAuth();
-  
-  // Owner is determined by role OR currentTier being "owner"
-  const isEffectiveOwner = isOwner || currentTier === "owner";
-  
-  console.log("[Integrations] Owner check:", { isOwner, currentTier, userRole: user?.role, isEffectiveOwner });
   
   // Fetch real integration statuses from database
   const { data: connectedIntegrations, isLoading } = useQuery({
@@ -229,21 +216,6 @@ export default function Integrations() {
         .select("provider, connected_account, health, last_synced_at");
       
       if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch configured integrations (which OAuth providers have credentials set up)
-  const { data: configuredProviders } = useQuery({
-    queryKey: ["integration-configs-public"],
-    queryFn: async () => {
-      // This query only works for owners due to RLS, but we'll handle the error gracefully
-      const { data, error } = await supabase
-        .from("integration_configs")
-        .select("provider, enabled");
-      
-      // Non-owners will get an empty array due to RLS
-      if (error) return [];
       return data || [];
     },
   });
@@ -273,20 +245,8 @@ export default function Integrations() {
         health: connected.health || undefined,
       };
     }
-
-    // Check if this integration has OAuth and if it's configured
-    if (integration.oauthProvider) {
-      const config = configuredProviders?.find((c) => c.provider === integration.oauthProvider);
-      if (!config || !config.enabled) {
-        // Only show "needs_setup" to owners, others see "disconnected"
-        return {
-          ...integration,
-          status: isEffectiveOwner ? ("needs_setup" as const) : ("disconnected" as const),
-        };
-      }
-    }
     
-    return integration;
+    return { ...integration, status: "disconnected" as const };
   });
 
   const categories = ["all", ...Object.keys(categoryLabels)];
@@ -332,25 +292,13 @@ export default function Integrations() {
 
       if (error) throw error;
 
-      // Handle consistent status responses
-      if (data?.status === "needs_configuration") {
-        toast.warning(data.message || "Admin setup required before authorization can begin.");
-        return;
-      }
-
-      if (data?.status === "disabled") {
-        toast.warning(data.message || "This integration is currently disabled.");
-        return;
-      }
-
-      if (data?.status === "ok" && data?.url) {
-        // Immediate redirect - no loading state
+      if (data?.url) {
         window.location.href = data.url;
       } else {
-        toast.error("No authorization URL returned.");
+        toast.error("Failed to start authorization");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start connection");
+      toast.error(err instanceof Error ? err.message : "Failed to connect");
     }
   };
 
@@ -399,14 +347,11 @@ export default function Integrations() {
           >
             {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-primary/10">
-                    <Link2 className="w-6 h-6 text-primary" />
-                  </div>
-                  <h1 className="text-3xl font-bold text-foreground">Integrations</h1>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <Link2 className="w-6 h-6 text-primary" />
                 </div>
-                {isEffectiveOwner && <IntegrationSettingsDialog />}
+                <h1 className="text-3xl font-bold text-foreground">Integrations</h1>
               </div>
               <p className="text-muted-foreground">
                 Connect your favorite tools and services to streamline your workflow
@@ -619,7 +564,6 @@ function IntegrationCard({
               <Button
                 size="sm"
                 className="flex-1"
-                variant={integration.status === "needs_setup" ? "outline" : "default"}
                 onClick={() => onConnect(integration)}
               >
                 <Link2 className="w-4 h-4 mr-2" />
@@ -631,14 +575,6 @@ function IntegrationCard({
               <ExternalLink className="w-4 h-4" />
             </Button>
           </div>
-
-          {integration.status === "needs_setup" && (
-            <div className="pt-1">
-              <Badge variant="outline" className="text-[10px] font-normal text-amber-600 border-amber-300 bg-amber-50">
-                Admin setup required before authorization
-              </Badge>
-            </div>
-          )}
         </CardContent>
       </Card>
     </motion.div>
