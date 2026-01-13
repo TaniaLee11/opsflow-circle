@@ -1,7 +1,24 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 
-// User AI Tiers / Product Types - purchasable products and portals
+// ============================================
+// USER IDENTITY TYPE (Language/Tone Only)
+// ============================================
+// Controls: Language, Tone, Examples, Scenarios, Marketing alignment
+// Does NOT control: Access, Permissions, Tools, Services
+export type UserIdentityType = "independent_operator" | "solopreneur" | "founder";
+
+export const USER_IDENTITY_LABELS: Record<UserIdentityType, string> = {
+  independent_operator: "Independent Operator",
+  solopreneur: "Solopreneur",
+  founder: "Founder"
+};
+
+// ============================================
+// USER TIER TYPE (Access & Permissions)
+// ============================================
+// Controls: Platform permissions, Feature access, LMS access, Service eligibility, AI behavior boundaries
+// ALWAYS overrides User Identity Type
 export type UserTierId = 
   | "free" 
   | "ai_assistant" 
@@ -11,6 +28,14 @@ export type UserTierId =
   | "ai_tax" 
   | "ai_compliance";
 
+// LMS Access Levels
+export type LmsAccessLevel = 
+  | "free_lms"           // AI Free: Free LMS only
+  | "free_lms_guided"    // AI Assistant: Free LMS + guided content
+  | "full_operations"    // AI Operations, AI Advisory: Full Operations LMS
+  | "free_lms_tax"       // AI Tax: Free LMS + tax micro-courses
+  | "full_academy";      // AI Enterprise, AI Compliance: Full Academy
+
 // Environment types
 export type EnvironmentType = "production" | "cohort";
 
@@ -18,167 +43,280 @@ export interface UserTier {
   id: UserTierId;
   name: string;
   displayName: string;
-  price: number | null; // null for free or variable pricing
-  priceLabel?: string; // For variable pricing display (e.g., "From $125/hr")
+  price: number | null;
+  priceLabel?: string;
   description: string;
+  whoItsFor: string;
   capabilities: string[];
   limitations: string[];
   icon: string;
   color: string;
+  // LMS Access
+  lmsAccess: LmsAccessLevel;
+  // Service Inclusion Flags
+  includesHumanServices: boolean;
+  includesTaxPrep: boolean;
+  includesAdvisory: boolean;
+  isAddon?: boolean; // Can be added to other tiers (e.g., AI Tax)
 }
 
 export const USER_TIERS: Record<UserTierId, UserTier> = {
+  // 🟢 AI FREE — Education & Awareness Only
   free: {
     id: "free",
     name: "Free",
     displayName: "AI Free",
     price: null,
-    description: "Start organized. Move at your own pace.",
+    description: "Education & Awareness Only",
+    whoItsFor: "Solopreneurs, founders, entrepreneurs, and nonprofit leaders who want structure, organization, and clarity — without year-round service.",
     capabilities: [
+      "Access to Free LMS only",
+      "Educational content",
+      "Read-only awareness",
       "AI Vault — upload & store tax docs, business records",
       "AI Communications — reminders, prompts, guided steps",
-      "AI LMS — business basics & planning education",
-      "Business Plan Builder (DIY with AI prompts)",
-      "Input → Output (upload docs → generate plans/exports)"
+      "Business Plan Builder (DIY with AI prompts)"
     ],
     limitations: [
-      "No year-round tax prep",
-      "No ongoing advisory",
-      "No compliance execution or filings"
+      "No execution",
+      "No automation",
+      "No filing",
+      "No services"
     ],
-    icon: "🆓",
-    color: "from-gray-500 to-gray-400"
+    icon: "🟢",
+    color: "from-gray-500 to-gray-400",
+    lmsAccess: "free_lms",
+    includesHumanServices: false,
+    includesTaxPrep: false,
+    includesAdvisory: false
   },
+
+  // 🔵 AI ASSISTANT — Guided Execution
   ai_assistant: {
     id: "ai_assistant",
     name: "AI Assistant",
     displayName: "AI Assistant",
     price: 34.99,
-    description: "Guidance while you run the business.",
+    description: "Guided Execution",
+    whoItsFor: "Solopreneurs and founders who want continuous AI guidance but not full automation.",
     capabilities: [
+      "Guided AI assistance",
+      "Step-by-step setup help",
+      "Limited automation",
+      "Execution with guardrails",
       "Full AI assistant (daily decision support)",
       "AI Vault (expanded usage)",
       "AI LMS (role- and stage-based)",
       "Business planning & document analysis",
-      "Smart reminders (deadlines, renewals, follow-ups)",
-      "Input → Output across finance, admin, ops"
+      "Smart reminders (deadlines, renewals, follow-ups)"
     ],
     limitations: [
+      "No human services included",
       "No automation orchestration",
       "No operational dashboards",
       "No tool integrations"
     ],
-    icon: "💬",
-    color: "from-blue-500 to-cyan-400"
+    icon: "🔵",
+    color: "from-blue-500 to-cyan-400",
+    lmsAccess: "free_lms_guided",
+    includesHumanServices: false,
+    includesTaxPrep: false,
+    includesAdvisory: false
   },
+
+  // 🟣 AI OPERATIONS — Systemized Business
   ai_operations: {
     id: "ai_operations",
     name: "AI Operations",
     displayName: "AI Operations",
     price: 99.99,
-    description: "Your AI-powered back office.",
+    description: "Systemized Business",
+    whoItsFor: "Founders and owners managing real operational complexity.",
     capabilities: [
-      "Everything in AI Assistant",
-      "Operational dashboards (cash flow, forecasting)",
+      "Full workflows",
+      "Automation",
+      "Dashboards",
+      "Operational visibility",
+      "Full Operations LMS",
+      "Platform-only (self-directed)",
       "Automated workflows (billing, reminders, reporting)",
       "Tool integrations (accounting, CRM, payroll)",
-      "Compliance tracking (not filing)",
-      "Input → Output across all operational workflows"
+      "Compliance tracking (not filing)"
     ],
     limitations: [
+      "No human services included",
       "Single-entity focus",
       "No multi-user access",
       "No advisory sessions included"
     ],
-    icon: "⚙️",
-    color: "from-purple-500 to-pink-400"
+    icon: "🟣",
+    color: "from-purple-500 to-pink-400",
+    lmsAccess: "full_operations",
+    includesHumanServices: false,
+    includesTaxPrep: false,
+    includesAdvisory: false
   },
+
+  // 🟠 AI TAX — Human-Prepared, Tech-Enabled
+  ai_tax: {
+    id: "ai_tax",
+    name: "AI Tax",
+    displayName: "AI Tax",
+    price: null,
+    priceLabel: "From $125",
+    description: "Human-Prepared, Tech-Enabled",
+    whoItsFor: "Clients who want annual tax preparation, not year-round engagement.",
+    capabilities: [
+      "Human-prepared tax returns",
+      "Live online tax interviews (Zoom or equivalent)",
+      "Annual tax preparation",
+      "Quarterly estimates (if applicable)",
+      "AI-supported organization and document prep",
+      "Income tax and sales tax accrual visibility",
+      "Light compliance awareness (directional, not enforcement)",
+      "Deadline reminders",
+      "Tax-specific LMS micro-courses",
+      "Inherits AI Free LMS access"
+    ],
+    limitations: [
+      "NOT DIY filing",
+      "NOT Client-prepared with review",
+      "NOT Software-only",
+      "No ongoing advisory outside annual meeting",
+      "State limitations may apply"
+    ],
+    icon: "🟠",
+    color: "from-amber-500 to-yellow-400",
+    lmsAccess: "free_lms_tax",
+    includesHumanServices: true,
+    includesTaxPrep: true,
+    includesAdvisory: false,
+    isAddon: true // Can be added to AI Free, AI Assistant, or AI Operations
+  },
+
+  // 🔴 AI ADVISORY — Platform + Human Engagement
+  ai_advisory: {
+    id: "ai_advisory",
+    name: "AI Advisory",
+    displayName: "AI Advisory",
+    price: null,
+    priceLabel: "From $125/hr",
+    description: "Platform + Human Engagement",
+    whoItsFor: "Founders and owners who want strategic guidance beyond self-service.",
+    capabilities: [
+      "Same platform access as AI Operations",
+      "Same workflows, automation, dashboards",
+      "Full Operations LMS",
+      "Human advisory services included",
+      "One-time projects or monthly ongoing advisory",
+      "Strategic direction",
+      "Financial interpretation",
+      "Capital readiness guidance",
+      "Accountability",
+      "Advisors work inside the platform with the client",
+      "AI supports preparation and follow-up"
+    ],
+    limitations: [
+      "Platform usage is required",
+      "AI never replaces human judgment",
+      "No tax preparation included",
+      "No compliance filings included",
+      "Session limits may apply"
+    ],
+    icon: "🔴",
+    color: "from-emerald-500 to-teal-400",
+    lmsAccess: "full_operations",
+    includesHumanServices: true,
+    includesTaxPrep: false,
+    includesAdvisory: true
+  },
+
+  // 🔴 AI ENTERPRISE — Full-Scope Partnership
   ai_enterprise: {
     id: "ai_enterprise",
     name: "AI Enterprise",
     displayName: "AI Enterprise",
     price: 499,
-    description: "Scalable intelligence for organizations.",
+    description: "Full-Scope Partnership",
+    whoItsFor: "Multi-entity, growth, or complex organizations needing long-term strategic engagement.",
     capabilities: [
+      "Full platform access (all tools + LMS)",
+      "Ongoing, high-touch human partnership",
+      "Cross-functional coordination: Operations, Tax, Advisory, Compliance",
+      "Multi-entity support",
       "Multi-user access & permissions",
-      "Multi-entity management",
       "Advanced analytics & reporting",
       "Governance & audit trails",
       "Enterprise-grade integrations & security",
-      "Priority support"
+      "Priority support",
+      "Full Academy access"
     ],
     limitations: [
       "Annual commitment required",
       "Custom onboarding process"
     ],
-    icon: "🏢",
-    color: "from-primary to-orange-400"
+    icon: "🔴",
+    color: "from-primary to-orange-400",
+    lmsAccess: "full_academy",
+    includesHumanServices: true,
+    includesTaxPrep: true,
+    includesAdvisory: true
   },
-  ai_advisory: {
-    id: "ai_advisory",
-    name: "AI Advisory",
-    displayName: "AI Advisory",
-    price: null, // Variable pricing
-    priceLabel: "From $125/hr",
-    description: "Human expertise, strategically deployed.",
-    capabilities: [
-      "Scheduled advisory sessions",
-      "AI-prepared briefs for advisors",
-      "Strategic planning & decision support",
-      "Board-ready reports and summaries",
-      "Growth & expansion guidance"
-    ],
-    limitations: [
-      "No tax preparation",
-      "No compliance filings",
-      "Session limits apply"
-    ],
-    icon: "📊",
-    color: "from-emerald-500 to-teal-400"
-  },
-  ai_tax: {
-    id: "ai_tax",
-    name: "AI Tax",
-    displayName: "AI Tax",
-    price: null, // Variable pricing
-    priceLabel: "From $125",
-    description: "One meeting. One year. Fully prepared.",
-    capabilities: [
-      "AI Vault (Tax-Centered) — year-round doc organization",
-      "AI Communications — prep reminders, doc requests",
-      "One (1) Annual Virtual Tax Prep Meeting",
-      "Human-led, AI-supported tax prep",
-      "Tax document summaries & exports"
-    ],
-    limitations: [
-      "No ongoing advisory outside annual meeting",
-      "No year-round tax support",
-      "State limitations may apply"
-    ],
-    icon: "📋",
-    color: "from-amber-500 to-yellow-400"
-  },
+
+  // ⚫ AI COMPLIANCE — Governance & Oversight
   ai_compliance: {
     id: "ai_compliance",
     name: "AI Compliance",
     displayName: "AI Compliance",
-    price: null, // Variable pricing
+    price: null,
     priceLabel: "From $175",
-    description: "Stay compliant without chasing deadlines.",
+    description: "Governance & Oversight",
+    whoItsFor: "Owners and organizations operating in regulated or grant-funded environments. Typically for nonprofits and regulated entities.",
     capabilities: [
-      "Compliance-aware AI monitoring",
-      "Filing calendars & alerts",
-      "Risk flags & remediation guidance",
-      "Audit and reporting readiness",
-      "Document input → compliance outputs"
+      "Quarterly compliance reviews",
+      "Annual tax filings (e.g., 990)",
+      "Governance tracking",
+      "Reporting and deadlines",
+      "Board-level support",
+      "Full Academy access",
+      "Compliance training",
+      "AI assists with monitoring and education"
     ],
     limitations: [
+      "Humans are responsible for review, guidance, and filing",
       "Industry-specific modules sold separately",
-      "Does not include legal review",
-      "No direct filing submissions"
+      "Does not include legal review"
     ],
-    icon: "🛡️",
-    color: "from-rose-500 to-red-400"
+    icon: "⚫",
+    color: "from-rose-500 to-red-400",
+    lmsAccess: "full_academy",
+    includesHumanServices: true,
+    includesTaxPrep: true, // Annual 990 filings
+    includesAdvisory: false
+  }
+};
+
+// LMS Access descriptions for UI
+export const LMS_ACCESS_DESCRIPTIONS: Record<LmsAccessLevel, { label: string; description: string }> = {
+  free_lms: {
+    label: "Free LMS",
+    description: "Business basics & planning education"
+  },
+  free_lms_guided: {
+    label: "Free LMS + Guided Content",
+    description: "Role- and stage-based learning with AI guidance"
+  },
+  full_operations: {
+    label: "Full Operations LMS",
+    description: "Complete operational training and workflows"
+  },
+  free_lms_tax: {
+    label: "Free LMS + Tax Courses",
+    description: "Business basics plus tax-specific micro-courses"
+  },
+  full_academy: {
+    label: "Full Academy",
+    description: "Complete access to all courses and training"
   }
 };
 
@@ -191,7 +329,7 @@ export interface EnterpriseConfig {
     primaryColor?: string;
     logoUrl?: string;
   };
-  clientOrganizations?: string[]; // IDs of client orgs
+  clientOrganizations?: string[];
 }
 
 // Cohort configuration
@@ -205,6 +343,10 @@ interface UserTierContextType {
   // Current user's tier
   currentTier: UserTier;
   currentTierId: UserTierId;
+  
+  // User Identity (for language/tone)
+  userIdentity: UserIdentityType;
+  setUserIdentity: (identity: UserIdentityType) => void;
   
   // Environment
   environment: EnvironmentType;
@@ -221,7 +363,13 @@ interface UserTierContextType {
   // Actions
   setTier: (tierId: UserTierId) => void;
   canAccessFeature: (feature: string) => boolean;
+  canAccessLmsContent: (requiredLevel: LmsAccessLevel) => boolean;
   getTierById: (id: UserTierId) => UserTier | undefined;
+  
+  // Service checks
+  hasHumanServices: () => boolean;
+  hasTaxPrep: () => boolean;
+  hasAdvisory: () => boolean;
   
   // Cohort actions
   exitCohort: (downgradeToTier: UserTierId | "exit") => void;
@@ -232,17 +380,19 @@ const UserTierContext = createContext<UserTierContextType | undefined>(undefined
 export function UserTierProvider({ children }: { children: ReactNode }) {
   const { user, isOwner } = useAuth();
   
-  // In production, these would come from database/Stripe subscription
-  const [currentTierId, setCurrentTierId] = useState<UserTierId>("ai_operations"); // Cohort = AI Operations level
-  const [environment, setEnvironment] = useState<EnvironmentType>("cohort"); // Demo: cohort environment
+  // User's tier
+  const [currentTierId, setCurrentTierId] = useState<UserTierId>("ai_operations");
+  const [environment, setEnvironment] = useState<EnvironmentType>("cohort");
+  
+  // User Identity Type (language/tone only)
+  const [userIdentity, setUserIdentity] = useState<UserIdentityType>("founder");
   
   const [cohortConfig, setCohortConfig] = useState<CohortConfig | null>({
     isActive: true,
-    expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+    expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     inviteCode: "COHORT-DEMO2024"
   });
   
-  // Enterprise is ONLY for firms - regular users never have this
   const [enterpriseConfig, setEnterpriseConfig] = useState<EnterpriseConfig | null>(null);
 
   const currentTier = USER_TIERS[currentTierId];
@@ -254,35 +404,79 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
     setCurrentTierId(tierId);
   };
 
+  // LMS Access level hierarchy
+  const lmsAccessHierarchy: Record<LmsAccessLevel, number> = {
+    free_lms: 0,
+    free_lms_guided: 1,
+    free_lms_tax: 1, // Same level as guided, different content
+    full_operations: 2,
+    full_academy: 3
+  };
+
+  const canAccessLmsContent = (requiredLevel: LmsAccessLevel): boolean => {
+    const userLevel = lmsAccessHierarchy[currentTier.lmsAccess];
+    const requiredLevelValue = lmsAccessHierarchy[requiredLevel];
+    
+    // Special case: tax courses available to free_lms_tax holders
+    if (requiredLevel === "free_lms_tax" && currentTier.lmsAccess === "free_lms_tax") {
+      return true;
+    }
+    
+    return userLevel >= requiredLevelValue;
+  };
+
   const canAccessFeature = (feature: string): boolean => {
     const tierLevel: Record<UserTierId, number> = {
       free: 0,
       ai_assistant: 1,
       ai_operations: 2,
-      ai_enterprise: 3,
-      ai_advisory: 2,
-      ai_tax: 2,
-      ai_compliance: 2
+      ai_enterprise: 4,
+      ai_advisory: 3, // Same platform as Operations + human services
+      ai_tax: 1,      // Free tier + human tax services
+      ai_compliance: 3 // Full academy + human services
     };
     
     const featureRequirements: Record<string, UserTierId> = {
+      // Core features
       "ai_interaction": "free",
       "lms_preview": "free",
+      "vault_basic": "free",
+      "communications_basic": "free",
+      
+      // Assistant level
       "business_plans": "ai_assistant",
       "pitch_decks": "ai_assistant",
       "compliance_checklists": "ai_assistant",
       "templates": "ai_assistant",
-      "lms_full": "ai_assistant",
+      "lms_guided": "ai_assistant",
       "guided_execution": "ai_assistant",
+      "vault_expanded": "ai_assistant",
+      
+      // Operations level
       "multi_step_workflows": "ai_operations",
       "automation_execution": "ai_operations",
-      "persistent_context": "ai_operations",
+      "operational_dashboards": "ai_operations",
+      "tool_integrations": "ai_operations",
+      "lms_full_operations": "ai_operations",
+      
+      // Advisory level
+      "advisory_features": "ai_advisory",
+      "human_advisory": "ai_advisory",
+      "strategic_planning": "ai_advisory",
+      
+      // Enterprise level
       "full_automation": "ai_enterprise",
       "org_workflows": "ai_enterprise",
       "priority_support": "ai_enterprise",
-      "advisory_features": "ai_advisory",
+      "multi_entity": "ai_enterprise",
+      "multi_user": "ai_enterprise",
+      "lms_full_academy": "ai_enterprise",
+      
+      // Specialized
       "tax_features": "ai_tax",
-      "compliance_features": "ai_compliance"
+      "human_tax_prep": "ai_tax",
+      "compliance_features": "ai_compliance",
+      "governance_tracking": "ai_compliance"
     };
     
     const requiredTier = featureRequirements[feature] || "free";
@@ -291,9 +485,13 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
 
   const getTierById = (id: UserTierId) => USER_TIERS[id];
 
+  // Service inclusion checks
+  const hasHumanServices = () => currentTier.includesHumanServices;
+  const hasTaxPrep = () => currentTier.includesTaxPrep;
+  const hasAdvisory = () => currentTier.includesAdvisory;
+
   const exitCohort = (downgradeToTier: UserTierId | "exit") => {
     if (downgradeToTier === "exit") {
-      // User chose to exit platform - in production, would trigger account cleanup
       setCohortConfig(null);
       setEnvironment("production");
       setCurrentTierId("free");
@@ -308,6 +506,8 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
     <UserTierContext.Provider value={{
       currentTier,
       currentTierId,
+      userIdentity,
+      setUserIdentity,
       environment,
       isCohort,
       cohortConfig,
@@ -316,7 +516,11 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
       allTiers,
       setTier,
       canAccessFeature,
+      canAccessLmsContent,
       getTierById,
+      hasHumanServices,
+      hasTaxPrep,
+      hasAdvisory,
       exitCohort
     }}>
       {children}
