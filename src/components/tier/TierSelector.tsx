@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Check, Sparkles, Crown, Zap, Rocket, Gift } from "lucide-react";
+import { ChevronDown, Check, Sparkles, Crown, Zap, Gift, Building2, TrendingUp, FileText, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTier, UserTierId } from "@/contexts/UserTierContext";
@@ -10,6 +10,18 @@ export function TierSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const { isOwner, isAdmin } = useAuth();
   const { currentTier, allTiers, setTier, isCohort } = useUserTier();
+
+  const getIcon = (tierId: UserTierId) => {
+    switch (tierId) {
+      case "free": return <Gift className="w-5 h-5" />;
+      case "ai_assistant": return <Sparkles className="w-5 h-5" />;
+      case "ai_operations": return <Zap className="w-5 h-5" />;
+      case "ai_enterprise": return <Building2 className="w-5 h-5" />;
+      case "ai_advisory": return <TrendingUp className="w-5 h-5" />;
+      case "ai_tax": return <FileText className="w-5 h-5" />;
+      case "ai_compliance": return <Shield className="w-5 h-5" />;
+    }
+  };
 
   return (
     <div className="relative">
@@ -40,7 +52,7 @@ export function TierSelector() {
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute right-0 top-full mt-2 w-96 rounded-xl bg-card border border-border shadow-xl z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-[420px] rounded-xl bg-card border border-border shadow-xl z-50 overflow-hidden"
             >
               {/* Header */}
               <div className="px-4 py-3 border-b border-border bg-gradient-to-r from-primary/10 to-transparent">
@@ -50,24 +62,16 @@ export function TierSelector() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {isCohort 
-                    ? "Cohort access with full AI Operations functionality"
+                    ? "Cohort access with full AI functionality"
                     : "Upgrade or change your plan anytime"
                   }
                 </p>
               </div>
 
               {/* Tier List */}
-              <div className="p-2 max-h-96 overflow-y-auto">
+              <div className="p-2 max-h-[420px] overflow-y-auto">
                 {allTiers.map((tier) => {
                   const isActive = currentTier.id === tier.id;
-                  const getIcon = () => {
-                    switch (tier.id) {
-                      case "free": return <Gift className="w-5 h-5" />;
-                      case "ai_assistant": return <Sparkles className="w-5 h-5" />;
-                      case "ai_operations": return <Zap className="w-5 h-5" />;
-                      case "ai_operations_full": return <Rocket className="w-5 h-5" />;
-                    }
-                  };
                   
                   return (
                     <button
@@ -88,12 +92,12 @@ export function TierSelector() {
                       )}
                     >
                       <div className={cn(
-                        "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white",
+                        "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white shrink-0",
                         tier.color
                       )}>
-                        {getIcon()}
+                        {getIcon(tier.id)}
                       </div>
-                      <div className="flex-1 text-left">
+                      <div className="flex-1 text-left min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-foreground">{tier.displayName}</span>
                           {isActive && (
@@ -106,7 +110,7 @@ export function TierSelector() {
                           {tier.description}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         {tier.price !== null ? (
                           <div className="text-sm font-semibold text-foreground">
                             ${tier.price}
@@ -116,7 +120,7 @@ export function TierSelector() {
                           <span className="text-sm font-medium text-muted-foreground">Free</span>
                         )}
                       </div>
-                      {isActive && <Check className="w-5 h-5 text-primary" />}
+                      {isActive && <Check className="w-5 h-5 text-primary shrink-0" />}
                     </button>
                   );
                 })}
