@@ -7,6 +7,7 @@ import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { TierSelector } from "@/components/tier/TierSelector";
 import { TierMetrics } from "@/components/dashboard/TierMetrics";
 import { CohortBanner } from "@/components/tier/CohortBanner";
+import { CohortInvitePanel } from "@/components/cohort/CohortInvitePanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTier } from "@/contexts/UserTierContext";
 import { Navigate } from "react-router-dom";
@@ -156,13 +157,18 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Tier Metrics - Owner Dashboard */}
+          {/* Owner Section: Tier Metrics + Cohort Invites */}
           {isOwner && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
+              className="space-y-6"
             >
+              {/* Cohort Invite Panel */}
+              <CohortInvitePanel />
+              
+              {/* Tier Metrics */}
               <TierMetrics />
             </motion.div>
           )}

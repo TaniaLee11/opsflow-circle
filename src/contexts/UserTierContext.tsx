@@ -229,13 +229,13 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
   const { user, isOwner } = useAuth();
   
   // In production, these would come from database/Stripe subscription
-  const [currentTierId, setCurrentTierId] = useState<UserTierId>("ai_enterprise");
+  const [currentTierId, setCurrentTierId] = useState<UserTierId>("ai_operations"); // Cohort = AI Operations level
   const [environment, setEnvironment] = useState<EnvironmentType>("cohort"); // Demo: cohort environment
   
   const [cohortConfig, setCohortConfig] = useState<CohortConfig | null>({
     isActive: true,
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    inviteCode: "VOPS-COHORT-2024"
+    expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+    inviteCode: "COHORT-DEMO2024"
   });
   
   // Enterprise is ONLY for firms - regular users never have this
