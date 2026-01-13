@@ -1,31 +1,57 @@
 import { supabase } from "@/integrations/supabase/client";
+import { UserTierId } from "@/contexts/UserTierContext";
 
-// Price IDs from Stripe
-export const STRIPE_PRICES = {
+// Price IDs from Stripe - mapped to UserTierId
+export const STRIPE_PRICES: Record<string, string> = {
   // Subscription tiers
-  assistant: "price_1Sh16AJ3R9oDKFd40hVGZlfE", // $34.99/month
-  operations: "price_1Sh19gJ3R9oDKFd4ftPwaGcS", // $99.99/month
-  enterprise: "price_1Sh1TfJ3R9oDKFd4DcGU9izr", // $499/month
   free: "price_1Sk4YLJ3R9oDKFd4mgxV1oiw", // $0/month
+  ai_assistant: "price_1Sh16AJ3R9oDKFd40hVGZlfE", // $34.99/month
+  ai_operations: "price_1Sh19gJ3R9oDKFd4ftPwaGcS", // $99.99/month
+  ai_enterprise: "price_1Sh1TfJ3R9oDKFd4DcGU9izr", // $499/month
+  ai_advisory: "price_1Sox4DJ3R9oDKFd4uzradhaH", // $125/hour (non-profit) - hourly billing
+  ai_tax: "price_1Sk56qJ3R9oDKFd4xzJQi6Ch", // $125 one-time
+  ai_compliance: "price_1Sk588J3R9oDKFd47tkpsRsM", // $175 one-time
   
-  // One-time services
+  // AI Advisory hourly rates
+  advisoryNonProfit: "price_1Sox4DJ3R9oDKFd4uzradhaH", // $125/hour
+  advisoryForProfit: "price_1Sox4MJ3R9oDKFd4RdC2PcGv", // $150/hour
+  
+  // One-time services (legacy)
   personalTax: "price_1Sk56qJ3R9oDKFd4xzJQi6Ch", // $125
   personalBusinessTax: "price_1Sk588J3R9oDKFd47tkpsRsM", // $175
   businessTax: "price_1Sk59VJ3R9oDKFd4YXwHdTa9", // $250
 } as const;
 
+// Tiers that are free (no Stripe checkout needed)
+export const FREE_TIERS: UserTierId[] = ["free"];
+
+// Tiers that are subscription-based
+export const SUBSCRIPTION_TIERS: UserTierId[] = ["ai_assistant", "ai_operations", "ai_enterprise"];
+
+// Tiers that are one-time payments
+export const ONETIME_TIERS: UserTierId[] = ["ai_tax", "ai_compliance"];
+
+// Tiers that are hourly/custom (require special handling)
+export const HOURLY_TIERS: UserTierId[] = ["ai_advisory"];
+
 export const TIER_NAMES: Record<string, string> = {
-  assistant: "AI Assistant",
-  operations: "AI Operations",
-  enterprise: "AI Enterprise",
   free: "AI Free",
+  ai_assistant: "AI Assistant",
+  ai_operations: "AI Operations",
+  ai_enterprise: "AI Enterprise",
+  ai_advisory: "AI Advisory",
+  ai_tax: "AI Tax",
+  ai_compliance: "AI Compliance",
 };
 
 export const TIER_PRICES: Record<string, number> = {
-  assistant: 3499,
-  operations: 9999,
-  enterprise: 49900,
   free: 0,
+  ai_assistant: 3499,
+  ai_operations: 9999,
+  ai_enterprise: 49900,
+  ai_advisory: 19999,
+  ai_tax: 14999,
+  ai_compliance: 17999,
 };
 
 export interface SubscriptionStatus {

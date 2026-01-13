@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Sparkles, Zap, Gift, Building2, TrendingUp, FileText, Shield, ArrowRight } from "lucide-react";
+import { Check, Sparkles, Zap, Gift, Building2, TrendingUp, FileText, Shield, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
+import { createCheckout, STRIPE_PRICES, FREE_TIERS, SUBSCRIPTION_TIERS, ONETIME_TIERS } from "@/lib/stripe";
+import { toast } from "sonner";
 
 const tierIcons: Record<UserTierId, React.ReactNode> = {
   free: <Gift className="w-6 h-6" />,
@@ -25,18 +27,47 @@ export default function TierSelection() {
     
     setIsLoading(true);
     
-    // In production, this would save to the database
-    // For now, save to localStorage and proceed
-    const userData = localStorage.getItem("vopsy_user");
-    if (userData) {
-      const user = JSON.parse(userData);
-      user.tierSelected = true;
-      user.selectedTier = selectedTier;
-      localStorage.setItem("vopsy_user", JSON.stringify(user));
+    try {
+      // Save selected tier to localStorage
+      const userData = localStorage.getItem("vopsy_user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        user.tierSelected = true;
+        user.selectedTier = selectedTier;
+        localStorage.setItem("vopsy_user", JSON.stringify(user));
+      }
+
+      // If free tier, go directly to dashboard
+      if (FREE_TIERS.includes(selectedTier)) {
+        navigate("/dashboard");
+        return;
+      }
+
+      // Get the price ID for the selected tier
+      const priceId = STRIPE_PRICES[selectedTier];
+      if (!priceId) {
+        toast.error("Price not configured for this tier");
+        setIsLoading(false);
+        return;
+      }
+
+      // Determine mode based on tier type
+      const mode = SUBSCRIPTION_TIERS.includes(selectedTier) ? "subscription" : "payment";
+
+      // Create Stripe checkout session
+      const { url } = await createCheckout(priceId, mode);
+      
+      if (url) {
+        // Redirect to Stripe Checkout
+        window.location.href = url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error("Failed to start checkout. Please try again.");
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
-    navigate("/dashboard");
   };
 
   const tiers = Object.values(USER_TIERS);
@@ -141,8 +172,22 @@ export default function TierSelection() {
                 : "bg-muted text-muted-foreground cursor-not-allowed"
             )}
           >
-            {isLoading ? "Setting up..." : "Continue to Dashboard"}
-            <ArrowRight className="w-5 h-5" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Redirecting to Checkout...
+              </>
+            ) : FREE_TIERS.includes(selectedTier!) ? (
+              <>
+                Continue to Dashboard
+                <ArrowRight className="w-5 h-5" />
+              </>
+            ) : (
+              <>
+                Continue to Checkout
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
           </button>
         </motion.div>
 
