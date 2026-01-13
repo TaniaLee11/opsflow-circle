@@ -23,6 +23,7 @@ import VOPSy from "./pages/VOPSy";
 import Vault from "./pages/Vault";
 import UserPortal from "./pages/UserPortal";
 import IntegrationCallback from "./pages/IntegrationCallback";
+import Workflows from "./pages/Workflows";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="/financial" element={<FinancialHub />} />
                 <Route path="/integrations" element={<Integrations />} />
                 <Route path="/integrations/callback" element={<IntegrationCallback />} />
+                <Route path="/workflows" element={<Workflows />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-canceled" element={<PaymentCanceled />} />
                 <Route path="*" element={<NotFound />} />
