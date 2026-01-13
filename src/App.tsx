@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import TierSelection from "./pages/TierSelection";
+import ProductSelection from "./pages/ProductSelection";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Auth />} />
               <Route path="/select-tier" element={<TierSelection />} />
+              <Route path="/select-product" element={<ProductSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/academy" element={<Academy />} />

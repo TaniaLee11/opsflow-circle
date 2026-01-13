@@ -4,7 +4,7 @@ import { Check, Sparkles, Zap, Gift, Building2, TrendingUp, FileText, Shield, Ar
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
-import { createCheckout, STRIPE_PRICES, FREE_TIERS, SUBSCRIPTION_TIERS, ONETIME_TIERS } from "@/lib/stripe";
+import { createCheckout, STRIPE_PRICES, FREE_TIERS, SUBSCRIPTION_TIERS, VARIABLE_PRICING_TIERS } from "@/lib/stripe";
 import { toast } from "sonner";
 
 const tierIcons: Record<UserTierId, React.ReactNode> = {
@@ -43,6 +43,12 @@ export default function TierSelection() {
         return;
       }
 
+      // If variable pricing tier, redirect to product selection
+      if (VARIABLE_PRICING_TIERS.includes(selectedTier)) {
+        navigate(`/select-product?tier=${selectedTier}`);
+        return;
+      }
+
       // Get the price ID for the selected tier
       const priceId = STRIPE_PRICES[selectedTier];
       if (!priceId) {
@@ -68,6 +74,13 @@ export default function TierSelection() {
       toast.error("Failed to start checkout. Please try again.");
       setIsLoading(false);
     }
+  };
+
+  const getButtonText = () => {
+    if (!selectedTier) return "Select a Tier";
+    if (FREE_TIERS.includes(selectedTier)) return "Continue to Dashboard";
+    if (VARIABLE_PRICING_TIERS.includes(selectedTier)) return "Select Product Options";
+    return "Continue to Checkout";
   };
 
   const tiers = Object.values(USER_TIERS);
@@ -138,7 +151,11 @@ export default function TierSelection() {
               <h3 className="font-semibold text-foreground mb-1">{tier.displayName}</h3>
               
               <div className="mb-3">
-                {tier.price !== null ? (
+                {tier.priceLabel ? (
+                  <span className="text-xl font-bold text-foreground">
+                    {tier.priceLabel}
+                  </span>
+                ) : tier.price !== null ? (
                   <span className="text-xl font-bold text-foreground">
                     ${tier.price}
                     <span className="text-sm font-normal text-muted-foreground">/mo</span>
@@ -175,16 +192,11 @@ export default function TierSelection() {
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Redirecting to Checkout...
-              </>
-            ) : FREE_TIERS.includes(selectedTier!) ? (
-              <>
-                Continue to Dashboard
-                <ArrowRight className="w-5 h-5" />
+                Processing...
               </>
             ) : (
               <>
-                Continue to Checkout
+                {getButtonText()}
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
