@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Sparkles, Zap, Gift, Building2, TrendingUp, FileText, Shield, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
 import { createCheckout, STRIPE_PRICES, FREE_TIERS, SUBSCRIPTION_TIERS, VARIABLE_PRICING_TIERS } from "@/lib/stripe";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const tierIcons: Record<UserTierId, React.ReactNode> = {
   free: <Gift className="w-6 h-6" />,
@@ -21,21 +22,27 @@ export default function TierSelection() {
   const [selectedTier, setSelectedTier] = useState<UserTierId | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleContinue = async () => {
-    if (!selectedTier) return;
+    if (!selectedTier || !user) return;
     
     setIsLoading(true);
     
     try {
-      // Save selected tier to localStorage
-      const userData = localStorage.getItem("vopsy_user");
-      if (userData) {
-        const user = JSON.parse(userData);
-        user.tierSelected = true;
-        user.selectedTier = selectedTier;
-        localStorage.setItem("vopsy_user", JSON.stringify(user));
-      }
+      // Save selected tier to localStorage with user ID
+      const profileData = {
+        tierSelected: true,
+        selectedTier: selectedTier,
+      };
+      localStorage.setItem(`vopsy_profile_${user.id}`, JSON.stringify(profileData));
 
       // If free tier, go directly to dashboard
       if (FREE_TIERS.includes(selectedTier)) {

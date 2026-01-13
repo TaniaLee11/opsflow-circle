@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, Building2, User, Briefcase, FileText, Shield, CheckCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { createCheckout, STRIPE_PRICES } from "@/lib/stripe";
+import { createCheckout } from "@/lib/stripe";
 import { toast } from "sonner";
 import { UserTierId } from "@/contexts/UserTierContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProductOption {
   id: string;
@@ -109,6 +110,14 @@ export default function ProductSelection() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const products = PRODUCT_OPTIONS[tier] || [];
   const tierTitle = TIER_TITLES[tier] || "Select Product";

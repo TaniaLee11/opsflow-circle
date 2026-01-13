@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, ArrowRight, Mail, Lock, User, Zap, AlertCircle } from "lucide-react";
+import { Shield, ArrowRight, Mail, Lock, User, Zap, AlertCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -14,13 +14,24 @@ export default function Auth() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, signup, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated, user, isLoading: authLoading, isOwner } = useAuth();
 
   // Redirect if already authenticated
-  if (isAuthenticated) {
-    navigate("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      // Owner goes directly to dashboard
+      if (isOwner) {
+        navigate("/dashboard");
+        return;
+      }
+      // Check if user needs tier selection
+      if (!user.tierSelected) {
+        navigate("/select-tier");
+      } else {
+        navigate("/dashboard");
+      }
+    }
+  }, [isAuthenticated, user, authLoading, isOwner, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,15 +41,6 @@ export default function Auth() {
     try {
       if (mode === "signin") {
         await login(email, password);
-        // Check if user needs tier selection (non-owners)
-        const userData = localStorage.getItem("vopsy_user");
-        if (userData) {
-          const user = JSON.parse(userData);
-          if (user.role !== "owner" && !user.tierSelected) {
-            navigate("/select-tier");
-            return;
-          }
-        }
       } else {
         if (!name.trim()) {
           setError("Please enter your name");
@@ -46,17 +48,22 @@ export default function Auth() {
           return;
         }
         await signup(email, password, name);
-        // New signups always go to tier selection
-        navigate("/select-tier");
-        return;
       }
-      navigate("/dashboard");
+      // Navigation will be handled by the useEffect
     } catch (err: any) {
       setError(err?.message || "Authentication failed. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
@@ -224,9 +231,18 @@ export default function Auth() {
               whileTap={{ scale: 0.98 }}
               className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 glow-primary hover:bg-primary/90 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Shield className="w-5 h-5" />
-              <span>{isLoading ? "Connecting..." : "Authorize Connection"}</span>
-              {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>{mode === "signin" ? "Signing in..." : "Creating account..."}</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="w-5 h-5" />
+                  <span>{mode === "signin" ? "Sign In" : "Create Account"}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </motion.button>
           </form>
 
@@ -250,16 +266,6 @@ export default function Auth() {
           className="text-center mt-8 text-sm text-muted-foreground"
         >
           Platform access restricted to active operational partners.
-        </motion.p>
-
-        {/* Demo hint */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="text-center mt-4 text-xs text-muted-foreground/60"
-        >
-          Owner: tania@virtualopsassist.com
         </motion.p>
       </motion.div>
     </div>
