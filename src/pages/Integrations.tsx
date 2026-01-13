@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Link2, 
   Check, 
@@ -11,7 +12,8 @@ import {
   Settings,
   AlertCircle,
   CheckCircle2,
-  Clock
+  Clock,
+  Loader2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -31,6 +33,9 @@ interface Integration {
   status: "connected" | "disconnected" | "pending";
   features: string[];
   popular?: boolean;
+  connectedAccount?: string;
+  lastSynced?: string;
+  health?: string;
 }
 
 const integrations: Integration[] = [
@@ -194,18 +199,61 @@ const statusConfig = {
 export default function Integrations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const queryClient = useQueryClient();
   
+  // Fetch real integration statuses from database
+  const { data: connectedIntegrations, isLoading } = useQuery({
+    queryKey: ["integrations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("integrations")
+        .select("provider, connected_account, health, last_synced_at");
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Map provider names to integration IDs
+  const providerToIdMap: Record<string, string> = {
+    google: "google-workspace",
+    microsoft: "microsoft-365",
+    quickbooks: "quickbooks",
+    slack: "slack",
+    hubspot: "hubspot",
+    stripe: "stripe",
+  };
+
+  // Update integration statuses based on database
+  const integrationsWithRealStatus = integrations.map((integration) => {
+    const connected = connectedIntegrations?.find(
+      (c) => providerToIdMap[c.provider] === integration.id
+    );
+    
+    if (connected) {
+      return {
+        ...integration,
+        status: "connected" as const,
+        connectedAccount: connected.connected_account || undefined,
+        lastSynced: connected.last_synced_at || undefined,
+        health: connected.health || undefined,
+      };
+    }
+    
+    return integration;
+  });
+
   const categories = ["all", ...Object.keys(categoryLabels)];
   
-  const filteredIntegrations = integrations.filter(integration => {
+  const filteredIntegrations = integrationsWithRealStatus.filter(integration => {
     const matchesSearch = integration.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          integration.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === "all" || integration.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const connectedCount = integrations.filter(i => i.status === "connected").length;
-  const popularIntegrations = integrations.filter(i => i.popular);
+  const connectedCount = integrationsWithRealStatus.filter(i => i.status === "connected").length;
+  const popularIntegrations = integrationsWithRealStatus.filter(i => i.popular);
 
   const handleConnect = async (integration: Integration) => {
     if (integration.status === "connected") {
@@ -253,8 +301,36 @@ export default function Integrations() {
     }
   };
 
-  const handleDisconnect = (integration: Integration) => {
-    toast.success(`Disconnected from ${integration.name}`);
+  const handleDisconnect = async (integration: Integration) => {
+    // Map integration IDs to provider names
+    const idToProviderMap: Record<string, string> = {
+      "google-workspace": "google",
+      "microsoft-365": "microsoft",
+      "quickbooks": "quickbooks",
+      "slack": "slack",
+      "hubspot": "hubspot",
+      "stripe": "stripe",
+    };
+    
+    const provider = idToProviderMap[integration.id];
+    if (!provider) {
+      toast.error("Unknown integration");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("integrations")
+        .delete()
+        .eq("provider", provider);
+      
+      if (error) throw error;
+      
+      toast.success(`Disconnected from ${integration.name}`);
+      queryClient.invalidateQueries({ queryKey: ["integrations"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to disconnect");
+    }
   };
 
   return (
