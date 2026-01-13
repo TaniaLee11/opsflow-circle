@@ -10,13 +10,14 @@ import Dashboard from "./pages/Dashboard";
 import AIStudio from "./pages/AIStudio";
 import Academy from "./pages/Academy";
 import FinancialHub from "./pages/FinancialHub";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import TierSelection from "./pages/TierSelection";
 import ProductSelection from "./pages/ProductSelection";
 import Studio from "./pages/Studio";
+import Integrations from "./pages/Integrations";
+import VOPSy from "./pages/VOPSy";
 
 const queryClient = new QueryClient();
 
@@ -33,18 +34,13 @@ const App = () => (
               <Route path="/select-tier" element={<TierSelection />} />
               <Route path="/select-product" element={<ProductSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/vopsy" element={<VOPSy />} />
               <Route path="/studio" element={<Studio />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/academy" element={<Academy />} />
               <Route path="/financial" element={<FinancialHub />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/projects" element={<Dashboard />} />
-              <Route path="/team" element={<Dashboard />} />
-              <Route path="/invoicing" element={<FinancialHub />} />
+              <Route path="/integrations" element={<Integrations />} />
               <Route path="/autoresponder" element={<Dashboard />} />
-              <Route path="/marketing" element={<Dashboard />} />
-              <Route path="/automations" element={<Dashboard />} />
-              <Route path="/messages" element={<Dashboard />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-canceled" element={<PaymentCanceled />} />
               <Route path="*" element={<NotFound />} />
