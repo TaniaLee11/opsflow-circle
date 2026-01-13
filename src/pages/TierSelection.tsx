@@ -83,7 +83,9 @@ export default function TierSelection() {
     return "Continue to Checkout";
   };
 
-  const tiers = Object.values(USER_TIERS);
+  // Custom order: Free, Assistant, Operations first row; Advisory, Tax, Compliance second row; Enterprise last
+  const tierOrder: UserTierId[] = ["free", "ai_assistant", "ai_operations", "ai_advisory", "ai_tax", "ai_compliance", "ai_enterprise"];
+  const tiers = tierOrder.map(id => USER_TIERS[id]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden px-4 py-12">
