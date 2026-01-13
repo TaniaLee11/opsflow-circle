@@ -60,17 +60,6 @@ const navItems: NavItem[] = [
   { icon: Workflow, label: "Automations", href: "/integrations", category: "Integrations" },
 ];
 
-// Portal items for Platform Owner context switching
-const portalItems: NavItem[] = [
-  { icon: Users, label: "AI Free Portal", href: "/portal/free", category: "User Portals", ownerOnly: true },
-  { icon: MessageSquare, label: "AI Assistant Portal", href: "/portal/ai_assistant", category: "User Portals", ownerOnly: true },
-  { icon: Zap, label: "AI Operations Portal", href: "/portal/ai_operations", category: "User Portals", ownerOnly: true },
-  { icon: BarChart3, label: "AI Enterprise Portal", href: "/portal/ai_enterprise", category: "User Portals", ownerOnly: true },
-  { icon: FileText, label: "AI Advisory Portal", href: "/portal/ai_advisory", category: "User Portals", ownerOnly: true },
-  { icon: Send, label: "AI Tax Portal", href: "/portal/ai_tax", category: "User Portals", ownerOnly: true },
-  { icon: Shield, label: "AI Compliance Portal", href: "/portal/ai_compliance", category: "User Portals", ownerOnly: true },
-];
-
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
@@ -83,17 +72,13 @@ export function Sidebar() {
     return true;
   });
 
-  // Add portal items for owner
-  const filteredPortalItems = isOwner ? portalItems : [];
-
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  // Group items by category (combine navItems and portalItems for owner)
-  const allItems = [...filteredItems, ...filteredPortalItems];
-  const categories = [...new Set(allItems.map(item => item.category))];
+  // Group items by category
+  const categories = [...new Set(filteredItems.map(item => item.category))];
 
   return (
     <motion.aside
@@ -137,22 +122,14 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
         {categories.map(category => {
-          const categoryItems = allItems.filter(item => item.category === category);
+          const categoryItems = filteredItems.filter(item => item.category === category);
           if (categoryItems.length === 0) return null;
           
           return (
             <div key={category} className="mb-4">
               {!collapsed && (
-                <p className={cn(
-                  "px-3 py-2 text-xs font-medium uppercase tracking-wider",
-                  category === "User Portals" ? "text-primary" : "text-muted-foreground"
-                )}>
+                <p className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {category}
-                  {category === "User Portals" && (
-                    <span className="ml-2 text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                      OWNER
-                    </span>
-                  )}
                 </p>
               )}
               {categoryItems.map((item) => {

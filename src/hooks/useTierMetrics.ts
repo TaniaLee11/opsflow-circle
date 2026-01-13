@@ -266,3 +266,141 @@ export function useTierPortalData(tierId: UserTierId) {
     staleTime: 30000,
   });
 }
+
+// Detailed user data for portal Users tab
+export interface PortalUser {
+  id: string;
+  displayName: string | null;
+  email: string | null;
+  companyName: string | null;
+  phone: string | null;
+  address: string | null;
+  subscriptionConfirmed: boolean;
+  createdAt: string;
+  messageCount: number;
+  conversationCount: number;
+}
+
+export function usePortalUsers(tierId: UserTierId) {
+  return useQuery({
+    queryKey: ["portal-users", tierId],
+    queryFn: async () => {
+      // Get profiles for this tier with account data
+      const { data: tierProfiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select(`
+          user_id,
+          display_name,
+          email,
+          subscription_confirmed,
+          created_at,
+          primary_account_id
+        `)
+        .or(`selected_tier.eq.${tierId},subscription_tier.eq.${tierId}`);
+
+      if (profilesError) throw profilesError;
+
+      const userIds = tierProfiles?.map((p) => p.user_id) || [];
+      const accountIds = tierProfiles?.map((p) => p.primary_account_id).filter(Boolean) || [];
+
+      // Get account details for company info
+      let accountsMap: Record<string, any> = {};
+      if (accountIds.length > 0) {
+        const { data: accounts } = await supabase
+          .from("accounts")
+          .select("id, company_name, phone, address")
+          .in("id", accountIds);
+        
+        accounts?.forEach((acc) => {
+          accountsMap[acc.id] = acc;
+        });
+      }
+
+      // Get conversation counts per user
+      let conversationCounts: Record<string, number> = {};
+      if (userIds.length > 0) {
+        const { data: conversations } = await supabase
+          .from("conversations")
+          .select("user_id, id")
+          .in("user_id", userIds);
+
+        conversations?.forEach((conv) => {
+          conversationCounts[conv.user_id] = (conversationCounts[conv.user_id] || 0) + 1;
+        });
+      }
+
+      // Get message counts via conversations
+      let messageCounts: Record<string, number> = {};
+      if (userIds.length > 0) {
+        const { data: userMessages } = await supabase
+          .from("conversations")
+          .select("user_id, messages(count)")
+          .in("user_id", userIds);
+
+        userMessages?.forEach((conv: any) => {
+          const count = conv.messages?.[0]?.count || 0;
+          messageCounts[conv.user_id] = (messageCounts[conv.user_id] || 0) + count;
+        });
+      }
+
+      // Calculate new users this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const newThisMonth = tierProfiles?.filter(
+        (p) => new Date(p.created_at) >= startOfMonth
+      ).length || 0;
+
+      // Build user list with all details
+      const users: PortalUser[] = (tierProfiles || []).map((profile) => {
+        const account = profile.primary_account_id ? accountsMap[profile.primary_account_id] : null;
+        const addressObj = account?.address;
+        let addressStr: string | null = null;
+        
+        if (addressObj && typeof addressObj === 'object') {
+          const parts = [
+            addressObj.street,
+            addressObj.city,
+            addressObj.state,
+            addressObj.zip,
+            addressObj.country
+          ].filter(Boolean);
+          addressStr = parts.length > 0 ? parts.join(", ") : null;
+        }
+
+        return {
+          id: profile.user_id,
+          displayName: profile.display_name,
+          email: profile.email,
+          companyName: account?.company_name || null,
+          phone: account?.phone || null,
+          address: addressStr,
+          subscriptionConfirmed: profile.subscription_confirmed || false,
+          createdAt: profile.created_at,
+          messageCount: messageCounts[profile.user_id] || 0,
+          conversationCount: conversationCounts[profile.user_id] || 0,
+        };
+      });
+
+      // Sort by most active
+      users.sort((a, b) => b.messageCount - a.messageCount);
+
+      // Calculate totals
+      const totalConversations = Object.values(conversationCounts).reduce((sum, c) => sum + c, 0);
+      const totalMessages = Object.values(messageCounts).reduce((sum, c) => sum + c, 0);
+
+      // Growth rate (simplified: new this month / total * 100)
+      const growthRate = users.length > 0 ? Math.round((newThisMonth / users.length) * 100) : 0;
+
+      return {
+        users,
+        totalConversations,
+        totalMessages,
+        newThisMonth,
+        growthRate,
+      };
+    },
+    staleTime: 30000,
+  });
+}
