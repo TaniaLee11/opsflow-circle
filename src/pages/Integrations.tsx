@@ -41,13 +41,13 @@ const integrations: Integration[] = [
   // Productivity
   {
     id: "google-workspace",
-    name: "Google Workspace",
-    description: "Connect Gmail, Calendar, Drive, and Docs for seamless productivity",
+    name: "Google Workspace (Read-Only)",
+    description: "Connect Gmail, Calendar, and Drive for AI agent read access",
     icon: "https://www.google.com/favicon.ico",
     category: "productivity",
     status: "disconnected",
     oauthProvider: "google",
-    features: ["Gmail sync", "Calendar integration", "Drive storage", "Docs collaboration"],
+    features: ["Gmail read access", "Calendar read access", "Drive read access"],
     popular: true,
   },
   {
