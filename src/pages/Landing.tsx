@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { 
   ArrowRight, 
   Zap, 
@@ -90,6 +91,19 @@ export default function Landing() {
   const navigate = useNavigate();
 
   return (
+    <>
+      <Helmet>
+        <title>Virtual OPS Hub | Operations, Finance & Compliance Made Simple</title>
+        <meta name="description" content="Stop juggling spreadsheets. Virtual OPS Hub brings operations, bookkeeping, and compliance into one AI-powered platform. Built for entrepreneurs and nonprofits. Start free today." />
+        <meta property="og:title" content="Finally, One Platform for Everything You Run" />
+        <meta property="og:description" content="Operations, finance, and compliance—integrated. Built for people who carry responsibility. Start free." />
+        <meta property="og:image" content="https://virtualopsassist.com/og-home.png" />
+        <meta property="og:url" content="https://virtualopsassist.com/" />
+        <meta name="twitter:title" content="Finally, One Platform for Everything You Run" />
+        <meta name="twitter:description" content="Operations, finance, and compliance—integrated. Built for people who carry responsibility." />
+        <meta name="twitter:image" content="https://virtualopsassist.com/og-home.png" />
+        <link rel="canonical" href="https://virtualopsassist.com/" />
+      </Helmet>
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -128,22 +142,22 @@ export default function Landing() {
           >
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 sm:mb-8">
               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-              <span className="text-xs sm:text-sm text-primary font-medium">AI-Powered Operations</span>
+              <span className="text-xs sm:text-sm text-primary font-medium">Trusted by 500+ Businesses & Nonprofits</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 sm:mb-6 leading-tight">
-              Your Operating System for
-              <span className="text-gradient block mt-1 sm:mt-2">Business & Mission</span>
+              Stop Juggling Spreadsheets.
+              <span className="text-gradient block mt-1 sm:mt-2">Start Running Your Business.</span>
             </h1>
 
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 px-4">
-              An integrated platform that brings together operations, finance, and compliance—
-              designed for people who carry responsibility and operate independently.
+              Operations, bookkeeping, compliance, and tax prep—finally in one place. 
+              Built for entrepreneurs and nonprofits who do it all.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
               <Button size="lg" onClick={() => navigate("/auth?mode=signup")} className="glow-primary text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
-                Find Your Path
+                Start Free Today
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
               <Button size="lg" variant="outline" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
@@ -415,5 +429,6 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
