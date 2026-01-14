@@ -2,30 +2,12 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Allowed origins for CORS - restrict to known domains
-const ALLOWED_ORIGINS = [
-  'https://dnntsdncmptuxctbcjsp.lovableproject.com',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000',
-];
-
-function getCorsHeaders(origin: string | null) {
-  // Check if origin is in allowed list
-  if (origin && ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed.replace(/:\d+$/, '')))) {
-    return {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    };
-  }
-  // For non-matching origins, return restrictive headers
-  return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0],
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
+// CORS headers - allow all origins for flexibility with preview domains
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 const SYSTEM_PROMPT = `You are VOPSy (Virtual Operations Intelligence), the client-facing AI agent inside Virtual OPS Hub. You function the same way the Virtual OPS accountant functions when working directly with a client.
 
@@ -204,8 +186,6 @@ const TIER_RATE_LIMITS: Record<string, number> = {
 const ALLOWED_TIERS = ['owner', 'ai_enterprise', 'ai_operations', 'ai_assistant', 'cohort'];
 
 serve(async (req) => {
-  const origin = req.headers.get('origin');
-  const corsHeaders = getCorsHeaders(origin);
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -392,7 +372,7 @@ serve(async (req) => {
       message: "I apologize, but I'm having trouble connecting right now. Please try again in a moment. In the meantime, feel free to explore the dashboard or check your documents."
     }), {
       status: 500,
-      headers: { ...getCorsHeaders(null), 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
