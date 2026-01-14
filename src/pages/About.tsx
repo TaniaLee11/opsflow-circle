@@ -7,7 +7,17 @@ import {
   Target,
   Users,
   Award,
-  CheckCircle2
+  Lightbulb,
+  Mic,
+  BookOpen,
+  Sparkles,
+  Building2,
+  Globe,
+  ExternalLink,
+  Bot,
+  Cog,
+  GraduationCap,
+  Palette
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
@@ -37,10 +47,62 @@ const values = [
 ];
 
 const milestones = [
-  { year: "2014", title: "Founded", description: "Started with a mission to bring order to small business operations." },
-  { year: "2018", title: "500 Clients", description: "Reached our milestone of serving 500 businesses and nonprofits." },
-  { year: "2022", title: "AI Integration", description: "Launched VOPSy AI to provide 24/7 intelligent support." },
-  { year: "2024", title: "The Hub", description: "Unified platform bringing all services together in one place." }
+  { year: "2019", title: "Virtual OPS Founded", description: "Launched with a mission to provide AI-enabled operations for founders, executives, and nonprofits." },
+  { year: "2022", title: "500+ Clients Served", description: "Reached our milestone of serving over 500 businesses and nonprofits worldwide." },
+  { year: "2024", title: "VOPSy AI Launch", description: "Introduced VOPSy, our AI Operations Director, to provide intelligent support and automation." },
+  { year: "2026", title: "Integration Hub", description: "Launching the Virtual OPS Integration Hub—tool-agnostic architecture that orchestrates your existing platforms." }
+];
+
+const expertise = [
+  { icon: Bot, label: "AI Architecture & Integration" },
+  { icon: Cog, label: "Operations Strategy" },
+  { icon: Lightbulb, label: "Systems Design" },
+  { icon: Building2, label: "Business Automation" },
+  { icon: Users, label: "Executive Operations" },
+  { icon: Heart, label: "Nonprofit Infrastructure" },
+  { icon: GraduationCap, label: "Teaching & Curriculum" },
+  { icon: Mic, label: "Public Speaking" },
+  { icon: Palette, label: "Creative Direction" },
+  { icon: Sparkles, label: "Ethical AI Implementation" },
+];
+
+const ventures = [
+  {
+    title: "Virtual OPS",
+    role: "Founder & Owner",
+    period: "2019 – Present",
+    description: "AI-enabled operations, finance, compliance, and automation services for founders, executives, nonprofits, and enterprises.",
+    focus: [
+      "Virtual OPS Integration Hub",
+      "AI-directed operations via VOPSy",
+      "Tool-agnostic architecture",
+      "Executive-level dashboards",
+      "Scalable operations infrastructure"
+    ]
+  },
+  {
+    title: "Overcome Inc",
+    role: "Founder & Executive Director",
+    period: "Ongoing",
+    description: "Mission-driven organization focused on empowerment, creative expression, education, and systems awareness.",
+    focus: [
+      "Live-stream programming",
+      "Faith-adjacent, purpose-driven content",
+      "Community-centered initiatives"
+    ]
+  },
+  {
+    title: "TL Productions",
+    role: "Founder",
+    period: "Launching 2026",
+    description: "Creative studio and publishing platform for modern leaders navigating identity, faith, systems, and innovation.",
+    focus: [
+      "Spoken word and music projects",
+      "Teaching content and curriculum",
+      "Film and visual storytelling",
+      "Thought leadership publishing"
+    ]
+  }
 ];
 
 export default function About() {
@@ -50,7 +112,7 @@ export default function About() {
     <>
       <Helmet>
         <title>About Us | Virtual OPS Assist - Our Story & Mission</title>
-        <meta name="description" content="Virtual OPS Assist has been helping entrepreneurs and nonprofits bring clarity to operations since 2014. Learn about our mission, values, and the team behind the Hub." />
+        <meta name="description" content="Meet Tania Potter, Founder of Virtual OPS. AI Architect building the 2026 Integration Hub powered by VOPSy. Speaker, Author, Educator & Systems Strategist." />
         <link rel="canonical" href="https://virtualopsassist.com/about" />
       </Helmet>
 
@@ -71,20 +133,154 @@ export default function About() {
               transition={{ duration: 0.6 }}
             >
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                We Believe Business 
-                <span className="text-gradient block">Shouldn't Be Overwhelming</span>
+                Building the Next Generation
+                <span className="text-gradient block">of Operations</span>
               </h1>
 
               <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Virtual OPS Assist was founded on a simple idea: busy people deserve calm, 
-                organized operations—without the chaos.
+                Where AI clarifies, systems align, and leaders regain control.
               </p>
             </motion.div>
           </div>
         </section>
 
-        {/* Story */}
+        {/* Founder Profile */}
         <section className="py-20 px-4 sm:px-6 border-t border-border/50">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="glass gradient-border rounded-2xl p-8 sm:p-12"
+            >
+              <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+                {/* Profile Card */}
+                <div className="lg:col-span-1">
+                  <div className="text-center lg:text-left">
+                    <div className="w-32 h-32 mx-auto lg:mx-0 rounded-2xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center mb-6">
+                      <span className="text-4xl font-bold text-white">TP</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-foreground mb-1">Tania Potter</h2>
+                    <p className="text-primary font-medium mb-2">Founder & Owner, Virtual OPS</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      AI Architect | Speaker | Author | Educator | Systems Strategist
+                    </p>
+                    <div className="flex items-center justify-center lg:justify-start gap-2 text-sm text-muted-foreground mb-6">
+                      <Globe className="w-4 h-4" />
+                      <span>Greater Rochester, NY (Global / Remote)</span>
+                    </div>
+                    <a 
+                      href="https://www.linkedin.com/in/taniapotter" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <span className="text-sm font-medium">Connect on LinkedIn</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div className="lg:col-span-2 space-y-4 text-muted-foreground leading-relaxed">
+                  <p>
+                    I am the Founder and Owner of Virtual OPS, a next-generation operations and AI-enabled 
+                    business infrastructure company built to serve founders, executives, nonprofits, and 
+                    growing organizations navigating complexity at scale.
+                  </p>
+                  <p>
+                    As we move into 2026, Virtual OPS is entering its next phase—the launch of our 
+                    <strong className="text-foreground"> Integration Hub</strong>, directed by our proprietary 
+                    AI operations agent, <strong className="text-foreground">VOPSy</strong>.
+                  </p>
+                  <p>
+                    This next wave is not about replacing tools—<em>it is about orchestrating them</em>.
+                  </p>
+                  <p>
+                    VOPSy is being designed as an AI Operations Director that sits above existing platforms 
+                    (finance, compliance, HR, CRM, marketing, and automation), translating fragmented data 
+                    into clarity, insight, and action. The Integration Hub will allow organizations to connect 
+                    their existing systems and finally understand how their operations are performing in 
+                    real time—without needing to be technical experts.
+                  </p>
+                </div>
+              </div>
+
+              {/* Work Domains */}
+              <div className="mt-10 pt-8 border-t border-border">
+                <p className="text-sm font-medium text-foreground mb-4">My work sits at the crossroads of:</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Cog className="w-4 h-4 text-primary" />
+                    <span>Business operations and systems architecture</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Bot className="w-4 h-4 text-primary" />
+                    <span>Artificial intelligence and ethical automation</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <GraduationCap className="w-4 h-4 text-primary" />
+                    <span>Education, teaching, and applied strategy</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Palette className="w-4 h-4 text-primary" />
+                    <span>Creative expression as a vehicle for impact</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Ventures */}
+        <section className="py-20 px-4 sm:px-6 bg-card/50">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Ventures & Leadership
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Building organizations that integrate wisdom, technology, and purpose.
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {ventures.map((venture, index) => (
+                <motion.div
+                  key={venture.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="glass rounded-xl p-6"
+                >
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-foreground">{venture.title}</h3>
+                    <p className="text-sm text-primary font-medium">{venture.role}</p>
+                    <p className="text-xs text-muted-foreground">{venture.period}</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">{venture.description}</p>
+                  <ul className="space-y-2">
+                    {venture.focus.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                        <span className="text-muted-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Speaking & Teaching */}
+        <section className="py-20 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -92,32 +288,103 @@ export default function About() {
               viewport={{ once: true }}
               className="glass gradient-border rounded-2xl p-8 sm:p-12"
             >
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">Our Story</h2>
-              <div className="space-y-4 text-muted-foreground leading-relaxed">
-                <p>
-                  We've spent over a decade working with entrepreneurs, small business owners, 
-                  and nonprofit leaders. What we found was consistent: brilliant people drowning 
-                  in operational complexity.
-                </p>
-                <p>
-                  Spreadsheets everywhere. Compliance deadlines missed. Tax season panic. 
-                  No clear view of where the money was going—or coming from.
-                </p>
-                <p>
-                  We built Virtual OPS Assist to change that. Not with more software, 
-                  but with a system—combining expert guidance, intelligent tools, and real 
-                  human support when it matters.
-                </p>
-                <p className="text-foreground font-medium">
-                  Today, we've helped over 500 businesses find clarity. And we're just getting started.
-                </p>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Mic className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Speaker | Author | Educator</h2>
+                  <p className="text-sm text-muted-foreground">Available for keynotes, workshops & trainings</p>
+                </div>
               </div>
+              
+              <div className="grid sm:grid-cols-2 gap-6 mb-8">
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-3">Speaking Topics:</p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      AI and operations strategy
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      Ethical automation and decision intelligence
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      Business systems for founders and nonprofits
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      Identity, purpose, and leadership in complex systems
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-3">Available For:</p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <Mic className="w-4 h-4 text-primary" />
+                      Keynotes
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      Workshops
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-primary" />
+                      Executive trainings
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-primary" />
+                      Faith-adjacent and secular audiences
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <Button onClick={() => navigate("/contact")} className="glow-primary-sm">
+                Book a Speaking Engagement
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </motion.div>
           </div>
         </section>
 
+        {/* Expertise */}
+        <section className="py-16 px-4 sm:px-6 bg-card/50">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-10"
+            >
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+                Areas of Expertise
+              </h2>
+            </motion.div>
+
+            <div className="flex flex-wrap justify-center gap-3">
+              {expertise.map((skill, index) => (
+                <motion.div
+                  key={skill.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border text-sm text-muted-foreground"
+                >
+                  <skill.icon className="w-4 h-4 text-primary" />
+                  {skill.label}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Values */}
-        <section className="py-20 px-4 sm:px-6 bg-card/50">
+        <section className="py-20 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -154,7 +421,7 @@ export default function About() {
         </section>
 
         {/* Timeline */}
-        <section className="py-20 px-4 sm:px-6">
+        <section className="py-20 px-4 sm:px-6 bg-card/50">
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -191,7 +458,7 @@ export default function About() {
         </section>
 
         {/* CTA */}
-        <section className="py-20 px-4 sm:px-6 bg-card/50">
+        <section className="py-20 px-4 sm:px-6">
           <div className="max-w-3xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -199,10 +466,11 @@ export default function About() {
               viewport={{ once: true }}
             >
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-                Let's Work Together
+                Ready to Work Together?
               </h2>
               <p className="text-lg text-muted-foreground mb-10">
-                Ready to bring clarity to your operations? We'd love to hear from you.
+                I speak, teach, and build for leaders who are ready for the next level—organizations 
+                that understand the future belongs to those who can integrate wisdom, technology, and purpose.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button size="lg" onClick={() => navigate("/contact")} className="glow-primary text-lg px-8 h-14">
