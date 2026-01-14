@@ -18,6 +18,8 @@ import {
   Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PublicNav } from "@/components/layout/PublicNav";
+import { PublicFooter } from "@/components/layout/PublicFooter";
 
 // Operating paths for path selection
 const operatingPaths = [
@@ -93,13 +95,13 @@ export default function Landing() {
   return (
     <>
       <Helmet>
-        <title>Virtual OPS Hub | Operations, Finance & Compliance Made Simple</title>
-        <meta name="description" content="Stop juggling spreadsheets. Virtual OPS Hub brings operations, bookkeeping, and compliance into one AI-powered platform. Built for entrepreneurs and nonprofits. Start free today." />
-        <meta property="og:title" content="Finally, One Platform for Everything You Run" />
+        <title>Virtual OPS Assist | Operations, Finance & Compliance Made Simple</title>
+        <meta name="description" content="Stop juggling spreadsheets. Virtual OPS Assist brings operations, bookkeeping, and compliance into one place. Built for entrepreneurs and nonprofits. Start free today." />
+        <meta property="og:title" content="Finally, One Place for Everything You Run" />
         <meta property="og:description" content="Operations, finance, and compliance—integrated. Built for people who carry responsibility. Start free." />
         <meta property="og:image" content="https://virtualopsassist.com/og-home.png" />
         <meta property="og:url" content="https://virtualopsassist.com/" />
-        <meta name="twitter:title" content="Finally, One Platform for Everything You Run" />
+        <meta name="twitter:title" content="Finally, One Place for Everything You Run" />
         <meta name="twitter:description" content="Operations, finance, and compliance—integrated. Built for people who carry responsibility." />
         <meta name="twitter:image" content="https://virtualopsassist.com/og-home.png" />
         <link rel="canonical" href="https://virtualopsassist.com/" />
@@ -112,25 +114,7 @@ export default function Landing() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/5 to-transparent rounded-full" />
       </div>
 
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            </div>
-            <span className="text-lg sm:text-xl font-bold text-foreground">Virtual OPS Hub</span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="hidden sm:flex">
-              Sign In
-            </Button>
-            <Button size="sm" onClick={() => navigate("/auth?mode=signup")} className="glow-primary-sm text-sm sm:text-base">
-              Get Started
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero Section */}
       <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
@@ -414,20 +398,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8 sm:py-12 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-            </div>
-            <span className="text-xs sm:text-sm text-muted-foreground">© 2024 Virtual OPS Hub</span>
-          </div>
-          <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
-            <span>Powered by VOPSy AI</span>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
     </>
   );
