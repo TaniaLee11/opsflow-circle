@@ -28,8 +28,8 @@ const contactInfo = [
   {
     icon: Phone,
     label: "Phone",
-    value: "(555) 123-4567",
-    href: "tel:+15551234567"
+    value: "(585) 315-1484",
+    href: "tel:+15853151484"
   },
   {
     icon: Clock,
