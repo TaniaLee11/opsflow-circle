@@ -15,17 +15,17 @@
         stroke-linejoin="round"
         fill="none"/>
   
-  <!-- "Virtual" text - white -->
+  <!-- "Virtual" text -->
   <text x="28" y="18" 
         font-family="system-ui, -apple-system, sans-serif" 
         font-size="11" 
         font-weight="400"
-        fill="#ffffff">Virtual</text>
+        fill="currentColor">Virtual</text>
   
-  <!-- "OPS" text - white -->
+  <!-- "OPS" text -->
   <text x="48" y="50" 
         font-family="system-ui, -apple-system, sans-serif" 
         font-size="26" 
         font-weight="700"
-        fill="#ffffff">OPS</text>
+        fill="currentColor">OPS</text>
 </svg>
