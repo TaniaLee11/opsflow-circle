@@ -297,7 +297,22 @@ export default function Integrations() {
         body: { provider },
       });
 
-      if (error) throw error;
+      // Handle response
+      let body: any = data;
+      if (!body && error && typeof (error as any).context?.json === "function") {
+        body = await (error as any).context.json().catch(() => null);
+      }
+
+      const errorMessage = body?.error || (error instanceof Error ? error.message : null);
+      
+      if (errorMessage) {
+        // Check for credentials not configured
+        if (errorMessage.toLowerCase().includes("credentials not configured")) {
+          toast.error(`${integration.name} is not configured yet. Contact your admin to set up OAuth credentials.`);
+          return;
+        }
+        throw new Error(errorMessage);
+      }
 
       if (data?.url) {
         window.location.href = data.url;
