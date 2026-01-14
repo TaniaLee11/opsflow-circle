@@ -69,15 +69,7 @@ export function PublicNav() {
           ))}
         </div>
 
-        {/* Desktop CTA */}
-        <div className="hidden lg:flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
-            Sign In
-          </Button>
-          <Button size="sm" onClick={() => navigate("/auth?mode=signup")} className="glow-primary-sm">
-            Get Started
-          </Button>
-        </div>
+        {/* Desktop CTA - Removed, sign in/get started available on Hub page */}
 
         {/* Mobile Menu Button */}
         <button
@@ -128,21 +120,7 @@ export function PublicNav() {
                   </button>
                 )
               ))}
-              <div className="pt-4 border-t border-border/50 space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={() => { navigate("/auth"); setMobileMenuOpen(false); }}
-                >
-                  Sign In
-                </Button>
-                <Button 
-                  className="w-full glow-primary-sm" 
-                  onClick={() => { navigate("/auth?mode=signup"); setMobileMenuOpen(false); }}
-                >
-                  Get Started
-                </Button>
-              </div>
+              {/* Sign in/get started available on Hub page */}
             </div>
           </motion.div>
         )}

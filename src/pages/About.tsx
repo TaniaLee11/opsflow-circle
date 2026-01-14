@@ -66,43 +66,10 @@ const expertise = [
   { icon: Sparkles, label: "Ethical AI Implementation" },
 ];
 
-const ventures = [
-  {
-    title: "Virtual OPS",
-    role: "Founder & Owner",
-    period: "2019 – Present",
-    description: "AI-enabled operations, finance, compliance, and automation services for founders, executives, nonprofits, and enterprises.",
-    focus: [
-      "Virtual OPS Integration Hub",
-      "AI-directed operations via VOPSy",
-      "Tool-agnostic architecture",
-      "Executive-level dashboards",
-      "Scalable operations infrastructure"
-    ]
-  },
-  {
-    title: "Overcome Inc",
-    role: "Founder & Executive Director",
-    period: "Ongoing",
-    description: "Mission-driven organization focused on empowerment, creative expression, education, and systems awareness.",
-    focus: [
-      "Live-stream programming",
-      "Faith-adjacent, purpose-driven content",
-      "Community-centered initiatives"
-    ]
-  },
-  {
-    title: "TL Productions",
-    role: "Founder",
-    period: "Launching 2026",
-    description: "Creative studio and publishing platform for modern leaders navigating identity, faith, systems, and innovation.",
-    focus: [
-      "Spoken word and music projects",
-      "Teaching content and curriculum",
-      "Film and visual storytelling",
-      "Thought leadership publishing"
-    ]
-  }
+// Other ventures - mentioned briefly as context
+const otherVentures = [
+  { name: "Overcome Inc", description: "Mission-driven organization focused on empowerment and community programming" },
+  { name: "TL Productions", description: "Creative studio launching in 2026" }
 ];
 
 export default function About() {
@@ -232,50 +199,54 @@ export default function About() {
           </div>
         </section>
 
-        {/* Ventures */}
+        {/* Virtual OPS Focus */}
         <section className="py-20 px-4 sm:px-6 bg-card/50">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-16"
+              className="glass gradient-border rounded-2xl p-8 sm:p-12"
             >
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Ventures & Leadership
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Building organizations that integrate wisdom, technology, and purpose.
-              </p>
-            </motion.div>
+              <div className="text-center mb-8">
+                <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                  Virtual OPS
+                </h2>
+                <p className="text-primary font-medium">Founded 2019 – Present</p>
+              </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              {ventures.map((venture, index) => (
-                <motion.div
-                  key={venture.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="glass rounded-xl p-6"
-                >
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold text-foreground">{venture.title}</h3>
-                    <p className="text-sm text-primary font-medium">{venture.role}</p>
-                    <p className="text-xs text-muted-foreground">{venture.period}</p>
+              <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-8">
+                AI-enabled operations, finance, compliance, and automation services for founders, 
+                executives, nonprofits, and enterprises.
+              </p>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  "Virtual OPS Integration Hub",
+                  "AI-directed operations via VOPSy",
+                  "Tool-agnostic architecture",
+                  "Executive-level dashboards",
+                  "Scalable operations infrastructure"
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
+                    <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-sm text-muted-foreground">{item}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">{venture.description}</p>
-                  <ul className="space-y-2">
-                    {venture.focus.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm">
-                        <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-                        <span className="text-muted-foreground">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
+
+              {/* Other ventures - brief mention */}
+              <div className="mt-10 pt-8 border-t border-border text-center">
+                <p className="text-xs text-muted-foreground mb-3">Also leading:</p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {otherVentures.map((venture) => (
+                    <span key={venture.name} className="text-sm text-muted-foreground">
+                      {venture.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
 
