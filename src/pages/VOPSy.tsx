@@ -94,6 +94,7 @@ export default function VOPSy() {
   const [input, setInput] = useState("");
   const [isInboxLoading, setIsInboxLoading] = useState(false);
   const [isDrafting, setIsDrafting] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
@@ -104,10 +105,13 @@ export default function VOPSy() {
     analyzeInbox, 
     formatAnalysisForChat, 
     draftReply,
+    sendDraft,
+    clearDraft,
     formatDraftForChat,
     getEmailByNumber,
     findEmailByKeyword,
     analysis: currentAnalysis,
+    currentDraft,
     status: inboxStatus 
   } = useInboxIntelligence();
 
@@ -182,6 +186,48 @@ export default function VOPSy() {
 
     return { isDraft: true, emailNum, keyword, tone };
   }, []);
+
+  // Check if message is a send request
+  const isSendRequest = useCallback((text: string): boolean => {
+    const lower = text.toLowerCase();
+    const sendPatterns = [
+      'send it', 'send this', 'send the email', 'send the reply', 'send the draft',
+      'go ahead and send', 'yes send', 'please send', 'send now', 'ship it',
+      'looks good send', 'send away', 'fire it off', 'deliver it'
+    ];
+    return sendPatterns.some(pattern => lower.includes(pattern));
+  }, []);
+
+  // Handle send request
+  const handleSendRequest = useCallback(async () => {
+    if (!currentDraft) {
+      addAssistantMessage(`📝 I don't have a draft ready to send. Would you like me to draft a reply to one of your emails first?`);
+      return;
+    }
+
+    setIsSendingEmail(true);
+    addAssistantMessage(`📤 Sending your reply...`);
+
+    const result = await sendDraft();
+    
+    if (result.success) {
+      addAssistantMessage(`✅ **Email sent successfully!**
+
+Your reply has been delivered. Is there anything else you'd like me to help with?
+
+• Check for more emails to respond to
+• Draft another reply
+• Something else entirely`);
+    } else {
+      addAssistantMessage(`❌ **Couldn't send the email**
+
+${result.error || 'An unexpected error occurred.'}
+
+Would you like me to try again, or would you prefer to make changes to the draft first?`);
+    }
+
+    setIsSendingEmail(false);
+  }, [currentDraft, sendDraft, addAssistantMessage]);
 
   // Handle draft request
   const handleDraftRequest = useCallback(async (emailNum?: number, keyword?: string, tone: 'professional' | 'friendly' | 'brief' | 'detailed' = 'professional') => {
@@ -273,10 +319,18 @@ Want me to help with something else in the meantime?`;
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || isInboxLoading || isDrafting) return;
+    if (!input.trim() || isLoading || isInboxLoading || isDrafting || isSendingEmail) return;
     stopListening();
     const message = input.trim();
     setInput("");
+
+    // Check if this is a send request
+    if (isSendRequest(message)) {
+      await sendMessage(message, true);
+      await handleSendRequest();
+      textareaRef.current?.focus();
+      return;
+    }
 
     // Check if this is a draft request
     const draftCheck = isDraftRequest(message);
