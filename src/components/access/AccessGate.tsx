@@ -3,6 +3,7 @@ import { Loader2, Lock, Clock, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, AccessType } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AccessGateProps {
   children: React.ReactNode;
@@ -136,7 +137,10 @@ export function AccessGate({
             </button>
             
             <button
-              onClick={() => navigate("/")}
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/");
+              }}
               className="w-full px-6 py-3 rounded-xl bg-muted text-muted-foreground font-medium hover:bg-muted/80 transition-colors"
             >
               Sign Out
