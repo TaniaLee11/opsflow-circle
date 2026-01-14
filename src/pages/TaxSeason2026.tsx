@@ -8,7 +8,6 @@ import {
   User,
   Heart,
   CheckCircle2,
-  AlertTriangle,
   Clock,
   FileText,
   Zap,
@@ -16,82 +15,171 @@ import {
   DollarSign,
   Shield,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Star,
+  Users,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-// Tax deadline data
-const taxDeadlines = [
+// Calculate days until deadline
+const getDaysUntil = (dateStr: string) => {
+  const deadline = new Date(dateStr);
+  const today = new Date();
+  const diffTime = deadline.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+// Tax deadline data with CTAs and engaging copy
+const taxSlides = [
+  {
+    id: "welcome",
+    type: "intro",
+    title: "Tax Season 2026",
+    subtitle: "Your Complete Filing Guide",
+    icon: Calendar,
+    color: "from-primary to-primary/70",
+    headline: "Know Your Deadlines. File with Confidence.",
+    description: "We've helped hundreds of businesses and nonprofits file on time with zero stress. Here's everything you need to know for 2026.",
+    stats: [
+      { value: "500+", label: "Clients Served" },
+      { value: "99.8%", label: "On-Time Filing Rate" },
+      { value: "12+", label: "Years Experience" }
+    ],
+    cta: "See What's Coming →",
+    ctaAction: "next"
+  },
   {
     id: "irs-opens",
-    title: "IRS E-File Opening Dates",
+    type: "info",
+    title: "IRS E-File Opens",
+    subtitle: "Mark Your Calendar",
     icon: Calendar,
     color: "from-blue-500 to-cyan-400",
+    headline: "Get Ready to File Early",
+    description: "Early filers often receive refunds faster and have more time to address any issues. Our team is ready to help you file as soon as systems open.",
     items: [
-      { date: "January 13, 2026", time: "9 a.m. ET", description: "Business returns & Nonprofit returns" },
-      { date: "January 26, 2026", description: "Individual tax returns (Form 1040)" }
+      { date: "January 13, 2026", badge: "Business & Nonprofits", description: "E-file opens at 9 a.m. ET for business returns" },
+      { date: "January 26, 2026", badge: "Individuals", description: "Form 1040 e-filing begins" }
     ],
-    warning: "IRS systems shut down for maintenance starting Dec 26, 2025"
+    tip: "💡 Pro tip: Gather your documents now so you're ready to file Day 1.",
+    cta: "Get Your Documents Ready",
+    ctaAction: "signup"
   },
   {
     id: "partnerships",
+    type: "deadline",
     title: "Partnerships & S Corps",
     subtitle: "Form 1065 & 1120-S",
     icon: Building2,
     color: "from-purple-500 to-pink-400",
     deadline: "March 15, 2026",
     extension: "September 15, 2026",
-    note: "Multi-member LLCs file here"
+    headline: "First Major Deadline of the Year",
+    description: "Multi-member LLCs and S Corps file here. Our clients appreciate that we handle the complexity so they can focus on running their business.",
+    testimonial: {
+      quote: "They made our first S Corp filing feel effortless.",
+      author: "Sarah K., Tech Startup Founder"
+    },
+    cta: "Let's Get You Filed",
+    ctaAction: "signup"
   },
   {
     id: "c-corps",
+    type: "deadline",
     title: "C Corporations",
     subtitle: "Form 1120",
     icon: Factory,
     color: "from-orange-500 to-amber-400",
     deadline: "April 15, 2026",
     extension: "October 15, 2026",
-    note: "Taxes owed are still due by April 15"
+    headline: "Corporate Filing Made Simple",
+    description: "C Corp taxes can be complex, but they don't have to be stressful. We handle the details while keeping you informed every step of the way.",
+    note: "Remember: Taxes owed are still due April 15, even with an extension.",
+    testimonial: {
+      quote: "Finally, a team that explains things in plain English.",
+      author: "Michael R., Manufacturing CEO"
+    },
+    cta: "Schedule Your Review",
+    ctaAction: "signup"
   },
   {
     id: "individuals",
-    title: "Individuals & Sole Proprietors",
+    type: "deadline",
+    title: "Individuals & Sole Props",
     subtitle: "Form 1040 + Schedule C",
     icon: User,
     color: "from-emerald-500 to-teal-400",
     deadline: "April 15, 2026",
     extension: "October 15, 2026",
-    note: "Schedule C does not change your deadline"
+    headline: "Personal Taxes, Professional Care",
+    description: "Whether you're a freelancer, consultant, or have a side hustle, your Schedule C gets the same attention we give to our biggest clients.",
+    note: "Schedule C doesn't change your filing deadline—plan accordingly!",
+    testimonial: {
+      quote: "I went from dreading tax season to actually feeling prepared.",
+      author: "Jordan T., Freelance Designer"
+    },
+    cta: "Start Your Return",
+    ctaAction: "signup"
   },
   {
     id: "nonprofits",
-    title: "Nonprofits (Calendar-Year)",
+    type: "deadline",
+    title: "Nonprofits",
     subtitle: "Form 990 / 990-EZ / 990-N",
     icon: Heart,
     color: "from-rose-500 to-red-400",
     deadline: "May 15, 2026",
     extension: "November 15, 2026",
-    note: "Missing this can risk penalties or status issues"
+    headline: "Protect Your Mission",
+    description: "Your Form 990 is more than compliance—it's transparency. We help nonprofits maintain good standing so they can keep doing great work.",
+    note: "Calendar-year organizations: This is your deadline.",
+    testimonial: {
+      quote: "They understand nonprofits. That makes all the difference.",
+      author: "Lisa M., Executive Director"
+    },
+    cta: "Secure Your Filing",
+    ctaAction: "signup"
+  },
+  {
+    id: "final-cta",
+    type: "cta",
+    title: "You're Ready",
+    icon: Sparkles,
+    color: "from-primary to-accent",
+    headline: "File with a Team That Cares",
+    description: "Join the businesses and nonprofits who trust Virtual OPS Hub for stress-free tax seasons and year-round compliance.",
+    services: [
+      { icon: BookOpen, text: "Bookkeeping & Cleanup" },
+      { icon: DollarSign, text: "Payroll & W-2s" },
+      { icon: Shield, text: "Business Compliance" },
+      { icon: FileText, text: "Form 990 Support" },
+      { icon: CheckCircle2, text: "Tax-Ready Financials" }
+    ],
+    cta: "Get Started Today",
+    ctaAction: "signup"
   }
-];
-
-// Services offered
-const services = [
-  { icon: BookOpen, text: "Bookkeeping & cleanup" },
-  { icon: DollarSign, text: "Payroll & W-2s" },
-  { icon: Shield, text: "Business & nonprofit compliance" },
-  { icon: FileText, text: "Form 990 support" },
-  { icon: CheckCircle2, text: "Tax-ready financials" }
 ];
 
 export default function TaxSeason2026() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = taxDeadlines.length + 1; // +1 for CTA slide
+  const totalSlides = taxSlides.length;
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+
+  const handleCTA = (action: string) => {
+    if (action === "next") {
+      nextSlide();
+    } else if (action === "signup") {
+      navigate("/auth?mode=signup");
+    }
+  };
+
+  const currentSlideData = taxSlides[currentSlide];
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
@@ -122,179 +210,191 @@ export default function TaxSeason2026() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-24 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 sm:mb-8">
-              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-              <span className="text-xs sm:text-sm text-primary font-medium">2026 Tax Season</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 sm:mb-6 leading-tight">
-              What Opens & When to File
-              <span className="text-gradient block mt-1 sm:mt-2">For 2025 Income</span>
-            </h1>
-
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 px-4">
-              Businesses • Nonprofits • Individuals
-            </p>
-
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <span>👉 Swipe through to stay compliant</span>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Carousel Section */}
-      <section className="py-8 sm:py-12 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
+      {/* Main Carousel Section */}
+      <section className="min-h-screen flex items-center justify-center pt-16 pb-8 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto w-full">
           {/* Carousel Container */}
           <div className="relative">
             {/* Navigation Buttons */}
             <button 
               onClick={prevSlide}
-              className="absolute left-0 sm:-left-12 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-card/80 border border-border hover:bg-card transition-colors"
+              className="absolute left-0 sm:-left-16 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full bg-card/80 border border-border hover:bg-card hover:border-primary/30 transition-all"
+              aria-label="Previous slide"
             >
               <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
             </button>
             <button 
               onClick={nextSlide}
-              className="absolute right-0 sm:-right-12 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-card/80 border border-border hover:bg-card transition-colors"
+              className="absolute right-0 sm:-right-16 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full bg-card/80 border border-border hover:bg-card hover:border-primary/30 transition-all"
+              aria-label="Next slide"
             >
               <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
             </button>
 
             {/* Slides */}
-            <div className="overflow-hidden">
+            <div className="overflow-hidden rounded-2xl">
               <motion.div
                 className="flex"
                 animate={{ x: `-${currentSlide * 100}%` }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
-                {/* Tax Deadline Slides */}
-                {taxDeadlines.map((deadline, index) => (
-                  <div key={deadline.id} className="w-full flex-shrink-0 px-2 sm:px-4">
+                {taxSlides.map((slide, index) => (
+                  <div key={slide.id} className="w-full flex-shrink-0 px-2 sm:px-4">
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="glass gradient-border rounded-2xl p-6 sm:p-8 md:p-10 min-h-[400px] flex flex-col"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="glass gradient-border rounded-2xl p-6 sm:p-8 md:p-10 min-h-[550px] sm:min-h-[500px] flex flex-col"
                     >
-                      {/* Header */}
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${deadline.color} flex items-center justify-center`}>
-                          <deadline.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                      {/* Slide Header */}
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${slide.color} flex items-center justify-center shadow-lg`}>
+                            <slide.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                          </div>
+                          <div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-foreground">{slide.title}</h2>
+                            {slide.subtitle && (
+                              <p className="text-sm text-muted-foreground">{slide.subtitle}</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <h2 className="text-xl sm:text-2xl font-bold text-foreground">{deadline.title}</h2>
-                          {deadline.subtitle && (
-                            <p className="text-sm text-muted-foreground">({deadline.subtitle})</p>
-                          )}
-                        </div>
+                        
+                        {/* Deadline Badge */}
+                        {slide.type === "deadline" && slide.deadline && (
+                          <div className="hidden sm:flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground uppercase tracking-wide">File By</span>
+                            <span className="text-lg font-bold text-primary">{slide.deadline}</span>
+                            {getDaysUntil(slide.deadline) > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {getDaysUntil(slide.deadline)} days remaining
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Content */}
-                      <div className="flex-1 space-y-4">
-                        {deadline.items ? (
-                          // IRS Opening dates format
-                          <>
-                            {deadline.items.map((item, i) => (
-                              <div key={i} className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50">
+                      {/* Slide Content */}
+                      <div className="flex-1 flex flex-col">
+                        {/* Headline */}
+                        <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
+                          {slide.headline}
+                        </h3>
+                        
+                        {/* Description */}
+                        <p className="text-base sm:text-lg text-muted-foreground mb-6">
+                          {slide.description}
+                        </p>
+
+                        {/* Type-specific content */}
+                        {slide.type === "intro" && slide.stats && (
+                          <div className="grid grid-cols-3 gap-4 mb-6">
+                            {slide.stats.map((stat, i) => (
+                              <div key={i} className="text-center p-4 rounded-xl bg-secondary/50">
+                                <div className="text-2xl sm:text-3xl font-bold text-primary">{stat.value}</div>
+                                <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {slide.type === "info" && slide.items && (
+                          <div className="space-y-3 mb-6">
+                            {slide.items.map((item, i) => (
+                              <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-secondary/50 border border-border">
                                 <Calendar className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                                <div>
-                                  <p className="font-semibold text-foreground">
-                                    {item.date} {item.time && <span className="text-primary">({item.time})</span>}
-                                  </p>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-semibold text-foreground">{item.date}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">{item.badge}</span>
+                                  </div>
                                   <p className="text-sm text-muted-foreground">{item.description}</p>
                                 </div>
                               </div>
                             ))}
-                            {deadline.warning && (
-                              <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                                <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
-                                <p className="text-sm text-destructive">{deadline.warning}</p>
-                              </div>
+                            {slide.tip && (
+                              <p className="text-sm text-primary font-medium mt-4">{slide.tip}</p>
                             )}
-                          </>
-                        ) : (
-                          // Standard deadline format
-                          <>
-                            <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/50">
+                          </div>
+                        )}
+
+                        {slide.type === "deadline" && (
+                          <div className="space-y-4 mb-6">
+                            {/* Mobile deadline display */}
+                            <div className="sm:hidden flex items-center gap-3 p-4 rounded-xl bg-primary/10 border border-primary/20">
                               <Calendar className="w-5 h-5 text-primary shrink-0" />
                               <div>
                                 <p className="text-sm text-muted-foreground">File by:</p>
-                                <p className="text-xl font-bold text-foreground">{deadline.deadline}</p>
+                                <p className="text-xl font-bold text-foreground">{slide.deadline}</p>
+                                {getDaysUntil(slide.deadline!) > 0 && (
+                                  <p className="text-xs text-primary">{getDaysUntil(slide.deadline!)} days remaining</p>
+                                )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/50">
-                              <Clock className="w-5 h-5 text-primary shrink-0" />
+
+                            {/* Extension info */}
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/50 border border-border">
+                              <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
                               <div>
-                                <p className="text-sm text-muted-foreground">Extension deadline:</p>
-                                <p className="text-xl font-bold text-foreground">{deadline.extension}</p>
+                                <p className="text-sm text-muted-foreground">Extension available until:</p>
+                                <p className="text-lg font-semibold text-foreground">{slide.extension}</p>
                               </div>
                             </div>
-                            {deadline.note && (
-                              <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
+
+                            {/* Note */}
+                            {slide.note && (
+                              <div className="flex items-start gap-3 p-4 rounded-xl bg-secondary/30 border border-border">
                                 <FileText className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                                <p className="text-sm text-foreground">{deadline.note}</p>
+                                <p className="text-sm text-foreground">{slide.note}</p>
                               </div>
                             )}
-                          </>
+
+                            {/* Testimonial */}
+                            {slide.testimonial && (
+                              <div className="p-4 rounded-xl bg-card border border-border">
+                                <div className="flex items-center gap-1 mb-2">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                                  ))}
+                                </div>
+                                <p className="text-sm italic text-foreground mb-2">"{slide.testimonial.quote}"</p>
+                                <p className="text-xs text-muted-foreground">— {slide.testimonial.author}</p>
+                              </div>
+                            )}
+                          </div>
                         )}
+
+                        {slide.type === "cta" && slide.services && (
+                          <div className="mb-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                              {slide.services.map((service, i) => (
+                                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 border border-border">
+                                  <service.icon className="w-5 h-5 text-primary shrink-0" />
+                                  <span className="text-sm font-medium text-foreground">{service.text}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Users className="w-4 h-4" />
+                              <span>Built for entrepreneurs, nonprofits, and founders who value peace of mind.</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CTA Button - Always at bottom */}
+                        <div className="mt-auto pt-4">
+                          <Button 
+                            size="lg" 
+                            onClick={() => handleCTA(slide.ctaAction || "signup")} 
+                            className="glow-primary text-base sm:text-lg px-8 h-12 sm:h-14 w-full sm:w-auto"
+                          >
+                            {slide.cta}
+                            <ArrowRight className="w-5 h-5 ml-2" />
+                          </Button>
+                        </div>
                       </div>
                     </motion.div>
                   </div>
                 ))}
-
-                {/* CTA Slide */}
-                <div className="w-full flex-shrink-0 px-2 sm:px-4">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="glass gradient-border rounded-2xl p-6 sm:p-8 md:p-10 min-h-[400px] flex flex-col"
-                  >
-                    <div className="flex-1 flex flex-col items-center justify-center text-center">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6">
-                        <CheckCircle2 className="w-8 h-8 text-primary" />
-                      </div>
-                      
-                      <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                        Don't Just File — Stay Compliant All Year
-                      </h2>
-
-                      <p className="text-muted-foreground mb-6 max-w-lg">
-                        Virtual OPS Hub helps you with:
-                      </p>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 w-full max-w-md">
-                        {services.map((service, i) => (
-                          <div key={i} className="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                            <service.icon className="w-4 h-4 text-primary shrink-0" />
-                            <span className="text-sm text-foreground">{service.text}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <p className="text-sm text-muted-foreground mb-6">
-                        💼 Built for entrepreneurs, nonprofits, and founders who want peace of mind.
-                      </p>
-
-                      <Button 
-                        size="lg" 
-                        onClick={() => navigate("/auth?mode=signup")} 
-                        className="glow-primary text-base sm:text-lg px-8 h-14"
-                      >
-                        Get Organized Before Deadlines Hit
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                </div>
               </motion.div>
             </div>
 
@@ -304,19 +404,25 @@ export default function TaxSeason2026() {
                 <button
                   key={i}
                   onClick={() => setCurrentSlide(i)}
-                  className={`w-2 h-2 rounded-full transition-all ${
+                  className={`h-2 rounded-full transition-all ${
                     i === currentSlide 
                       ? "w-8 bg-primary" 
-                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                      : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                   }`}
+                  aria-label={`Go to slide ${i + 1}`}
                 />
               ))}
+            </div>
+
+            {/* Slide Counter */}
+            <div className="text-center mt-4 text-sm text-muted-foreground">
+              {currentSlide + 1} of {totalSlides}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Quick Reference Grid */}
+      {/* Quick Reference Section */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 bg-card/50">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -326,69 +432,92 @@ export default function TaxSeason2026() {
             className="text-center mb-8 sm:mb-12"
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-              Quick Reference: All 2026 Deadlines
+              2026 Filing Deadlines at a Glance
             </h2>
             <p className="text-muted-foreground">
-              Bookmark this page to stay on track
+              Save this page—we'll help you stay on track
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {taxDeadlines.filter(d => d.deadline).map((deadline, index) => (
-              <motion.div
-                key={deadline.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="glass rounded-xl p-5 border border-border hover:border-primary/30 transition-colors"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${deadline.color} flex items-center justify-center`}>
-                    <deadline.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground text-sm">{deadline.title}</h3>
-                    <p className="text-xs text-muted-foreground">{deadline.subtitle}</p>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">File by:</span>
-                    <span className="font-semibold text-foreground">{deadline.deadline}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Extension:</span>
-                    <span className="font-semibold text-foreground">{deadline.extension}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {taxSlides
+              .filter((s): s is typeof s & { deadline: string; extension: string } => s.type === "deadline")
+              .map((slide, index) => {
+                const daysLeft = getDaysUntil(slide.deadline);
+                return (
+                  <motion.div
+                    key={slide.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    className="glass rounded-xl p-5 border border-border hover:border-primary/30 transition-all group cursor-pointer"
+                    onClick={() => navigate("/auth?mode=signup")}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${slide.color} flex items-center justify-center`}>
+                        <slide.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground text-sm">{slide.title}</h3>
+                        <p className="text-xs text-muted-foreground">{slide.subtitle}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">File by:</span>
+                        <span className="font-semibold text-foreground">{slide.deadline}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Extension:</span>
+                        <span className="text-muted-foreground">{slide.extension}</span>
+                      </div>
+                    </div>
+
+                    {daysLeft > 0 && (
+                      <div className="text-center py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium">
+                        {daysLeft} days to prepare
+                      </div>
+                    )}
+                    
+                    <div className="mt-3 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                      Click to get started →
+                    </div>
+                  </motion.div>
+                );
+              })}
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/* Trust Section */}
       <section className="py-16 sm:py-20 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+              <CheckCircle2 className="w-4 h-4 text-primary" />
+              <span className="text-sm text-primary font-medium">Trusted by 500+ Businesses</span>
+            </div>
+
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 sm:mb-6">
-              Ready to Get Tax-Ready?
+              Ready When You Are
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground mb-8">
-              Join entrepreneurs and nonprofits who trust Virtual OPS Hub for year-round compliance.
+            <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Whether you're filing early or need an extension, our team is here to help you every step of the way. No pressure—just reliable support.
             </p>
+            
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button 
                 size="lg" 
                 onClick={() => navigate("/auth?mode=signup")} 
                 className="glow-primary text-lg px-8 h-14 w-full sm:w-auto"
               >
-                Get Started Free
+                Start Your 2026 Filing
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               <Button 
@@ -397,7 +526,7 @@ export default function TaxSeason2026() {
                 onClick={() => navigate("/")} 
                 className="text-lg px-8 h-14 w-full sm:w-auto"
               >
-                Learn More About Us
+                Learn About Our Services
               </Button>
             </div>
           </motion.div>
@@ -406,20 +535,15 @@ export default function TaxSeason2026() {
 
       {/* Footer */}
       <footer className="py-8 px-4 sm:px-6 border-t border-border">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-foreground">Virtual OPS Hub</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              © 2026 Virtual OPS Hub. All rights reserved.
-            </p>
-            <div className="flex gap-2 flex-wrap justify-center">
-              <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">#VirtualOPSHub</span>
-              <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">#TaxSeason2026</span>
-              <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">#NonprofitCompliance</span>
-            </div>
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+          <p>© 2026 Virtual OPS Hub. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">
+              Home
+            </button>
+            <button onClick={() => navigate("/auth")} className="hover:text-foreground transition-colors">
+              Sign In
+            </button>
           </div>
         </div>
       </footer>
