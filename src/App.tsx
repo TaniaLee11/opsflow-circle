@@ -27,6 +27,7 @@ import UserPortal from "./pages/UserPortal";
 import IntegrationCallback from "./pages/IntegrationCallback";
 import Workflows from "./pages/Workflows";
 import Settings from "./pages/Settings";
+import TaxSeason2026 from "./pages/TaxSeason2026";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <ClientViewBanner />
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/select-tier" element={<TierSelection />} />
