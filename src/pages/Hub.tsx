@@ -11,7 +11,13 @@ import {
   GraduationCap,
   Bot,
   HeartHandshake,
-  Sparkles
+  Sparkles,
+  MessageCircle,
+  TrendingUp,
+  Receipt,
+  Calendar,
+  FileText,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
@@ -90,6 +96,45 @@ const howItWorks = [
     step: "04",
     title: "Grow without chaos",
     description: "As you scale, your systems scale with you. No rebuilding required."
+  }
+];
+
+const vopsyDemoPrompts = [
+  {
+    icon: TrendingUp,
+    label: "Cash Flow",
+    prompt: "Analyze my cash flow and runway. What's my current financial position?",
+    color: "from-emerald-500 to-teal-500"
+  },
+  {
+    icon: Receipt,
+    label: "Tax Planning",
+    prompt: "Help me with tax planning. What are my estimated quarterly taxes and upcoming deadlines?",
+    color: "from-primary to-orange-400"
+  },
+  {
+    icon: Calendar,
+    label: "Compliance",
+    prompt: "What compliance deadlines do I have coming up this quarter?",
+    color: "from-blue-500 to-indigo-500"
+  },
+  {
+    icon: FileText,
+    label: "Bookkeeping",
+    prompt: "Walk me through organizing my bookkeeping. Where should I start?",
+    color: "from-purple-500 to-pink-500"
+  },
+  {
+    icon: Shield,
+    label: "Nonprofit",
+    prompt: "I run a nonprofit. What compliance requirements should I be aware of?",
+    color: "from-amber-500 to-orange-500"
+  },
+  {
+    icon: MessageCircle,
+    label: "Get Started",
+    prompt: "I'm new here. What can you help me with?",
+    color: "from-cyan-500 to-blue-500"
   }
 ];
 
@@ -250,6 +295,68 @@ export default function Hub() {
                   <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Meet VOPSy - Interactive Demo */}
+        <section className="py-20 px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/30 rounded-full blur-2xl scale-150" />
+                  <VOPSyMascot size="lg" className="relative z-10" />
+                </div>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Meet VOPSy
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Your AI-powered operations assistant. Available 24/7 to answer questions, 
+                guide you through financial tasks, and keep you on track. Try asking:
+              </p>
+            </motion.div>
+
+            {/* Interactive Demo Prompts */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+              {vopsyDemoPrompts.map((item, index) => (
+                <motion.button
+                  key={item.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08 }}
+                  onClick={() => navigate(`/vopsy?prompt=${encodeURIComponent(item.prompt)}`)}
+                  className="group glass rounded-xl p-5 text-left hover:border-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center mb-3 group-hover:shadow-lg transition-shadow`}>
+                    <item.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <p className="font-medium text-foreground mb-1">{item.label}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">"{item.prompt}"</p>
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <Button 
+                size="lg" 
+                onClick={() => navigate("/vopsy")} 
+                className="glow-primary text-lg px-8 h-14"
+              >
+                <Bot className="w-5 h-5 mr-2" />
+                Chat with VOPSy
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+              <p className="text-sm text-muted-foreground mt-4">
+                Free tier includes AI assistant access
+              </p>
             </div>
           </div>
         </section>
