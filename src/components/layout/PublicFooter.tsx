@@ -34,9 +34,15 @@ export function PublicFooter() {
               </div>
               <span className="font-bold text-foreground">Virtual OPS Assist</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
               Operations, bookkeeping, and compliance—expertly managed, all in one place.
             </p>
+            <a 
+              href="mailto:info@virtualopsassist.com" 
+              className="text-sm text-primary hover:text-primary/80 transition-colors"
+            >
+              info@virtualopsassist.com
+            </a>
           </div>
 
           {/* Company */}
