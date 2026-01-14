@@ -9,6 +9,10 @@ import { UserTierProvider } from "@/contexts/UserTierContext";
 import { ClientViewProvider } from "@/contexts/ClientViewContext";
 import { ClientViewBanner } from "@/components/client-view/ClientViewBanner";
 import Landing from "./pages/Landing";
+import Hub from "./pages/Hub";
+import About from "./pages/About";
+import Services from "./pages/Services";
+import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
@@ -45,6 +49,10 @@ const App = () => (
                 <ClientViewBanner />
                 <Routes>
                   <Route path="/" element={<Landing />} />
+                  <Route path="/hub" element={<Hub />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/contact" element={<Contact />} />
                   <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/onboarding" element={<Onboarding />} />
