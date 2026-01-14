@@ -3,11 +3,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UserTierProvider } from "@/contexts/UserTierContext";
 import { ClientViewProvider } from "@/contexts/ClientViewContext";
 import { ClientViewBanner } from "@/components/client-view/ClientViewBanner";
+import { SiteChatWidget } from "@/components/chat/SiteChatWidget";
 import Landing from "./pages/Landing";
 import Hub from "./pages/Hub";
 import About from "./pages/About";
@@ -36,6 +37,17 @@ import TaxSeason2026 from "./pages/TaxSeason2026";
 
 const queryClient = new QueryClient();
 
+// Component to conditionally show chat widget
+function ChatWidgetWrapper() {
+  const location = useLocation();
+  // Hide chat widget on VOPSy page (has its own chat) and auth pages
+  const hiddenPaths = ["/vopsy", "/auth", "/onboarding"];
+  const shouldHide = hiddenPaths.some(path => location.pathname.startsWith(path));
+  
+  if (shouldHide) return null;
+  return <SiteChatWidget />;
+}
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
@@ -47,6 +59,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <ClientViewBanner />
+                <ChatWidgetWrapper />
                 <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/hub" element={<Hub />} />
