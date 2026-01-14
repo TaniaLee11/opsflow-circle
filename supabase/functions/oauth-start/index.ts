@@ -107,8 +107,18 @@ serve(async (req) => {
       .eq("provider", provider)
       .maybeSingle();
 
+    // Helper to resolve credentials - supports env: prefix or direct values
+    const resolveCredential = (value: string | null | undefined, envKey: string): string => {
+      if (!value) return Deno.env.get(envKey) || "";
+      if (value.startsWith("env:")) {
+        const envName = value.replace("env:", "");
+        return Deno.env.get(envName) || "";
+      }
+      return value;
+    };
+
     // Use configured credentials or fall back to environment variables
-    const clientId = integrationConfig?.client_id || Deno.env.get(`${provider.toUpperCase()}_CLIENT_ID`) || "";
+    const clientId = resolveCredential(integrationConfig?.client_id, `${provider.toUpperCase()}_CLIENT_ID`);
     
     if (!clientId) {
       logStep("No client_id available", { provider });
