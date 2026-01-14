@@ -58,7 +58,7 @@ export function useVOPSyChat() {
     messagesRef.current = messages;
   }, [messages]);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, skipAI: boolean = false) => {
     if (!content.trim() || isLoading) return;
 
     setError(null);
@@ -72,6 +72,12 @@ export function useVOPSyChat() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    
+    // If skipAI is true, just add the user message without calling the AI
+    if (skipAI) {
+      return;
+    }
+
     setIsLoading(true);
 
     // Add typing indicator
@@ -139,6 +145,17 @@ export function useVOPSyChat() {
     }
   }, [isLoading, user?.name, currentTier, isOwner]);
 
+  // Add an assistant message directly (for inbox intelligence, etc.)
+  const addAssistantMessage = useCallback((content: string) => {
+    const assistantMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'vopsy',
+      content,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+  }, []);
+
   const clearHistory = useCallback(() => {
     const welcomeMsg = WELCOME_MESSAGE(
       user?.name?.split(' ')[0] || 'there',
@@ -154,5 +171,6 @@ export function useVOPSyChat() {
     error,
     sendMessage,
     clearHistory,
+    addAssistantMessage,
   };
 }

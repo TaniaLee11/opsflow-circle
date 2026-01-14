@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Brain, 
@@ -16,23 +16,29 @@ import {
   BookOpen,
   Mic,
   MicOff,
-  Volume2
+  Volume2,
+  Link
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useVOPSyChat } from "@/hooks/useVOPSyChat";
+import { useVOPSyChat, ChatMessage } from "@/hooks/useVOPSyChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { useInboxIntelligence } from "@/hooks/useInboxIntelligence";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
 
+// Keywords that trigger inbox intelligence
+const INBOX_KEYWORDS = ['inbox', 'email', 'emails', 'mail', 'messages', 'unread'];
+
 const quickActions = [
   { icon: TrendingUp, label: "Cash flow analysis", prompt: "Analyze my cash flow and runway. What's my current financial position?", category: "Finance" },
-  { icon: Mail, label: "Check my inbox", prompt: "Check my inbox and summarize the important emails I need to respond to today", category: "Operations" },
+  { icon: Mail, label: "Check my inbox", prompt: "Go ahead — scan my real inbox and show me what needs attention", category: "Operations", isInbox: true },
   { icon: ListTodo, label: "Today's priorities", prompt: "What should be my top priorities today? Give me a strategic assessment.", category: "Strategy" },
   { icon: Calendar, label: "Schedule tasks", prompt: "Help me plan and schedule my tasks for this week", category: "Operations" },
   { icon: Zap, label: "Automate workflow", prompt: "Suggest automations for my repetitive tasks. What processes can I optimize?", category: "Operations" },
@@ -84,11 +90,16 @@ function formatInlineText(text: string) {
 }
 
 export default function VOPSy() {
-  const { messages, isLoading, sendMessage, clearHistory } = useVOPSyChat();
+  const { messages, isLoading, sendMessage, clearHistory, addAssistantMessage } = useVOPSyChat();
   const [input, setInput] = useState("");
+  const [isInboxLoading, setIsInboxLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Inbox intelligence hook
+  const { analyzeInbox, formatAnalysisForChat, status: inboxStatus } = useInboxIntelligence();
 
   // Voice input hook
   const {
@@ -100,16 +111,60 @@ export default function VOPSy() {
     stopListening,
   } = useVoiceInput({
     onTranscript: (text) => {
-      // When we get final transcript, add to input or send directly
       if (text.trim()) {
         setInput(prev => prev + (prev ? ' ' : '') + text);
       }
     },
     onInterimTranscript: (text) => {
-      // Show interim results in real-time
       console.log('Interim:', text);
     },
   });
+
+  // Check if message is inbox-related
+  const isInboxRequest = useCallback((text: string) => {
+    const lower = text.toLowerCase();
+    return INBOX_KEYWORDS.some(kw => lower.includes(kw)) && 
+           (lower.includes('check') || lower.includes('scan') || lower.includes('go ahead') || 
+            lower.includes('show') || lower.includes('analyze') || lower.includes('summarize') ||
+            lower.includes('what') || lower.includes('need'));
+  }, []);
+
+  // Handle inbox analysis with real data
+  const handleInboxRequest = useCallback(async () => {
+    setIsInboxLoading(true);
+    
+    const analysis = await analyzeInbox();
+    
+    if (!analysis) {
+      // Not connected - provide helpful message
+      const notConnectedMsg = `🔐 **Inbox Access Check**
+
+I'd love to scan your real inbox, but I don't have access yet!
+
+To enable **Inbox Intelligence**, you'll need to connect your email account:
+• **Google Workspace** — Gmail, Calendar, Drive
+• **Microsoft 365** — Outlook, Teams, OneDrive
+
+👉 **[Go to Integrations](/integrations)** to connect your email account.
+
+Once connected, I'll be able to:
+• Scan your unread and flagged emails
+• Identify messages that need a reply or decision  
+• Group them by priority (🔴 Urgent, 🟡 Needs Response, 🟢 FYI)
+• Give you plain-English summaries
+• Draft replies when you're ready
+
+Want me to help with something else in the meantime?`;
+      
+      addAssistantMessage(notConnectedMsg);
+    } else {
+      // Connected - show real analysis
+      const formattedAnalysis = formatAnalysisForChat(analysis);
+      addAssistantMessage(formattedAnalysis);
+    }
+    
+    setIsInboxLoading(false);
+  }, [analyzeInbox, formatAnalysisForChat, addAssistantMessage]);
 
   // Show voice error as toast
   useEffect(() => {
@@ -130,17 +185,32 @@ export default function VOPSy() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    stopListening(); // Stop voice if active
+    if (!input.trim() || isLoading || isInboxLoading) return;
+    stopListening();
     const message = input.trim();
     setInput("");
-    await sendMessage(message);
+
+    // Check if this is an inbox request
+    if (isInboxRequest(message)) {
+      // Add user message first, then handle inbox
+      await sendMessage(message, true); // skipAI = true
+      await handleInboxRequest();
+    } else {
+      await sendMessage(message);
+    }
+    
     textareaRef.current?.focus();
   };
 
-  const handleQuickAction = async (prompt: string) => {
-    stopListening(); // Stop voice if active
-    await sendMessage(prompt);
+  const handleQuickAction = async (prompt: string, isInbox?: boolean) => {
+    stopListening();
+    
+    if (isInbox) {
+      await sendMessage(prompt, true); // Add user message without AI response
+      await handleInboxRequest();
+    } else {
+      await sendMessage(prompt);
+    }
   };
 
   const handleVoiceToggle = () => {
@@ -273,11 +343,18 @@ export default function VOPSy() {
                       key={idx}
                       variant="outline"
                       size="sm"
-                      className="text-[10px] sm:text-xs gap-1 sm:gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/30 px-2 sm:px-3 py-1 h-auto"
-                      onClick={() => handleQuickAction(action.prompt)}
-                      disabled={isLoading}
+                      className={cn(
+                        "text-[10px] sm:text-xs gap-1 sm:gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/30 px-2 sm:px-3 py-1 h-auto",
+                        action.isInbox && "border-primary/30 bg-primary/5"
+                      )}
+                      onClick={() => handleQuickAction(action.prompt, action.isInbox)}
+                      disabled={isLoading || isInboxLoading}
                     >
-                      <action.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      {action.isInbox && isInboxLoading ? (
+                        <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
+                      ) : (
+                        <action.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      )}
                       <span className="hidden sm:inline">{action.label}</span>
                       <span className="sm:hidden">{action.label.split(' ')[0]}</span>
                     </Button>
