@@ -180,22 +180,36 @@ serve(async (req) => {
     const tokens = await tokenResponse.json();
     logStep("Tokens received", { hasAccessToken: !!tokens.access_token });
 
-    // Get user's organization
+    // Get user's organization (optional - platform owners may not have one)
     const { data: profile } = await supabaseClient
       .from("profiles")
-      .select("organization_id")
+      .select("organization_id, role")
       .eq("user_id", userId)
       .single();
 
-    if (!profile?.organization_id) {
-      throw new Error("User organization not found");
+    // For platform owners without org, use their user_id as a pseudo-org identifier
+    // For regular users, require an organization
+    let orgId = profile?.organization_id;
+    
+    if (!orgId) {
+      // Check if user is a platform owner (they can operate without an org)
+      const isPlatformOwner = profile?.role === 'platform_owner' || profile?.role === 'owner';
+      
+      if (!isPlatformOwner) {
+        throw new Error("User organization not found - please complete onboarding first");
+      }
+      
+      // For platform owners, we'll use their user_id as org_id
+      // First check if there's a default org for this user, or create a virtual reference
+      logStep("Platform owner without org - using user_id as org reference", { userId });
+      orgId = userId; // Use user_id as fallback org_id for platform owners
     }
 
     // Store integration in database
     const { error: insertError } = await supabaseClient
       .from("integrations")
       .upsert({
-        org_id: profile.organization_id,
+        org_id: orgId,
         user_id: userId,
         provider,
         access_token: tokens.access_token,
@@ -210,7 +224,7 @@ serve(async (req) => {
 
     if (insertError) {
       logStep("Failed to store integration", { error: insertError.message });
-      throw new Error("Failed to store integration");
+      throw new Error("Failed to store integration: " + insertError.message);
     }
 
     logStep("Integration stored successfully");
