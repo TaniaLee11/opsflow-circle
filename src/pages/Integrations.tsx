@@ -267,6 +267,13 @@ export default function Integrations() {
       return;
     }
     
+    // CRITICAL: Verify user is authenticated before initiating OAuth
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast.error("Please log in to connect integrations");
+      return;
+    }
+    
     // Map integration IDs to provider names
     const providerMap: Record<string, string> = {
       "google-workspace": "google",
