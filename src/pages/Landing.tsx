@@ -146,8 +146,8 @@ export default function Landing() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
-              <Button size="lg" onClick={() => navigate("/auth?mode=signup")} className="glow-primary text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
-                Start Free Today
+              <Button size="lg" onClick={() => navigate("/hub")} className="glow-primary text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
+                Get Started
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
               <Button size="lg" variant="outline" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
@@ -258,7 +258,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ scale: 1.02, y: -5 }}
-                onClick={() => navigate("/auth?mode=signup")}
+                onClick={() => navigate("/hub")}
                 className="glass rounded-xl p-4 sm:p-6 text-left group hover:glow-primary-sm transition-all border border-border hover:border-primary/50"
               >
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${path.color} flex items-center justify-center mb-3 sm:mb-4`}>
@@ -393,8 +393,8 @@ export default function Landing() {
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 px-4">
               Start where you are. The platform will guide you, adapt with you, and grow with you.
             </p>
-            <Button size="lg" onClick={() => navigate("/auth?mode=signup")} className="glow-primary text-base sm:text-lg px-8 sm:px-10 h-12 sm:h-14 w-full sm:w-auto max-w-xs mx-auto">
-              Get Started Free
+            <Button size="lg" onClick={() => navigate("/hub")} className="glow-primary text-base sm:text-lg px-8 sm:px-10 h-12 sm:h-14 w-full sm:w-auto max-w-xs mx-auto">
+              Get Started
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
             </Button>
             <p className="text-xs sm:text-sm text-muted-foreground mt-3 sm:mt-4">
