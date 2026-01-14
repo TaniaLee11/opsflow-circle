@@ -89,20 +89,26 @@ const differentiators = [
   }
 ];
 
+const CALENDLY_URL = "https://calendly.com/vops";
+
 export default function Landing() {
   const navigate = useNavigate();
+
+  const handleScheduleCall = () => {
+    window.open(CALENDLY_URL, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <>
       <Helmet>
-        <title>Virtual OPS Assist | Operations, Finance & Compliance Made Simple</title>
-        <meta name="description" content="Stop juggling spreadsheets. Virtual OPS Assist brings operations, bookkeeping, and compliance into one place. Built for entrepreneurs and nonprofits. Start free today." />
-        <meta property="og:title" content="Finally, One Place for Everything You Run" />
-        <meta property="og:description" content="Operations, finance, and compliance—integrated. Built for people who carry responsibility. Start free." />
+        <title>Virtual OPS Assist | Accounting, Bookkeeping & Financial Services</title>
+        <meta name="description" content="Expert bookkeeping, tax preparation, compliance, and CFO advisory services for entrepreneurs, nonprofits, and growing businesses. 500+ businesses served. Start free today." />
+        <meta property="og:title" content="Accounting & Financial Services That Actually Move You Forward" />
+        <meta property="og:description" content="Full-cycle bookkeeping, tax prep, compliance, and strategic advisory. Built for businesses that do it all. Trusted by 500+ organizations." />
         <meta property="og:image" content="https://virtualopsassist.com/og-home.png" />
         <meta property="og:url" content="https://virtualopsassist.com/" />
-        <meta name="twitter:title" content="Finally, One Place for Everything You Run" />
-        <meta name="twitter:description" content="Operations, finance, and compliance—integrated. Built for people who carry responsibility." />
+        <meta name="twitter:title" content="Accounting & Financial Services That Actually Move You Forward" />
+        <meta name="twitter:description" content="Full-cycle bookkeeping, tax prep, compliance, and strategic advisory. Trusted by 500+ organizations." />
         <meta name="twitter:image" content="https://virtualopsassist.com/og-home.png" />
         <link rel="canonical" href="https://virtualopsassist.com/" />
       </Helmet>
@@ -130,13 +136,13 @@ export default function Landing() {
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 sm:mb-6 leading-tight">
-              Stop Juggling Spreadsheets.
-              <span className="text-gradient block mt-1 sm:mt-2">Start Running Your Business.</span>
+              Accounting & Financial Services
+              <span className="text-gradient block mt-1 sm:mt-2">That Actually Move You Forward.</span>
             </h1>
 
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 px-4">
-              Operations, bookkeeping, compliance, and tax prep—finally in one place. 
-              Built for entrepreneurs and nonprofits who do it all.
+              Full-cycle bookkeeping, tax preparation, compliance, CFO advisory, and operations support—
+              delivered by real professionals, backed by smart systems.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
