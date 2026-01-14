@@ -194,6 +194,104 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* About Virtual OPS Section */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 border-t border-border/50 bg-card/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4 sm:mb-6">
+                <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                <span className="text-xs sm:text-sm text-primary font-medium">Since 2016</span>
+              </div>
+              
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 sm:mb-6">
+                About Virtual OPS
+              </h2>
+              
+              <div className="space-y-4 text-sm sm:text-base text-muted-foreground">
+                <p>
+                  Virtual OPS Assist was founded in 2016 with a simple mission: help business owners 
+                  reclaim their time by taking the operational chaos off their plates. What started as 
+                  boutique bookkeeping and admin support has evolved into a full-service operations partner 
+                  for entrepreneurs, nonprofits, and growing businesses.
+                </p>
+                <p>
+                  Over the years, we have served 500+ organizations—from solo founders to multi-entity 
+                  enterprises—helping them stay compliant, financially organized, and operationally sound.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="space-y-4 sm:space-y-6"
+            >
+              {/* The Hub */}
+              <div className="glass gradient-border rounded-xl p-4 sm:p-6">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-xl bg-primary/10 shrink-0">
+                    <Layers className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 sm:mb-2">
+                      The Virtual OPS Hub
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your command center for everything operations. The Hub brings together financial 
+                      tracking, compliance calendars, document management, and support—all in one place. 
+                      No more scattered tools or missed deadlines.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* VOPSy AI */}
+              <div className="glass gradient-border rounded-xl p-4 sm:p-6">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-orange-400 shrink-0">
+                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 sm:mb-2">
+                      Meet VOPSy, Your AI Assistant
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      VOPSy is your always-on operations partner. Get instant answers about cash flow, 
+                      tax deadlines, compliance requirements, and more. VOPSy learns your business and 
+                      helps you make informed decisions—24/7, no waiting for callbacks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Human Backup */}
+              <div className="glass rounded-xl p-4 sm:p-6 border border-border">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-xl bg-secondary shrink-0">
+                    <Users className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 sm:mb-2">
+                      Real Humans When You Need Them
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      AI is powerful, but sometimes you need a real person. Our team of bookkeepers, 
+                      tax professionals, and operations experts are always available to step in.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Audience Recognition Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 border-t border-border/50">
         <div className="max-w-6xl mx-auto">
