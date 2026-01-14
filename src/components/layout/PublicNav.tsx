@@ -5,13 +5,19 @@ import { Menu, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import vopsLogo from "@/assets/vops-logo.svg";
 
-const navLinks = [
+interface NavLink {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+const navLinks: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "Hub", href: "/hub" },
   { label: "Services", href: "/services" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
-  { label: "Courses", href: "https://academy.virtualopsassist.com", external: true },
+  // { label: "Courses", href: "https://academy.virtualopsassist.com", external: true }, // Hidden until live
 ];
 
 export function PublicNav() {

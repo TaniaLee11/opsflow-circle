@@ -9,7 +9,7 @@ const footerLinks = {
   ],
   resources: [
     { label: "The Hub", href: "/hub" },
-    { label: "Courses", href: "https://academy.virtualopsassist.com", external: true },
+    // { label: "Courses", href: "https://academy.virtualopsassist.com", external: true }, // Hidden until live
     { label: "Tax Season 2026", href: "/tax-season-2026" },
   ],
   legal: [
