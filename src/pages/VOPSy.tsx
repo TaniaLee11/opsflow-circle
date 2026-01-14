@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Brain, 
   Send, 
-  Sparkles,
   MessageSquare,
   ListTodo,
   Calendar,
@@ -29,6 +28,7 @@ import { useVOPSyChat } from "@/hooks/useVOPSyChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
 
 const quickActions = [
   { icon: TrendingUp, label: "Cash flow analysis", prompt: "Analyze my cash flow and runway. What's my current financial position?", category: "Finance" },
@@ -166,8 +166,8 @@ export default function VOPSy() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="relative">
-                  <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-orange-500 shadow-lg">
-                    <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12">
+                    <VOPSyMascot size="sm" animate={true} className="!w-10 !h-10 sm:!w-12 sm:!h-12" />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-success rounded-full border-2 border-card animate-pulse" />
                 </div>
@@ -211,8 +211,8 @@ export default function VOPSy() {
                         )}
                       >
                         {message.role === "vopsy" && (
-                          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shrink-0 mt-1">
-                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 mt-1">
+                            <VOPSyMascot size="sm" animate={false} className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
                           </div>
                         )}
                         
