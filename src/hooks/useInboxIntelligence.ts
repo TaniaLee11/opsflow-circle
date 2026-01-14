@@ -42,6 +42,13 @@ export interface EmailDraft {
   body: string;
   tone: string;
   originalEmailId: string;
+  to?: string;
+}
+
+export interface SendResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
 }
 
 export type DraftTone = 'professional' | 'friendly' | 'brief' | 'detailed';
@@ -50,8 +57,11 @@ export function useInboxIntelligence() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [status, setStatus] = useState<InboxStatus | null>(null);
   const [analysis, setAnalysis] = useState<InboxAnalysis | null>(null);
+  const [currentDraft, setCurrentDraft] = useState<EmailDraft | null>(null);
+  const [currentDraftRecipient, setCurrentDraftRecipient] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Check inbox connection status
@@ -180,12 +190,75 @@ export function useInboxIntelligence() {
         throw new Error(fnError.message || 'Failed to draft reply');
       }
 
-      return data.draft as EmailDraft;
+      const draft = {
+        ...data.draft as EmailDraft,
+        to: email.from, // Store recipient from original email
+      };
+      
+      // Store the current draft and recipient for sending later
+      setCurrentDraft(draft);
+      setCurrentDraftRecipient(email.from);
+      
+      return draft;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Draft failed';
       toast.error(errorMsg);
       return null;
     }
+  }, []);
+
+  // Send the drafted email
+  const sendDraft = useCallback(async (draft?: EmailDraft): Promise<SendResult> => {
+    const draftToSend = draft || currentDraft;
+    const recipient = draft?.to || currentDraftRecipient;
+    
+    if (!draftToSend) {
+      return { success: false, error: 'No draft to send. Please draft a reply first.' };
+    }
+
+    if (!recipient) {
+      return { success: false, error: 'No recipient found for this draft.' };
+    }
+
+    setIsSending(true);
+    
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('send-email', {
+        body: {
+          originalEmailId: draftToSend.originalEmailId,
+          subject: draftToSend.subject,
+          body: draftToSend.body,
+          to: recipient,
+        },
+      });
+
+      if (fnError) {
+        throw new Error(fnError.message || 'Failed to send email');
+      }
+
+      const result = data as SendResult;
+      
+      if (result.success) {
+        // Clear the draft after successful send
+        setCurrentDraft(null);
+        setCurrentDraftRecipient(null);
+        toast.success('Email sent successfully!');
+      }
+      
+      return result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Send failed';
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsSending(false);
+    }
+  }, [currentDraft, currentDraftRecipient]);
+
+  // Clear the current draft
+  const clearDraft = useCallback(() => {
+    setCurrentDraft(null);
+    setCurrentDraftRecipient(null);
   }, []);
 
   // Format a draft for chat display
@@ -305,12 +378,16 @@ export function useInboxIntelligence() {
     isLoading,
     isFetching,
     isAnalyzing,
+    isSending,
     status,
     analysis,
+    currentDraft,
     error,
     checkConnection,
     analyzeInbox,
     draftReply,
+    sendDraft,
+    clearDraft,
     formatAnalysisForChat,
     formatDraftForChat,
     getEmailByNumber,
