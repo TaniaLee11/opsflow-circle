@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, LogIn } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 export default function IntegrationCallback() {
   const [searchParams] = useSearchParams();
@@ -35,28 +36,12 @@ export default function IntegrationCallback() {
         return;
       }
 
-      // CRITICAL: Rehydrate session and validate user is authenticated
-      setMessage("Verifying your session...");
-      
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        console.error("No authenticated session found during OAuth callback");
-        setStatus('auth_required');
-        setMessage("Please log in to connect your integration");
-        toast.error("Authentication required - please log in first");
-        // Store callback params to resume after login
-        sessionStorage.setItem('pending_oauth_callback', JSON.stringify({ code, state }));
-        setTimeout(() => navigate("/auth", { state: { returnTo: "/integrations" } }), 3000);
-        return;
-      }
-
-      // Extract provider from state
+      // Extract provider from state (format: uuid:provider)
       const [stateId, provider] = state.split(":");
       
-      if (!provider) {
+      if (!provider || !stateId) {
         setStatus('error');
-        setMessage("Invalid state parameter");
+        setMessage("Invalid state parameter format");
         setTimeout(() => navigate("/integrations"), 3000);
         return;
       }
@@ -64,7 +49,10 @@ export default function IntegrationCallback() {
       try {
         setMessage(`Connecting to ${provider}...`);
 
-        // Pass auth token to edge function for user identification
+        // The oauth-callback edge function will look up the user_id from the oauth_states table
+        // using the state parameter. This is the secure way - we don't rely on browser session.
+        // The state was stored with user_id when oauth-start was called (while user was authenticated).
+        
         const { data, error: fnError } = await supabase.functions.invoke("oauth-callback", {
           body: { code, state: stateId, provider },
         });
@@ -75,10 +63,23 @@ export default function IntegrationCallback() {
           body = await (fnError as any).context.json().catch(() => null);
         }
 
-        if (body?.error) {
-          throw new Error(body.error);
+        const errorMessage = body?.error || (fnError instanceof Error ? fnError.message : null);
+
+        if (errorMessage) {
+          // Check for state/user-related errors
+          if (
+            errorMessage.toLowerCase().includes("state expired") ||
+            errorMessage.toLowerCase().includes("user") ||
+            errorMessage.toLowerCase().includes("identify") ||
+            errorMessage.toLowerCase().includes("not found")
+          ) {
+            setStatus("auth_required");
+            setMessage("Your session expired. Please log in and try connecting again.");
+            toast.error("Session expired - please log in and reconnect");
+            return; // Don't auto-redirect, let user click button
+          }
+          throw new Error(errorMessage);
         }
-        if (fnError) throw fnError;
 
         setStatus("success");
         setMessage(`Successfully connected to ${provider}!`);
@@ -90,37 +91,35 @@ export default function IntegrationCallback() {
         setTimeout(() => navigate("/integrations"), 2000);
       } catch (err) {
         console.error("OAuth callback error:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to complete connection";
-        
-        // Check for user-not-found specific error
-        if (errorMessage.toLowerCase().includes("user") || errorMessage.toLowerCase().includes("identify")) {
-          setStatus("auth_required");
-          setMessage("Session expired - please log in to connect your integration");
-          toast.error("Please log in to connect Google");
-          setTimeout(() => navigate("/auth", { state: { returnTo: "/integrations" } }), 3000);
-        } else {
-          setStatus("error");
-          setMessage(errorMessage);
-          toast.error("Failed to connect integration");
-          setTimeout(() => navigate("/integrations"), 3000);
-        }
+        const errMsg = err instanceof Error ? err.message : "Failed to complete connection";
+        setStatus("error");
+        setMessage(errMsg);
+        toast.error("Failed to connect integration");
+        setTimeout(() => navigate("/integrations"), 3000);
       }
     };
 
     handleCallback();
   }, [searchParams, navigate, queryClient]);
 
+  const handleLoginRedirect = () => {
+    navigate("/auth", { state: { returnTo: "/integrations" } });
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center space-y-6 p-8">
+      <div className="text-center space-y-6 p-8 max-w-md">
         {status === 'processing' && (
           <Loader2 className="w-16 h-16 text-primary mx-auto animate-spin" />
         )}
         {status === 'success' && (
           <CheckCircle2 className="w-16 h-16 text-success mx-auto" />
         )}
-        {(status === 'error' || status === 'auth_required') && (
+        {status === 'error' && (
           <XCircle className="w-16 h-16 text-destructive mx-auto" />
+        )}
+        {status === 'auth_required' && (
+          <LogIn className="w-16 h-16 text-warning mx-auto" />
         )}
         
         <div>
@@ -133,9 +132,16 @@ export default function IntegrationCallback() {
           <p className="text-muted-foreground">{message}</p>
         </div>
         
-        <p className="text-sm text-muted-foreground">
-          You'll be redirected automatically...
-        </p>
+        {status === 'auth_required' ? (
+          <Button onClick={handleLoginRedirect} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            Log in to finish connecting
+          </Button>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            You'll be redirected automatically...
+          </p>
+        )}
       </div>
     </div>
   );
