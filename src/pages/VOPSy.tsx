@@ -29,6 +29,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useVOPSyChat, ChatMessage } from "@/hooks/useVOPSyChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { useInboxIntelligence } from "@/hooks/useInboxIntelligence";
+import { useFinancialIntelligence } from "@/hooks/useFinancialIntelligence";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
@@ -36,8 +37,11 @@ import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
 // Keywords that trigger inbox intelligence
 const INBOX_KEYWORDS = ['inbox', 'email', 'emails', 'mail', 'messages', 'unread'];
 
+// Keywords that trigger financial intelligence
+const FINANCIAL_KEYWORDS = ['cash flow', 'cashflow', 'invoices', 'invoice', 'receivables', 'financial', 'finances', 'balance', 'revenue', 'payments', 'overdue', 'stripe', 'quickbooks', 'xero', 'accounting', 'money'];
+
 const quickActions = [
-  { icon: TrendingUp, label: "Cash flow analysis", prompt: "Analyze my cash flow and runway. What's my current financial position?", category: "Finance" },
+  { icon: TrendingUp, label: "Cash flow analysis", prompt: "Show me my current cash flow and financial position from my connected accounts", category: "Finance", isFinancial: true },
   { icon: Mail, label: "Check my inbox", prompt: "Go ahead — scan my real inbox and show me what needs attention", category: "Operations", isInbox: true },
   { icon: ListTodo, label: "Today's priorities", prompt: "What should be my top priorities today? Give me a strategic assessment.", category: "Strategy" },
   { icon: Calendar, label: "Schedule tasks", prompt: "Help me plan and schedule my tasks for this week", category: "Operations" },
@@ -115,6 +119,14 @@ export default function VOPSy() {
     status: inboxStatus 
   } = useInboxIntelligence();
 
+  // Financial intelligence hook
+  const {
+    fetchFinancialData,
+    formatFinancialForChat,
+    isLoading: isFinancialLoading,
+    status: financialStatus,
+  } = useFinancialIntelligence();
+
   // Voice input hook
   const {
     isListening,
@@ -141,6 +153,15 @@ export default function VOPSy() {
            (lower.includes('check') || lower.includes('scan') || lower.includes('go ahead') || 
             lower.includes('show') || lower.includes('analyze') || lower.includes('summarize') ||
             lower.includes('what') || lower.includes('need'));
+  }, []);
+
+  // Check if message is financial-related
+  const isFinancialRequest = useCallback((text: string) => {
+    const lower = text.toLowerCase();
+    return FINANCIAL_KEYWORDS.some(kw => lower.includes(kw)) && 
+           (lower.includes('show') || lower.includes('what') || lower.includes('analyze') || 
+            lower.includes('check') || lower.includes('my') || lower.includes('current') ||
+            lower.includes('how much') || lower.includes('position'));
   }, []);
 
   // Check if message is a draft request
@@ -300,6 +321,39 @@ Want me to help with something else in the meantime?`;
     setIsInboxLoading(false);
   }, [analyzeInbox, formatAnalysisForChat, addAssistantMessage]);
 
+  // Handle financial data request
+  const handleFinancialRequest = useCallback(async () => {
+    addAssistantMessage(`💰 Fetching your financial data...`);
+    
+    const financialData = await fetchFinancialData();
+    
+    if (!financialData) {
+      const notConnectedMsg = `🔐 **Financial Access Check**
+
+I'd love to show you real financial data, but I don't have access yet!
+
+To enable **Financial Intelligence**, connect one or more of these accounts:
+• **QuickBooks** — Invoices, expenses, reports
+• **Stripe** — Payments, subscriptions, balances
+• **Xero** — Accounting, invoices, bank reconciliation
+
+👉 **[Go to Integrations](/integrations)** to connect your financial accounts.
+
+Once connected, I'll be able to:
+• Show your real-time cash position
+• List unpaid and overdue invoices
+• Track recent payments and transactions
+• Alert you to financial action items
+
+Would you like help with something else?`;
+      
+      addAssistantMessage(notConnectedMsg);
+    } else {
+      const formattedFinancial = formatFinancialForChat(financialData);
+      addAssistantMessage(formattedFinancial);
+    }
+  }, [fetchFinancialData, formatFinancialForChat, addAssistantMessage]);
+
   // Show voice error as toast
   useEffect(() => {
     if (voiceError) {
@@ -319,7 +373,7 @@ Want me to help with something else in the meantime?`;
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || isInboxLoading || isDrafting || isSendingEmail) return;
+    if (!input.trim() || isLoading || isInboxLoading || isDrafting || isSendingEmail || isFinancialLoading) return;
     stopListening();
     const message = input.trim();
     setInput("");
@@ -341,6 +395,14 @@ Want me to help with something else in the meantime?`;
       return;
     }
 
+    // Check if this is a financial request
+    if (isFinancialRequest(message)) {
+      await sendMessage(message, true);
+      await handleFinancialRequest();
+      textareaRef.current?.focus();
+      return;
+    }
+
     // Check if this is an inbox request
     if (isInboxRequest(message)) {
       await sendMessage(message, true);
@@ -352,10 +414,13 @@ Want me to help with something else in the meantime?`;
     textareaRef.current?.focus();
   };
 
-  const handleQuickAction = async (prompt: string, isInbox?: boolean) => {
+  const handleQuickAction = async (prompt: string, isInbox?: boolean, isFinancial?: boolean) => {
     stopListening();
     
-    if (isInbox) {
+    if (isFinancial) {
+      await sendMessage(prompt, true);
+      await handleFinancialRequest();
+    } else if (isInbox) {
       await sendMessage(prompt, true);
       await handleInboxRequest();
     } else {
@@ -495,12 +560,12 @@ Want me to help with something else in the meantime?`;
                       size="sm"
                       className={cn(
                         "text-[10px] sm:text-xs gap-1 sm:gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/30 px-2 sm:px-3 py-1 h-auto",
-                        action.isInbox && "border-primary/30 bg-primary/5"
+                        (action.isInbox || action.isFinancial) && "border-primary/30 bg-primary/5"
                       )}
-                      onClick={() => handleQuickAction(action.prompt, action.isInbox)}
-                      disabled={isLoading || isInboxLoading}
+                      onClick={() => handleQuickAction(action.prompt, action.isInbox, action.isFinancial)}
+                      disabled={isLoading || isInboxLoading || isFinancialLoading}
                     >
-                      {action.isInbox && isInboxLoading ? (
+                      {(action.isInbox && isInboxLoading) || (action.isFinancial && isFinancialLoading) ? (
                         <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
                       ) : (
                         <action.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
