@@ -67,13 +67,14 @@ serve(async (req) => {
       throw new Error(`Unsupported provider: ${provider}`);
     }
 
-    // Get user from stored state
+    // Get user from stored state - this is the secure method
+    // The state was stored with user_id when oauth-start was called
     let userId: string | null = null;
     
     if (state) {
       const { data: stateData, error: stateError } = await supabaseClient
         .from("oauth_states")
-        .select("user_id")
+        .select("user_id, expires_at")
         .eq("state", state)
         .maybeSingle();
 
@@ -82,6 +83,14 @@ serve(async (req) => {
       }
 
       if (stateData) {
+        // Check if state has expired
+        if (new Date(stateData.expires_at) < new Date()) {
+          logStep("State expired", { expiresAt: stateData.expires_at });
+          // Clean up expired state
+          await supabaseClient.from("oauth_states").delete().eq("state", state);
+          throw new Error("OAuth state expired - please try connecting again");
+        }
+        
         userId = stateData.user_id;
         logStep("User found from state", { userId });
         
@@ -90,6 +99,8 @@ serve(async (req) => {
           .from("oauth_states")
           .delete()
           .eq("state", state);
+      } else {
+        logStep("State not found in database", { state });
       }
     }
 
@@ -108,7 +119,7 @@ serve(async (req) => {
     }
 
     if (!userId) {
-      throw new Error("Could not identify user - state expired or invalid");
+      throw new Error("OAuth state expired or invalid - please log in and try connecting again");
     }
 
     // Get credentials from integration_configs table or fall back to env
