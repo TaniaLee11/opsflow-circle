@@ -185,26 +185,42 @@ export default function TaxSeason2026() {
   return (
     <>
       <Helmet>
-        <title>2026 Tax Season Guide | Virtual OPS Hub</title>
-        <meta name="description" content="Complete 2026 tax filing guide for businesses, nonprofits, and individuals. Know your deadlines and file with confidence. Partnerships, S Corps, C Corps, Form 990, and more." />
+        <title>2026 Tax Deadlines & Filing Guide | Virtual OPS Hub</title>
+        <meta name="description" content="Don't miss a deadline. 2026 tax filing dates for S Corps (March 15), C Corps (April 15), individuals, and nonprofits (May 15). 500+ businesses trust us for stress-free filing. Start now." />
         
-        {/* Open Graph */}
-        <meta property="og:title" content="2026 Tax Season Guide | Virtual OPS Hub" />
-        <meta property="og:description" content="Know your deadlines. File with confidence. Complete tax filing guide for businesses, nonprofits, and individuals." />
+        {/* Open Graph - Optimized for shares */}
+        <meta property="og:title" content="📅 2026 Tax Deadlines You Can't Miss" />
+        <meta property="og:description" content="S Corps: March 15 • C Corps: April 15 • Nonprofits: May 15. Get organized with our free deadline guide. Trusted by 500+ businesses." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://virtualopsassist.com/tax-season-2026" />
-        <meta property="og:image" content="https://virtualopsassist.com/og-image.png" />
+        <meta property="og:image" content="https://virtualopsassist.com/og-tax-2026.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta property="og:site_name" content="Virtual OPS Hub" />
         
-        {/* Twitter Card */}
+        {/* Twitter Card - Action-oriented */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="2026 Tax Season Guide | Virtual OPS Hub" />
-        <meta name="twitter:description" content="Know your deadlines. File with confidence. Complete tax filing guide for businesses, nonprofits, and individuals." />
-        <meta name="twitter:image" content="https://virtualopsassist.com/og-image.png" />
+        <meta name="twitter:title" content="📅 2026 Tax Deadlines You Can't Miss" />
+        <meta name="twitter:description" content="S Corps: March 15 • C Corps: April 15 • Nonprofits: May 15. Free deadline guide from Virtual OPS Hub." />
+        <meta name="twitter:image" content="https://virtualopsassist.com/og-tax-2026.png" />
         
-        {/* Additional SEO */}
-        <meta name="keywords" content="tax season 2026, tax deadlines, form 1040, form 990, s corp tax, c corp tax, partnership tax, nonprofit tax filing" />
+        {/* SEO Keywords - Long-tail targeting */}
+        <meta name="keywords" content="2026 tax deadlines, when are business taxes due 2026, S Corp filing deadline March 2026, C Corp tax deadline April 2026, nonprofit Form 990 deadline, tax extension deadlines 2026, small business tax preparation, partnership tax filing" />
         <link rel="canonical" href="https://virtualopsassist.com/tax-season-2026" />
+        
+        {/* Article-specific schema */}
+        <script type="application/ld+json">{`
+          {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": "2026 Tax Season: Complete Filing Deadlines Guide",
+            "description": "Know your 2026 tax deadlines for partnerships, S Corps, C Corps, individuals, and nonprofits.",
+            "author": {"@type": "Organization", "name": "Virtual OPS Hub"},
+            "publisher": {"@type": "Organization", "name": "Virtual OPS Hub"},
+            "datePublished": "2025-12-01",
+            "dateModified": "2026-01-14"
+          }
+        `}</script>
       </Helmet>
       
     <div className="min-h-screen bg-background overflow-hidden">
