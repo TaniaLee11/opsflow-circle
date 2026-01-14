@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X, ExternalLink } from "lucide-react";
+import { Menu, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import vopsLogo from "@/assets/vops-logo.svg";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -28,10 +29,8 @@ export function PublicNav() {
           onClick={() => navigate("/")}
           className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity"
         >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-          </div>
-          <span className="text-lg sm:text-xl font-bold text-foreground">Virtual OPS Assist</span>
+          <img src={vopsLogo} alt="Virtual OPS" className="h-8 sm:h-10 w-auto" />
+          <span className="text-lg sm:text-xl font-bold text-foreground">Virtual OPS</span>
         </button>
 
         {/* Desktop Nav */}

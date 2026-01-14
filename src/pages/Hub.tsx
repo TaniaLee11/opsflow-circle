@@ -11,12 +11,12 @@ import {
   GraduationCap,
   Bot,
   HeartHandshake,
-  CheckCircle2,
   Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
 
 const audiences = [
   {
@@ -60,8 +60,8 @@ const hubFeatures = [
   },
   {
     icon: Bot,
-    title: "AI Support",
-    description: "VOPSy—your virtual assistant for questions, automations, and quick answers."
+    title: "Meet VOPSy",
+    description: "Your AI assistant for questions, automations, and quick answers—available 24/7."
   },
   {
     icon: HeartHandshake,
@@ -115,36 +115,52 @@ export default function Hub() {
 
         {/* Hero */}
         <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-sm text-primary font-medium">Your Operations Hub</span>
-              </div>
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-center lg:text-left"
+              >
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-primary font-medium">Your Operations Hub</span>
+                </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                Your Operations Hub—
-                <span className="text-gradient block">Built for Real Businesses</span>
-              </h1>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
+                  Your Operations Hub—
+                  <span className="text-gradient block">Built for Real Businesses</span>
+                </h1>
 
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-                One place to manage compliance, finances, systems, and support—without overwhelm.
-              </p>
+                <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mb-10">
+                  One place to manage compliance, finances, systems, and support—without overwhelm.
+                </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" onClick={() => navigate("/auth?mode=signup")} className="glow-primary text-lg px-8 h-14">
-                  Start Free
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate("/services")} className="text-lg px-8 h-14">
-                  Explore Services
-                </Button>
-              </div>
-            </motion.div>
+                <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4">
+                  <Button size="lg" onClick={() => navigate("/auth?mode=signup")} className="glow-primary text-lg px-8 h-14">
+                    Start Free
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => navigate("/services")} className="text-lg px-8 h-14">
+                    Explore Services
+                  </Button>
+                </div>
+              </motion.div>
+
+              {/* VOPSy Mascot */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="flex justify-center lg:justify-end"
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl scale-75" />
+                  <VOPSyMascot size="xl" className="relative z-10 w-64 h-64 sm:w-80 sm:h-80" />
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
 
