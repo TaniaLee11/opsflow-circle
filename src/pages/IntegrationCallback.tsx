@@ -9,7 +9,7 @@ export default function IntegrationCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
+  const [status, setStatus] = useState<'processing' | 'success' | 'error' | 'auth_required'>('processing');
   const [message, setMessage] = useState("Processing your connection...");
 
   useEffect(() => {
@@ -18,6 +18,7 @@ export default function IntegrationCallback() {
       const state = searchParams.get("state");
       const error = searchParams.get("error");
 
+      // Handle OAuth errors from provider
       if (error) {
         setStatus('error');
         setMessage(`Connection failed: ${error}`);
@@ -34,6 +35,22 @@ export default function IntegrationCallback() {
         return;
       }
 
+      // CRITICAL: Rehydrate session and validate user is authenticated
+      setMessage("Verifying your session...");
+      
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) {
+        console.error("No authenticated session found during OAuth callback");
+        setStatus('auth_required');
+        setMessage("Please log in to connect your integration");
+        toast.error("Authentication required - please log in first");
+        // Store callback params to resume after login
+        sessionStorage.setItem('pending_oauth_callback', JSON.stringify({ code, state }));
+        setTimeout(() => navigate("/auth", { state: { returnTo: "/integrations" } }), 3000);
+        return;
+      }
+
       // Extract provider from state
       const [stateId, provider] = state.split(":");
       
@@ -47,11 +64,12 @@ export default function IntegrationCallback() {
       try {
         setMessage(`Connecting to ${provider}...`);
 
+        // Pass auth token to edge function for user identification
         const { data, error: fnError } = await supabase.functions.invoke("oauth-callback", {
           body: { code, state: stateId, provider },
         });
 
-        // Like oauth-start, oauth-callback can return non-2xx with a JSON body.
+        // Handle edge function errors with JSON body
         let body: any = data;
         if (!body && fnError && typeof (fnError as any).context?.json === "function") {
           body = await (fnError as any).context.json().catch(() => null);
@@ -72,10 +90,20 @@ export default function IntegrationCallback() {
         setTimeout(() => navigate("/integrations"), 2000);
       } catch (err) {
         console.error("OAuth callback error:", err);
-        setStatus("error");
-        setMessage(err instanceof Error ? err.message : "Failed to complete connection");
-        toast.error("Failed to connect integration");
-        setTimeout(() => navigate("/integrations"), 3000);
+        const errorMessage = err instanceof Error ? err.message : "Failed to complete connection";
+        
+        // Check for user-not-found specific error
+        if (errorMessage.toLowerCase().includes("user") || errorMessage.toLowerCase().includes("identify")) {
+          setStatus("auth_required");
+          setMessage("Session expired - please log in to connect your integration");
+          toast.error("Please log in to connect Google");
+          setTimeout(() => navigate("/auth", { state: { returnTo: "/integrations" } }), 3000);
+        } else {
+          setStatus("error");
+          setMessage(errorMessage);
+          toast.error("Failed to connect integration");
+          setTimeout(() => navigate("/integrations"), 3000);
+        }
       }
     };
 
@@ -89,10 +117,10 @@ export default function IntegrationCallback() {
           <Loader2 className="w-16 h-16 text-primary mx-auto animate-spin" />
         )}
         {status === 'success' && (
-          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
+          <CheckCircle2 className="w-16 h-16 text-success mx-auto" />
         )}
-        {status === 'error' && (
-          <XCircle className="w-16 h-16 text-red-500 mx-auto" />
+        {(status === 'error' || status === 'auth_required') && (
+          <XCircle className="w-16 h-16 text-destructive mx-auto" />
         )}
         
         <div>
@@ -100,6 +128,7 @@ export default function IntegrationCallback() {
             {status === 'processing' && "Connecting..."}
             {status === 'success' && "Connected!"}
             {status === 'error' && "Connection Failed"}
+            {status === 'auth_required' && "Login Required"}
           </h1>
           <p className="text-muted-foreground">{message}</p>
         </div>
