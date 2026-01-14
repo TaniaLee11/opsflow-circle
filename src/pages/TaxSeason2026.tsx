@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { 
   ArrowRight, 
   Calendar,
@@ -182,6 +183,30 @@ export default function TaxSeason2026() {
   const currentSlideData = taxSlides[currentSlide];
 
   return (
+    <>
+      <Helmet>
+        <title>2026 Tax Season Guide | Virtual OPS Hub</title>
+        <meta name="description" content="Complete 2026 tax filing guide for businesses, nonprofits, and individuals. Know your deadlines and file with confidence. Partnerships, S Corps, C Corps, Form 990, and more." />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content="2026 Tax Season Guide | Virtual OPS Hub" />
+        <meta property="og:description" content="Know your deadlines. File with confidence. Complete tax filing guide for businesses, nonprofits, and individuals." />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://virtualopsassist.com/tax-season-2026" />
+        <meta property="og:image" content="https://virtualopsassist.com/og-image.png" />
+        <meta property="og:site_name" content="Virtual OPS Hub" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="2026 Tax Season Guide | Virtual OPS Hub" />
+        <meta name="twitter:description" content="Know your deadlines. File with confidence. Complete tax filing guide for businesses, nonprofits, and individuals." />
+        <meta name="twitter:image" content="https://virtualopsassist.com/og-image.png" />
+        
+        {/* Additional SEO */}
+        <meta name="keywords" content="tax season 2026, tax deadlines, form 1040, form 990, s corp tax, c corp tax, partnership tax, nonprofit tax filing" />
+        <link rel="canonical" href="https://virtualopsassist.com/tax-season-2026" />
+      </Helmet>
+      
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -548,5 +573,6 @@ export default function TaxSeason2026() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
