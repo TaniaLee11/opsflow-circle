@@ -37,6 +37,15 @@ export interface InboxStatus {
   message?: string;
 }
 
+export interface EmailDraft {
+  subject: string;
+  body: string;
+  tone: string;
+  originalEmailId: string;
+}
+
+export type DraftTone = 'professional' | 'friendly' | 'brief' | 'detailed';
+
 export function useInboxIntelligence() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
@@ -144,6 +153,65 @@ export function useInboxIntelligence() {
     }
   }, []);
 
+  // Draft an email reply
+  const draftReply = useCallback(async (
+    email: AnalyzedEmail,
+    tone: DraftTone = 'professional',
+    instructions?: string,
+    userName?: string
+  ): Promise<EmailDraft | null> => {
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('draft-email-reply', {
+        body: {
+          originalEmail: {
+            id: email.id,
+            subject: email.subject,
+            from: email.from,
+            snippet: email.snippet,
+            summary: email.summary,
+          },
+          tone,
+          instructions,
+          userContext: userName ? { userName } : undefined,
+        },
+      });
+
+      if (fnError) {
+        throw new Error(fnError.message || 'Failed to draft reply');
+      }
+
+      return data.draft as EmailDraft;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Draft failed';
+      toast.error(errorMsg);
+      return null;
+    }
+  }, []);
+
+  // Format a draft for chat display
+  const formatDraftForChat = useCallback((draft: EmailDraft, originalSubject: string): string => {
+    const lines: string[] = [];
+    
+    lines.push(`✉️ **Draft Reply Ready**`);
+    lines.push(`Replying to: *${originalSubject}*`);
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    lines.push(`**Subject:** ${draft.subject}`);
+    lines.push('');
+    lines.push(draft.body);
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    lines.push('📝 **What would you like to do?**');
+    lines.push('• Say "**send it**" to send this reply');
+    lines.push('• Say "**make it shorter**" or "**more friendly**" to adjust');
+    lines.push('• Say "**add...**" to include specific points');
+    lines.push('• Say "**start over**" for a fresh draft');
+
+    return lines.join('\n');
+  }, []);
+
   // Format analysis for chat display
   const formatAnalysisForChat = useCallback((analysisData: InboxAnalysis): string => {
     const lines: string[] = [];
@@ -159,7 +227,7 @@ export function useInboxIntelligence() {
       lines.push('---');
       lines.push('🔴 **URGENT — Needs Immediate Attention**');
       analysisData.urgent.forEach((email, i) => {
-        lines.push(`${i + 1}. **${email.subject}** (from ${email.from})`);
+        lines.push(`**${i + 1}.** "${email.subject}" (from ${email.from})`);
         lines.push(`   ${email.summary}`);
         if (email.suggestedAction) {
           lines.push(`   → *${email.suggestedAction}*`);
@@ -172,7 +240,8 @@ export function useInboxIntelligence() {
       lines.push('---');
       lines.push('🟡 **NEEDS RESPONSE — Requests & Approvals**');
       analysisData.needsResponse.forEach((email, i) => {
-        lines.push(`${i + 1}. **${email.subject}** (from ${email.from})`);
+        const num = analysisData.urgent.length + i + 1;
+        lines.push(`**${num}.** "${email.subject}" (from ${email.from})`);
         lines.push(`   ${email.summary}`);
         if (email.suggestedAction) {
           lines.push(`   → *${email.suggestedAction}*`);
@@ -184,8 +253,9 @@ export function useInboxIntelligence() {
     if (analysisData.fyi.length > 0) {
       lines.push('---');
       lines.push('🟢 **FYI — No Action Needed**');
+      const startNum = analysisData.urgent.length + analysisData.needsResponse.length + 1;
       analysisData.fyi.slice(0, 5).forEach((email, i) => {
-        lines.push(`${i + 1}. **${email.subject}** — ${email.summary}`);
+        lines.push(`**${startNum + i}.** "${email.subject}" — ${email.summary}`);
       });
       if (analysisData.fyi.length > 5) {
         lines.push(`   ...and ${analysisData.fyi.length - 5} more`);
@@ -194,10 +264,42 @@ export function useInboxIntelligence() {
 
     lines.push('');
     lines.push('---');
-    lines.push('Would you like me to **draft a reply** to any of these emails? Just tell me which one!');
+    lines.push('💬 **Want me to draft a reply?** Just say "draft reply to #1" or "reply to the invoice email"');
 
     return lines.join('\n');
   }, []);
+
+  // Get email by number from analysis
+  const getEmailByNumber = useCallback((num: number): AnalyzedEmail | null => {
+    if (!analysis) return null;
+    
+    const allEmails = [
+      ...analysis.urgent,
+      ...analysis.needsResponse,
+      ...analysis.fyi,
+    ];
+    
+    if (num < 1 || num > allEmails.length) return null;
+    return allEmails[num - 1];
+  }, [analysis]);
+
+  // Find email by subject keyword
+  const findEmailByKeyword = useCallback((keyword: string): AnalyzedEmail | null => {
+    if (!analysis) return null;
+    
+    const allEmails = [
+      ...analysis.urgent,
+      ...analysis.needsResponse,
+      ...analysis.fyi,
+    ];
+    
+    const lower = keyword.toLowerCase();
+    return allEmails.find(e => 
+      e.subject.toLowerCase().includes(lower) || 
+      e.summary.toLowerCase().includes(lower) ||
+      e.from.toLowerCase().includes(lower)
+    ) || null;
+  }, [analysis]);
 
   return {
     isLoading,
@@ -208,6 +310,10 @@ export function useInboxIntelligence() {
     error,
     checkConnection,
     analyzeInbox,
+    draftReply,
     formatAnalysisForChat,
+    formatDraftForChat,
+    getEmailByNumber,
+    findEmailByKeyword,
   };
 }

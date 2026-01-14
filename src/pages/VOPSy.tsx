@@ -93,13 +93,23 @@ export default function VOPSy() {
   const { messages, isLoading, sendMessage, clearHistory, addAssistantMessage } = useVOPSyChat();
   const [input, setInput] = useState("");
   const [isInboxLoading, setIsInboxLoading] = useState(false);
+  const [isDrafting, setIsDrafting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Inbox intelligence hook
-  const { analyzeInbox, formatAnalysisForChat, status: inboxStatus } = useInboxIntelligence();
+  const { 
+    analyzeInbox, 
+    formatAnalysisForChat, 
+    draftReply,
+    formatDraftForChat,
+    getEmailByNumber,
+    findEmailByKeyword,
+    analysis: currentAnalysis,
+    status: inboxStatus 
+  } = useInboxIntelligence();
 
   // Voice input hook
   const {
@@ -128,6 +138,84 @@ export default function VOPSy() {
             lower.includes('show') || lower.includes('analyze') || lower.includes('summarize') ||
             lower.includes('what') || lower.includes('need'));
   }, []);
+
+  // Check if message is a draft request
+  const isDraftRequest = useCallback((text: string): { isDraft: boolean; emailNum?: number; keyword?: string; tone?: 'professional' | 'friendly' | 'brief' | 'detailed' } => {
+    const lower = text.toLowerCase();
+    
+    if (!lower.includes('draft') && !lower.includes('reply') && !lower.includes('respond')) {
+      return { isDraft: false };
+    }
+
+    // Extract email number (e.g., "draft reply to #1" or "reply to 2")
+    const numMatch = lower.match(/(?:#|number\s*)?(\d+)/);
+    const emailNum = numMatch ? parseInt(numMatch[1], 10) : undefined;
+
+    // Detect tone
+    let tone: 'professional' | 'friendly' | 'brief' | 'detailed' | undefined;
+    if (lower.includes('friendly') || lower.includes('casual') || lower.includes('warm')) {
+      tone = 'friendly';
+    } else if (lower.includes('brief') || lower.includes('short') || lower.includes('concise')) {
+      tone = 'brief';
+    } else if (lower.includes('detailed') || lower.includes('thorough') || lower.includes('comprehensive')) {
+      tone = 'detailed';
+    } else {
+      tone = 'professional';
+    }
+
+    // If no number, try to find a keyword
+    let keyword: string | undefined;
+    if (!emailNum) {
+      // Common patterns: "reply to the invoice email", "draft response to meeting request"
+      const keywordPatterns = [
+        /(?:reply|respond|draft)\s+(?:to\s+)?(?:the\s+)?(.+?)(?:\s+email)?$/,
+        /(?:about|regarding)\s+(.+)$/,
+      ];
+      for (const pattern of keywordPatterns) {
+        const match = lower.match(pattern);
+        if (match && match[1] && match[1].length > 2) {
+          keyword = match[1].trim();
+          break;
+        }
+      }
+    }
+
+    return { isDraft: true, emailNum, keyword, tone };
+  }, []);
+
+  // Handle draft request
+  const handleDraftRequest = useCallback(async (emailNum?: number, keyword?: string, tone: 'professional' | 'friendly' | 'brief' | 'detailed' = 'professional') => {
+    if (!currentAnalysis) {
+      addAssistantMessage(`📭 I don't have any emails loaded yet. Let me check your inbox first...`);
+      await handleInboxRequest();
+      return;
+    }
+
+    // Find the email
+    let email = emailNum ? getEmailByNumber(emailNum) : null;
+    if (!email && keyword) {
+      email = findEmailByKeyword(keyword);
+    }
+
+    if (!email) {
+      addAssistantMessage(`🤔 I couldn't find that email. Try saying "draft reply to #1" with a number from the inbox report, or mention a keyword from the email subject.`);
+      return;
+    }
+
+    setIsDrafting(true);
+    addAssistantMessage(`✍️ Drafting a ${tone} reply to "${email.subject}"...`);
+
+    const draft = await draftReply(email, tone);
+    
+    if (draft) {
+      const formattedDraft = formatDraftForChat(draft, email.subject);
+      addAssistantMessage(formattedDraft);
+    } else {
+      addAssistantMessage(`❌ Sorry, I had trouble drafting that reply. Please try again.`);
+    }
+
+    setIsDrafting(false);
+  }, [currentAnalysis, getEmailByNumber, findEmailByKeyword, draftReply, formatDraftForChat, addAssistantMessage]);
 
   // Handle inbox analysis with real data
   const handleInboxRequest = useCallback(async () => {
@@ -185,15 +273,23 @@ Want me to help with something else in the meantime?`;
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || isInboxLoading) return;
+    if (!input.trim() || isLoading || isInboxLoading || isDrafting) return;
     stopListening();
     const message = input.trim();
     setInput("");
 
+    // Check if this is a draft request
+    const draftCheck = isDraftRequest(message);
+    if (draftCheck.isDraft) {
+      await sendMessage(message, true);
+      await handleDraftRequest(draftCheck.emailNum, draftCheck.keyword, draftCheck.tone);
+      textareaRef.current?.focus();
+      return;
+    }
+
     // Check if this is an inbox request
     if (isInboxRequest(message)) {
-      // Add user message first, then handle inbox
-      await sendMessage(message, true); // skipAI = true
+      await sendMessage(message, true);
       await handleInboxRequest();
     } else {
       await sendMessage(message);
@@ -206,7 +302,7 @@ Want me to help with something else in the meantime?`;
     stopListening();
     
     if (isInbox) {
-      await sendMessage(prompt, true); // Add user message without AI response
+      await sendMessage(prompt, true);
       await handleInboxRequest();
     } else {
       await sendMessage(prompt);
