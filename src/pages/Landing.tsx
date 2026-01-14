@@ -15,7 +15,8 @@ import {
   Clock,
   Heart,
   Rocket,
-  Sparkles
+  Sparkles,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
@@ -150,8 +151,9 @@ export default function Landing() {
                 Get Started
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
-                See How It Works
+              <Button size="lg" variant="outline" onClick={handleScheduleCall} className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Schedule a Call
               </Button>
             </div>
           </motion.div>
