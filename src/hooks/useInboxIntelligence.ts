@@ -285,9 +285,10 @@ export function useInboxIntelligence() {
     return lines.join('\n');
   }, []);
 
-  // Format analysis for chat display
+  // Format analysis for chat display - overview summary
   const formatAnalysisForChat = useCallback((analysisData: InboxAnalysis): string => {
     const lines: string[] = [];
+    const totalEmails = analysisData.urgent.length + analysisData.needsResponse.length + analysisData.fyi.length;
     
     lines.push(`📧 **Inbox Intelligence Report**`);
     lines.push(`Connected to: **${analysisData.connectedAccount}** (${analysisData.provider})`);
@@ -295,52 +296,69 @@ export function useInboxIntelligence() {
     lines.push('');
     lines.push(analysisData.summary);
     lines.push('');
-
-    if (analysisData.urgent.length > 0) {
-      lines.push('---');
-      lines.push('🔴 **URGENT — Needs Immediate Attention**');
-      analysisData.urgent.forEach((email, i) => {
-        lines.push(`**${i + 1}.** "${email.subject}" (from ${email.from})`);
-        lines.push(`   ${email.summary}`);
-        if (email.suggestedAction) {
-          lines.push(`   → *${email.suggestedAction}*`);
-        }
-      });
-      lines.push('');
-    }
-
-    if (analysisData.needsResponse.length > 0) {
-      lines.push('---');
-      lines.push('🟡 **NEEDS RESPONSE — Requests & Approvals**');
-      analysisData.needsResponse.forEach((email, i) => {
-        const num = analysisData.urgent.length + i + 1;
-        lines.push(`**${num}.** "${email.subject}" (from ${email.from})`);
-        lines.push(`   ${email.summary}`);
-        if (email.suggestedAction) {
-          lines.push(`   → *${email.suggestedAction}*`);
-        }
-      });
-      lines.push('');
-    }
-
-    if (analysisData.fyi.length > 0) {
-      lines.push('---');
-      lines.push('🟢 **FYI — No Action Needed**');
-      const startNum = analysisData.urgent.length + analysisData.needsResponse.length + 1;
-      analysisData.fyi.slice(0, 5).forEach((email, i) => {
-        lines.push(`**${startNum + i}.** "${email.subject}" — ${email.summary}`);
-      });
-      if (analysisData.fyi.length > 5) {
-        lines.push(`   ...and ${analysisData.fyi.length - 5} more`);
-      }
-    }
-
+    lines.push('---');
+    lines.push(`📬 **${totalEmails} emails found:**`);
+    lines.push(`• 🔴 ${analysisData.urgent.length} urgent`);
+    lines.push(`• 🟡 ${analysisData.needsResponse.length} need response`);
+    lines.push(`• 🟢 ${analysisData.fyi.length} FYI only`);
     lines.push('');
     lines.push('---');
-    lines.push('💬 **Want me to draft a reply?** Just say "draft reply to #1" or "reply to the invoice email"');
+    lines.push('💬 **Say "show emails" to review them one by one with action options**');
+    lines.push('Or say "draft reply to #1" to jump directly to a specific email');
 
     return lines.join('\n');
   }, []);
+
+  // Format a single email for detailed view with actions
+  const formatSingleEmailForChat = useCallback((email: AnalyzedEmail, index: number, total: number): string => {
+    const lines: string[] = [];
+    
+    const priorityIcon = email.priority === 'urgent' ? '🔴' : email.priority === 'needs_response' ? '🟡' : '🟢';
+    const priorityLabel = email.priority === 'urgent' ? 'URGENT' : email.priority === 'needs_response' ? 'NEEDS RESPONSE' : 'FYI';
+    
+    lines.push(`📧 **Email ${index} of ${total}** ${priorityIcon} ${priorityLabel}`);
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    lines.push(`**Subject:** ${email.subject}`);
+    lines.push(`**From:** ${email.from}`);
+    lines.push(`**Received:** ${new Date(email.date).toLocaleString()}`);
+    lines.push('');
+    lines.push(`**Summary:** ${email.summary}`);
+    lines.push('');
+    if (email.suggestedAction) {
+      lines.push(`💡 **Suggested action:** ${email.suggestedAction}`);
+      lines.push('');
+    }
+    lines.push('---');
+    lines.push('');
+    lines.push('**📋 What would you like to do?**');
+    lines.push('');
+    lines.push(`• **"Draft reply"** — I'll write a response for you`);
+    lines.push(`• **"Create task"** — Add a follow-up task to your list`);
+    lines.push(`• **"Create project"** — Start a new project from this email`);
+    lines.push(`• **"Archive"** — Mark as read and archive (coming soon)`);
+    lines.push(`• **"Next"** — Show the next email`);
+    lines.push(`• **"Skip to urgent"** — Jump to urgent emails only`);
+    lines.push('');
+    if (index < total) {
+      lines.push(`📬 Say **"next"** to see email ${index + 1} of ${total}`);
+    } else {
+      lines.push(`✅ This is the last email. Say **"back to summary"** to see the overview.`);
+    }
+
+    return lines.join('\n');
+  }, []);
+
+  // Get all emails in priority order
+  const getAllEmailsInOrder = useCallback((): AnalyzedEmail[] => {
+    if (!analysis) return [];
+    return [
+      ...analysis.urgent,
+      ...analysis.needsResponse,
+      ...analysis.fyi,
+    ];
+  }, [analysis]);
 
   // Get email by number from analysis
   const getEmailByNumber = useCallback((num: number): AnalyzedEmail | null => {
@@ -389,8 +407,10 @@ export function useInboxIntelligence() {
     sendDraft,
     clearDraft,
     formatAnalysisForChat,
+    formatSingleEmailForChat,
     formatDraftForChat,
     getEmailByNumber,
     findEmailByKeyword,
+    getAllEmailsInOrder,
   };
 }
