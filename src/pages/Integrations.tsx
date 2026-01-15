@@ -105,13 +105,14 @@ const integrations: Integration[] = [
   {
     id: "stripe",
     name: "Stripe",
-    description: "Connect your Stripe account for payment processing",
+    description: "Payment processing is configured via environment secrets",
     icon: "https://stripe.com/favicon.ico",
     category: "finance",
-    status: "disconnected",
-    oauthProvider: "stripe",
+    status: "connected",
+    // No oauthProvider - Stripe is configured via STRIPE_SECRET_KEY
     features: ["Payment processing", "Subscription billing", "Invoice management", "Revenue analytics"],
     popular: true,
+    connectedAccount: "Configured via API Key",
   },
   {
     id: "paypal",
