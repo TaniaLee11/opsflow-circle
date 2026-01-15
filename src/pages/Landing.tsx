@@ -270,7 +270,7 @@ export default function Landing() {
                 </div>
               </div>
 
-              {/* Human Backup */}
+              {/* Human-Led Services */}
               <div className="glass rounded-xl p-4 sm:p-6 border border-border">
                 <div className="flex items-start gap-3 sm:gap-4">
                   <div className="p-2 sm:p-3 rounded-xl bg-secondary shrink-0">
@@ -278,11 +278,11 @@ export default function Landing() {
                   </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 sm:mb-2">
-                      Real Humans When You Need Them
+                      Human-Led Advisory, Tax & Compliance
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      AI is powerful, but sometimes you need a real person. Our team of bookkeepers, 
-                      tax professionals, and operations experts are always available to step in.
+                      AI is powerful, but tax prep, compliance, and strategic advisory are 100% human-led. 
+                      Work directly with Tanya Potter and our team of professionals—and get the Hub as a bonus.
                     </p>
                   </div>
                 </div>
