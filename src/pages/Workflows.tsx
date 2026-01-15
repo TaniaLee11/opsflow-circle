@@ -214,7 +214,7 @@ function WorkflowsContent() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       
-      <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
+      <main className="md:ml-64 min-h-screen pt-14 md:pt-0">
         {/* Header */}
         <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
