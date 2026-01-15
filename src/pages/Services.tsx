@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
+import { useNavigate } from "react-router-dom";
 import { 
   ArrowRight,
   Calculator,
@@ -16,7 +17,13 @@ import {
   Cog,
   Shield,
   DollarSign,
-  ExternalLink
+  ExternalLink,
+  Sparkles,
+  Zap,
+  Crown,
+  HeartHandshake,
+  Receipt,
+  ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
@@ -184,66 +191,134 @@ const serviceCategories = [
   }
 ];
 
-const pricing = [
+// Unified 7 tiers - Platform-led (AI Free, Assistant, Operations) vs Human-led (Advisory, Tax, Compliance, Enterprise)
+const tiers = [
   {
+    id: "free",
     name: "AI Free",
+    icon: Sparkles,
     price: "Free",
-    description: "Basic AI assistant access",
-    features: ["Limited VOPSy AI access", "Educational resources", "Community support"],
-    cta: "Start Free"
+    description: "Get started with AI-powered tools built on years of accounting expertise",
+    features: [
+      "Limited VOPSy AI access",
+      "Educational resources",
+      "Community support",
+      "Basic financial tools"
+    ],
+    cta: "Start Free",
+    type: "platform", // Routes to Hub signup
+    highlight: false
   },
   {
+    id: "ai_assistant",
     name: "AI Assistant",
+    icon: Bot,
     price: "$39.99",
     period: "/month",
-    description: "For individuals getting organized",
-    features: ["Full VOPSy AI access", "Document assistance", "Basic financial guidance", "Email support"],
-    cta: "Get Started"
+    description: "Full AI assistant access with document help and financial guidance",
+    features: [
+      "Full VOPSy AI access",
+      "Document assistance",
+      "Basic financial guidance",
+      "Email support",
+      "Workflow automation"
+    ],
+    cta: "Get Started",
+    type: "platform",
+    highlight: false
   },
   {
+    id: "ai_operations",
     name: "AI Operations",
+    icon: Zap,
     price: "$99.99",
     period: "/month",
-    description: "For active businesses needing full support",
-    features: ["Everything in AI Assistant", "Monthly bookkeeping support", "Compliance tracking", "Priority support"],
-    popular: true,
-    cta: "Most Popular"
+    description: "Complete operations platform for active businesses",
+    features: [
+      "Everything in AI Assistant",
+      "Monthly bookkeeping support",
+      "Compliance tracking",
+      "Priority support",
+      "Financial dashboards"
+    ],
+    cta: "Most Popular",
+    type: "platform",
+    highlight: true,
+    popular: true
   },
   {
+    id: "ai_advisory",
+    name: "AI Advisory",
+    icon: HeartHandshake,
+    price: "$150",
+    period: "/hour",
+    priceNote: "$125/hour for nonprofits",
+    description: "Strategic financial guidance from Tanya Potter, plus full platform access",
+    features: [
+      "One-on-one advisory sessions",
+      "Strategic financial planning",
+      "Growth readiness assessments",
+      "Fractional CFO services",
+      "Full Hub access included"
+    ],
+    cta: "Schedule Consultation",
+    type: "human",
+    highlight: false
+  },
+  {
+    id: "ai_tax",
+    name: "AI Tax",
+    icon: Receipt,
+    price: "From $125",
+    priceNote: "Personal $125 • Personal w/Business $175 • Business $250",
+    description: "Professional tax preparation with expert review, plus platform access",
+    features: [
+      "Personal & business returns",
+      "Expert tax preparation",
+      "IRS notice support",
+      "Year-round tax planning",
+      "Full Hub access included"
+    ],
+    cta: "Schedule Tax Review",
+    type: "human",
+    highlight: false
+  },
+  {
+    id: "ai_compliance",
+    name: "AI Compliance",
+    icon: ClipboardCheck,
+    price: "$350",
+    period: "/quarter",
+    priceNote: "Plus cost of returns",
+    description: "Ongoing compliance management with dedicated support, plus platform access",
+    features: [
+      "Quarterly compliance review",
+      "Filing deadline management",
+      "Sales tax tracking",
+      "1099 contractor management",
+      "Full Hub access included"
+    ],
+    cta: "Schedule Compliance Call",
+    type: "human",
+    highlight: false
+  },
+  {
+    id: "ai_enterprise",
     name: "AI Enterprise",
+    icon: Crown,
     price: "$499–$999",
     period: "/month",
-    description: "For growing organizations with complex needs",
-    features: ["Everything in AI Operations", "Dedicated support team", "Custom integrations", "Advisory access"],
-    cta: "Contact Us"
-  }
-];
-
-const specializedPricing = [
-  {
-    name: "AI Advisory",
-    description: "Strategic financial guidance",
-    rates: [
-      { label: "For-Profit", price: "$150/hour" },
-      { label: "Nonprofit", price: "$125/hour" }
-    ]
-  },
-  {
-    name: "AI Tax",
-    description: "Tax preparation services",
-    rates: [
-      { label: "Personal Return", price: "$125" },
-      { label: "Personal w/ Business", price: "$175" },
-      { label: "Business Returns", price: "$250" }
-    ]
-  },
-  {
-    name: "AI Compliance",
-    description: "Quarterly compliance management",
-    rates: [
-      { label: "Quarterly Fee", price: "$350" },
-      { label: "Plus cost of return", price: "" }
-    ]
+    description: "Custom solutions for growing organizations with complex needs",
+    features: [
+      "Dedicated account manager",
+      "Custom integrations",
+      "White-glove onboarding",
+      "Multi-user access",
+      "Priority human support"
+    ],
+    cta: "Contact Us",
+    type: "human",
+    highlight: false
   }
 ];
 
@@ -259,6 +334,18 @@ const industriesServed = [
 ];
 
 export default function Services() {
+  const navigate = useNavigate();
+  
+  const handleTierSelect = (tier: typeof tiers[0]) => {
+    if (tier.type === "platform") {
+      // Platform-led tiers route to Hub signup
+      navigate("/tier-selection");
+    } else {
+      // Human-led tiers route to Calendly
+      window.open(CALENDLY_URL, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const handleScheduleCall = () => {
     window.open(CALENDLY_URL, '_blank', 'noopener,noreferrer');
   };
@@ -400,49 +487,102 @@ export default function Services() {
           </div>
         </section>
 
-        {/* Subscription Pricing */}
+        {/* Pricing Tiers - 7 Options */}
         <section className="py-20 px-4 sm:px-6">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-16"
+              className="text-center mb-8"
             >
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Subscription Plans
+                Choose Your Path
               </h2>
-              <p className="text-lg text-muted-foreground">
-                Choose the level of support that fits your needs.
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Whether you prefer AI-powered tools or hands-on expert guidance, we have the right fit for you.
               </p>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {pricing.map((tier, index) => (
+            {/* Platform-led vs Human-led explanation */}
+            <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-4xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="glass rounded-xl p-6 border-l-4 border-primary"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <Bot className="w-6 h-6 text-primary" />
+                  <h3 className="font-semibold text-foreground">AI-Powered Platform</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  <strong>AI Free, AI Assistant & AI Operations</strong> — Self-service tools built on years of accounting expertise. 
+                  Get intelligent guidance through the Virtual Operations Hub without direct human interaction.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="glass rounded-xl p-6 border-l-4 border-accent"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <HeartHandshake className="w-6 h-6 text-accent" />
+                  <h3 className="font-semibold text-foreground">Human-Led Services</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  <strong>AI Advisory, AI Tax, AI Compliance & AI Enterprise</strong> — Work directly with Tanya Potter and her team. 
+                  You get expert human guidance plus the Hub as an added bonus.
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Tier Cards */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {tiers.map((tier, index) => (
                 <motion.div
-                  key={tier.name}
+                  key={tier.id}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`glass rounded-2xl p-6 relative ${
-                    tier.popular ? 'border-2 border-primary' : ''
-                  }`}
+                  transition={{ delay: index * 0.05 }}
+                  className={`glass rounded-2xl p-6 relative flex flex-col ${
+                    tier.popular ? 'border-2 border-primary ring-2 ring-primary/20' : ''
+                  } ${tier.type === 'human' ? 'bg-accent/5' : ''}`}
                 >
                   {tier.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full">
                       Most Popular
                     </div>
                   )}
+                  
+                  {/* Type Badge */}
+                  <div className={`absolute top-4 right-4 px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                    tier.type === 'platform' 
+                      ? 'bg-primary/10 text-primary' 
+                      : 'bg-accent/20 text-accent-foreground'
+                  }`}>
+                    {tier.type === 'platform' ? 'Platform' : 'Human-Led'}
+                  </div>
+
                   <div className="text-center mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <tier.icon className="w-6 h-6 text-primary" />
+                    </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">{tier.name}</h3>
                     <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-3xl font-bold text-foreground">{tier.price}</span>
+                      <span className="text-2xl font-bold text-foreground">{tier.price}</span>
                       {tier.period && <span className="text-muted-foreground text-sm">{tier.period}</span>}
                     </div>
+                    {tier.priceNote && (
+                      <p className="text-xs text-muted-foreground mt-1">{tier.priceNote}</p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-2">{tier.description}</p>
                   </div>
-                  <ul className="space-y-2 mb-6">
+
+                  <ul className="space-y-2 mb-6 flex-grow">
                     {tier.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
@@ -450,56 +590,16 @@ export default function Services() {
                       </li>
                     ))}
                   </ul>
+
                   <Button 
-                    onClick={handleScheduleCall} 
+                    onClick={() => handleTierSelect(tier)}
                     className={`w-full ${tier.popular ? 'glow-primary' : ''}`}
                     variant={tier.popular ? 'default' : 'outline'}
                   >
                     {tier.cta}
+                    {tier.type === 'human' && <ExternalLink className="w-3 h-3 ml-2" />}
+                    {tier.type === 'platform' && <ArrowRight className="w-3 h-3 ml-2" />}
                   </Button>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Specialized Services Pricing */}
-        <section className="py-20 px-4 sm:px-6 bg-card/50">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Specialized Services
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                Project-based and specialized support for specific needs.
-              </p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {specializedPricing.map((service, index) => (
-                <motion.div
-                  key={service.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="glass rounded-2xl p-6"
-                >
-                  <h3 className="text-xl font-semibold text-foreground mb-2">{service.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-6">{service.description}</p>
-                  <div className="space-y-3">
-                    {service.rates.map((rate) => (
-                      <div key={rate.label} className="flex justify-between items-center">
-                        <span className="text-sm text-foreground">{rate.label}</span>
-                        <span className="text-sm font-medium text-primary">{rate.price}</span>
-                      </div>
-                    ))}
-                  </div>
                 </motion.div>
               ))}
             </div>
