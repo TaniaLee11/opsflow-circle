@@ -44,7 +44,7 @@ const FINANCIAL_KEYWORDS = ['cash flow', 'cashflow', 'invoices', 'invoice', 'rec
 
 const quickActions = [
   { icon: TrendingUp, label: "Cash flow analysis", prompt: "Show me my current cash flow and financial position from my connected accounts", category: "Finance", isFinancial: true },
-  { icon: Mail, label: "Check my inbox", prompt: "Go ahead — scan my real inbox and show me what needs attention", category: "Operations", isInbox: true },
+  { icon: Mail, label: "Check my inbox", prompt: "Go ahead — scan my inbox and show me what needs attention", category: "Operations", isInbox: true },
   { icon: Calendar, label: "Check my calendar", prompt: "Show me my calendar and upcoming meetings for this week", category: "Operations", isCalendar: true },
   { icon: ListTodo, label: "Today's priorities", prompt: "What should be my top priorities today? Give me a strategic assessment.", category: "Strategy" },
   { icon: Zap, label: "Automate workflow", prompt: "Suggest automations for my repetitive tasks. What processes can I optimize?", category: "Operations" },
