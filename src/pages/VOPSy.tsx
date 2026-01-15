@@ -111,16 +111,22 @@ export default function VOPSy() {
   const { 
     analyzeInbox, 
     formatAnalysisForChat, 
+    formatSingleEmailForChat,
     draftReply,
     sendDraft,
     clearDraft,
     formatDraftForChat,
     getEmailByNumber,
     findEmailByKeyword,
+    getAllEmailsInOrder,
     analysis: currentAnalysis,
     currentDraft,
     status: inboxStatus 
   } = useInboxIntelligence();
+
+  // Email navigation state
+  const [currentEmailIndex, setCurrentEmailIndex] = useState(0);
+  const [isViewingEmails, setIsViewingEmails] = useState(false);
 
   // Financial intelligence hook
   const {
@@ -711,11 +717,120 @@ Make sure you have Google Calendar or Outlook connected in **[Integrations](/int
     }
   }, [messages]);
 
+  // Check if this is an email navigation request
+  const isEmailNavigationRequest = useCallback((text: string): { isNav: boolean; action?: string } => {
+    const lower = text.toLowerCase();
+    
+    if (lower.includes('show email') || lower.includes('review email') || lower.includes('go through email') ||
+        (lower.includes('show') && lower.includes('one by one')) || lower === 'show emails') {
+      return { isNav: true, action: 'start' };
+    }
+    if (lower === 'next' || lower === 'next email' || lower.includes('show next') || lower === 'continue') {
+      return { isNav: true, action: 'next' };
+    }
+    if (lower === 'back' || lower === 'previous' || lower === 'prev' || lower.includes('previous email')) {
+      return { isNav: true, action: 'prev' };
+    }
+    if (lower.includes('back to summary') || lower.includes('show summary') || lower === 'summary') {
+      return { isNav: true, action: 'summary' };
+    }
+    if (lower.includes('skip to urgent') || lower.includes('urgent only')) {
+      return { isNav: true, action: 'urgent' };
+    }
+    
+    return { isNav: false };
+  }, []);
+
+  // Handle email navigation
+  const handleEmailNavigation = useCallback(async (action: string) => {
+    if (!currentAnalysis) {
+      addAssistantMessage(`📭 I don't have any emails loaded yet. Let me check your inbox first...`);
+      await handleInboxRequest();
+      return;
+    }
+
+    const allEmails = getAllEmailsInOrder();
+    if (allEmails.length === 0) {
+      addAssistantMessage(`📭 Your inbox is clear! No emails to review.`);
+      return;
+    }
+
+    switch (action) {
+      case 'start':
+        setCurrentEmailIndex(0);
+        setIsViewingEmails(true);
+        const firstEmail = allEmails[0];
+        addAssistantMessage(formatSingleEmailForChat(firstEmail, 1, allEmails.length));
+        break;
+        
+      case 'next':
+        if (!isViewingEmails) {
+          setCurrentEmailIndex(0);
+          setIsViewingEmails(true);
+          addAssistantMessage(formatSingleEmailForChat(allEmails[0], 1, allEmails.length));
+        } else if (currentEmailIndex < allEmails.length - 1) {
+          const nextIndex = currentEmailIndex + 1;
+          setCurrentEmailIndex(nextIndex);
+          addAssistantMessage(formatSingleEmailForChat(allEmails[nextIndex], nextIndex + 1, allEmails.length));
+        } else {
+          addAssistantMessage(`✅ **That's all the emails!**
+
+You've reviewed all ${allEmails.length} emails.
+
+**Quick recap:**
+• 🔴 ${currentAnalysis.urgent.length} urgent
+• 🟡 ${currentAnalysis.needsResponse.length} need response
+• 🟢 ${currentAnalysis.fyi.length} FYI only
+
+Say **"back to summary"** to see the overview, or ask me to draft a reply to any email by number.`);
+          setIsViewingEmails(false);
+        }
+        break;
+        
+      case 'prev':
+        if (currentEmailIndex > 0) {
+          const prevIndex = currentEmailIndex - 1;
+          setCurrentEmailIndex(prevIndex);
+          addAssistantMessage(formatSingleEmailForChat(allEmails[prevIndex], prevIndex + 1, allEmails.length));
+        } else {
+          addAssistantMessage(`📧 This is the first email. Say **"next"** to continue or **"back to summary"** to see the overview.`);
+        }
+        break;
+        
+      case 'summary':
+        setIsViewingEmails(false);
+        setCurrentEmailIndex(0);
+        addAssistantMessage(formatAnalysisForChat(currentAnalysis));
+        break;
+        
+      case 'urgent':
+        if (currentAnalysis.urgent.length === 0) {
+          addAssistantMessage(`✅ **No urgent emails!** Your inbox is in good shape.
+
+Say **"show emails"** to review all emails, or **"next"** to continue.`);
+        } else {
+          setCurrentEmailIndex(0);
+          setIsViewingEmails(true);
+          addAssistantMessage(formatSingleEmailForChat(currentAnalysis.urgent[0], 1, currentAnalysis.urgent.length));
+        }
+        break;
+    }
+  }, [currentAnalysis, currentEmailIndex, isViewingEmails, getAllEmailsInOrder, formatSingleEmailForChat, formatAnalysisForChat, addAssistantMessage, handleInboxRequest]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading || isInboxLoading || isCalendarLoading || isDrafting || isSendingEmail || isFinancialLoading || isTaskLoading) return;
     stopListening();
     const message = input.trim();
     setInput("");
+
+    // Check for email navigation
+    const emailNavCheck = isEmailNavigationRequest(message);
+    if (emailNavCheck.isNav && emailNavCheck.action) {
+      await sendMessage(message, true);
+      await handleEmailNavigation(emailNavCheck.action);
+      textareaRef.current?.focus();
+      return;
+    }
 
     // Check if this is a send request
     if (isSendRequest(message)) {
@@ -725,19 +840,31 @@ Make sure you have Google Calendar or Outlook connected in **[Integrations](/int
       return;
     }
 
-    // Check if this is a draft request
+    // Check if this is a draft request - also handle "draft reply" when viewing an email
     const draftCheck = isDraftRequest(message);
     if (draftCheck.isDraft) {
       await sendMessage(message, true);
-      await handleDraftRequest(draftCheck.emailNum, draftCheck.keyword, draftCheck.tone);
+      // If viewing emails and no specific number given, use current email
+      const emailNum = draftCheck.emailNum || (isViewingEmails ? currentEmailIndex + 1 : undefined);
+      await handleDraftRequest(emailNum, draftCheck.keyword, draftCheck.tone);
       textareaRef.current?.focus();
       return;
     }
 
-    // Check if this is a task/project/calendar action request
+    // Check for "create task" or "create project" when viewing an email - use email subject
     const taskActionCheck = isTaskActionRequest(message);
     if (taskActionCheck.isAction && taskActionCheck.action) {
       await sendMessage(message, true);
+      
+      // If viewing an email and creating task/project without details, use email info
+      if (isViewingEmails && (taskActionCheck.action === 'create_task' || taskActionCheck.action === 'create_project')) {
+        const allEmails = getAllEmailsInOrder();
+        const currentEmail = allEmails[currentEmailIndex];
+        if (currentEmail && !taskActionCheck.details) {
+          taskActionCheck.details = `Follow up: ${currentEmail.subject}`;
+        }
+      }
+      
       await handleTaskActionRequest(taskActionCheck.action, taskActionCheck.details);
       textareaRef.current?.focus();
       return;
