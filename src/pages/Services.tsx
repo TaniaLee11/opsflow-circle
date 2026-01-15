@@ -395,30 +395,6 @@ export default function Services() {
           </div>
         </section>
 
-        {/* Not Sure Where to Start - CTA First */}
-        <section className="py-16 px-4 sm:px-6 bg-card/50 border-y border-border/50">
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-                Not Sure Where to Start?
-              </h2>
-              <p className="text-lg text-muted-foreground mb-10">
-                Let's talk about your needs and find the right fit. No pressure, no commitment—
-                just a conversation about where you are and how we can help.
-              </p>
-              <Button size="lg" onClick={handleScheduleCall} className="glow-primary text-lg px-10 h-14">
-                <Calendar className="w-5 h-5 mr-2" />
-                Schedule a Free Consultation
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </Button>
-            </motion.div>
-          </div>
-        </section>
-
         {/* Choose Your Path - Pricing Section */}
         <section className="py-20 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
@@ -627,6 +603,30 @@ export default function Services() {
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Not Sure Where to Start - CTA */}
+        <section className="py-20 px-4 sm:px-6">
+          <div className="max-w-3xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
+                Not Sure Where to Start?
+              </h2>
+              <p className="text-lg text-muted-foreground mb-10">
+                Let's talk about your needs and find the right fit. No pressure, no commitment—
+                just a conversation about where you are and how we can help.
+              </p>
+              <Button size="lg" onClick={handleScheduleCall} className="glow-primary text-lg px-10 h-14">
+                <Calendar className="w-5 h-5 mr-2" />
+                Schedule a Free Consultation
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
+            </motion.div>
           </div>
         </section>
 
