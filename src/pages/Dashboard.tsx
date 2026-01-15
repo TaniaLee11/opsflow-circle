@@ -73,11 +73,11 @@ function DashboardContent() {
       
       <Sidebar />
       
-      {/* Main Content */}
-      <main className={cn(
-        "min-h-screen transition-all duration-300",
-        isMobile ? "pt-14" : "lg:ml-64"
-      )}>
+        {/* Main Content */}
+        <main className={cn(
+          "min-h-screen transition-all duration-300",
+          isMobile ? "pt-14" : "md:ml-64"
+        )}>
         {/* Header */}
         <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">

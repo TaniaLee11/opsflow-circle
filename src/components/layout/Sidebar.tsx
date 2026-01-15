@@ -249,7 +249,7 @@ export function Sidebar() {
     return (
       <>
         {/* Mobile Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border h-14 flex items-center px-4 lg:hidden">
+        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border h-14 flex items-center px-4 md:hidden">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
@@ -277,7 +277,7 @@ export function Sidebar() {
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       className={cn(
-        "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border z-50 flex flex-col transition-all duration-300 hidden lg:flex",
+        "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border z-50 flex flex-col transition-all duration-300 hidden md:flex",
         collapsed ? "w-20" : "w-64"
       )}
     >
