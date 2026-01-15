@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -10,7 +10,13 @@ import {
   Download, 
   Loader2,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Maximize,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -18,6 +24,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type GenerationType = "image" | "video" | "audio";
 
@@ -26,6 +34,102 @@ interface GeneratedContent {
   url: string;
   prompt: string;
   createdAt: Date;
+  isBeta?: boolean;
+}
+
+// Custom video player component
+function VideoPlayer({ src, className }: { src: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handlePlaybackRate = (rate: string) => {
+    const rateNum = parseFloat(rate);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rateNum;
+      setPlaybackRate(rateNum);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (videoRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        videoRef.current.requestFullscreen();
+      }
+    }
+  };
+
+  return (
+    <div className={cn("relative group", className)}>
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
+      <video
+        ref={videoRef}
+        src={src}
+        className="w-full rounded-lg border border-border"
+        onLoadedData={() => setIsLoading(false)}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+      />
+      
+      {/* Custom Controls Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-b-lg">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={togglePlay} className="text-white hover:bg-white/20">
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </Button>
+          
+          <Button variant="ghost" size="sm" onClick={toggleMute} className="text-white hover:bg-white/20">
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </Button>
+
+          <Select value={playbackRate.toString()} onValueChange={handlePlaybackRate}>
+            <SelectTrigger className="w-16 h-7 text-xs bg-white/10 border-white/20 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0.5">0.5x</SelectItem>
+              <SelectItem value="1">1x</SelectItem>
+              <SelectItem value="1.5">1.5x</SelectItem>
+              <SelectItem value="2">2x</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex-1" />
+
+          <Button variant="ghost" size="sm" onClick={toggleFullscreen} className="text-white hover:bg-white/20">
+            <Maximize className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Studio() {
@@ -51,7 +155,6 @@ export default function Studio() {
       });
 
       if (error) {
-        // Check for rate limiting or payment errors
         if (error.message?.includes("429") || error.message?.includes("rate")) {
           toast.error("Rate limit exceeded. Please try again in a moment.");
         } else if (error.message?.includes("402")) {
@@ -63,13 +166,20 @@ export default function Studio() {
       }
 
       if (data?.url) {
+        const isBeta = activeTab === "video" || activeTab === "audio";
         setGeneratedContent(prev => [{
           type: activeTab,
           url: data.url,
           prompt: prompt.trim(),
-          createdAt: new Date()
+          createdAt: new Date(),
+          isBeta
         }, ...prev]);
-        toast.success(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} generated successfully!`);
+        
+        if (isBeta) {
+          toast.info(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} generation is in beta - showing sample content`);
+        } else {
+          toast.success(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} generated successfully!`);
+        }
         setPrompt("");
       }
     } catch (error: any) {
@@ -98,24 +208,36 @@ export default function Studio() {
     }
   };
 
-  const tabConfig = {
+  const tabConfig: Record<GenerationType, {
+    icon: typeof Image;
+    label: string;
+    placeholder: string;
+    color: string;
+    available: boolean;
+    betaMessage?: string;
+  }> = {
     image: {
       icon: Image,
       label: "Image",
       placeholder: "Describe the image you want to create... (e.g., 'A serene mountain landscape at sunset with vibrant colors')",
-      color: "text-primary"
+      color: "text-primary",
+      available: true
     },
     video: {
       icon: Video,
       label: "Video",
       placeholder: "Describe the video scene... (e.g., 'Gentle waves crashing on a tropical beach, slow motion')",
-      color: "text-info"
+      color: "text-info",
+      available: false,
+      betaMessage: "Video generation is coming soon. Currently showing sample content."
     },
     audio: {
       icon: Music,
       label: "Audio",
       placeholder: "Describe the audio or music... (e.g., 'Calm ambient music with soft piano and nature sounds')",
-      color: "text-success"
+      color: "text-success",
+      available: false,
+      betaMessage: "Audio generation is coming soon. Currently showing sample content."
     }
   };
 
@@ -167,6 +289,16 @@ export default function Studio() {
                     const config = tabConfig[type];
                     return (
                       <TabsContent key={type} value={type} className="space-y-4">
+                        {/* Beta warning for video/audio */}
+                        {!config.available && config.betaMessage && (
+                          <Alert className="border-warning/50 bg-warning/10">
+                            <AlertCircle className="h-4 w-4 text-warning" />
+                            <AlertDescription className="text-sm">
+                              {config.betaMessage}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground flex items-center gap-2">
                             <Wand2 className="w-4 h-4 text-primary" />
@@ -196,6 +328,7 @@ export default function Studio() {
                             <>
                               <Sparkles className="w-4 h-4 mr-2" />
                               Generate {config.label}
+                              {!config.available && <span className="ml-1 text-xs opacity-70">(Beta)</span>}
                             </>
                           )}
                         </Button>
@@ -240,9 +373,16 @@ export default function Studio() {
                               </div>
 
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                                  {content.prompt}
-                                </p>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
+                                    {content.prompt}
+                                  </p>
+                                  {content.isBeta && (
+                                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-warning/20 text-warning-foreground">
+                                      Beta
+                                    </span>
+                                  )}
+                                </div>
 
                                 {content.type === "image" && (
                                   <img
@@ -253,10 +393,9 @@ export default function Studio() {
                                 )}
 
                                 {content.type === "video" && (
-                                  <video
-                                    src={content.url}
-                                    controls
-                                    className="w-full max-w-md rounded-lg border border-border"
+                                  <VideoPlayer 
+                                    src={content.url} 
+                                    className="max-w-md"
                                   />
                                 )}
 
