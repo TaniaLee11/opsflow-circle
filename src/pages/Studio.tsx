@@ -228,8 +228,7 @@ export default function Studio() {
       label: "Video",
       placeholder: "Describe the video scene... (e.g., 'Gentle waves crashing on a tropical beach, slow motion')",
       color: "text-info",
-      available: false,
-      betaMessage: "Video generation is coming soon. Currently showing sample content."
+      available: true
     },
     audio: {
       icon: Music,

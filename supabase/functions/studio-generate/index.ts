@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Replicate from "https://esm.sh/replicate@0.25.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,8 +138,10 @@ serve(async (req) => {
       );
     }
 
-    // 5. Get API key
+    // 5. Get API keys
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
+
     if (!LOVABLE_API_KEY) {
       console.error("[studio-generate] LOVABLE_API_KEY not configured");
       throw new Error("AI service not configured");
@@ -197,49 +200,72 @@ serve(async (req) => {
     }
 
     if (type === "video") {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            {
-              role: "system",
-              content: "You are a creative video description assistant. Generate a detailed video concept based on the user's prompt."
-            },
-            {
-              role: "user",
-              content: `Create a video concept for: ${prompt}`
-            }
-          ]
-        }),
-      });
+      // Check if Replicate API key is configured
+      if (!REPLICATE_API_KEY) {
+        console.error("[studio-generate] REPLICATE_API_KEY not configured");
+        return new Response(
+          JSON.stringify({ 
+            error: "Video generation service not configured. Please add REPLICATE_API_KEY." 
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-      if (!response.ok) {
-        const status = response.status;
-        if (status === 429) {
+      console.log("[studio-generate] Starting Replicate video generation...");
+
+      try {
+        const replicate = new Replicate({
+          auth: REPLICATE_API_KEY,
+        });
+
+        // Use Stable Video Diffusion or similar model for text-to-video
+        // Using minimax/video-01 which is a text-to-video model
+        const output = await replicate.run(
+          "minimax/video-01",
+          {
+            input: {
+              prompt: prompt,
+              prompt_optimizer: true,
+            }
+          }
+        );
+
+        console.log("[studio-generate] Replicate video output:", output);
+
+        // The output is typically a URL to the generated video
+        const videoUrl = typeof output === 'string' ? output : (output as any)?.url || (Array.isArray(output) ? output[0] : null);
+
+        if (!videoUrl) {
+          console.error("[studio-generate] No video URL in Replicate response:", output);
+          throw new Error("No video URL in response");
+        }
+
+        result = { 
+          url: videoUrl,
+          type: "video"
+        };
+      } catch (replicateError) {
+        console.error("[studio-generate] Replicate error:", replicateError);
+        
+        // Provide more helpful error messages
+        const errorMessage = replicateError instanceof Error ? replicateError.message : "Unknown error";
+        
+        if (errorMessage.includes("Invalid API token")) {
           return new Response(
-            JSON.stringify({ error: "AI service rate limit exceeded. Please try again later." }),
+            JSON.stringify({ error: "Invalid Replicate API key. Please check your configuration." }),
+            { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        if (errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+          return new Response(
+            JSON.stringify({ error: "Replicate rate limit exceeded. Please try again later." }),
             { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-        if (status === 402) {
-          return new Response(
-            JSON.stringify({ error: "AI service credits exhausted. Please contact support." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        throw new Error("Failed to generate video concept");
-      }
 
-      result = { 
-        url: "https://www.w3schools.com/html/mov_bbb.mp4",
-        type: "video",
-        message: "Video generation is in beta. This is a sample video."
-      };
+        throw new Error(`Video generation failed: ${errorMessage}`);
+      }
     }
 
     if (type === "audio") {
