@@ -172,7 +172,7 @@ export default function TaxSeason2026() {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
 
-  const CALENDLY_URL = "https://calendly.com/virtualopshub/consultation";
+  const CALENDLY_URL = "https://calendly.com/vops";
   
   const handleCTA = (action: string) => {
     if (action === "next") {
@@ -246,7 +246,7 @@ export default function TaxSeason2026() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="hidden sm:flex">
               Home
             </Button>
-            <Button size="sm" onClick={() => window.open("https://calendly.com/virtualopshub/consultation", "_blank")} className="glow-primary-sm text-sm sm:text-base">
+            <Button size="sm" onClick={() => window.open("https://calendly.com/vops", "_blank")} className="glow-primary-sm text-sm sm:text-base">
               Schedule a Call
             </Button>
           </div>
