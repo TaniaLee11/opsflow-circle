@@ -27,6 +27,34 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json();
+    
+    // Handle video status polling
+    if (body.predictionId) {
+      const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
+      if (!REPLICATE_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: "Video service not configured" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const replicate = new Replicate({ auth: REPLICATE_API_KEY });
+      
+      console.log(`[studio-generate] Checking prediction status: ${body.predictionId}`);
+      const prediction = await replicate.predictions.get(body.predictionId);
+      console.log(`[studio-generate] Prediction status: ${prediction.status}`);
+
+      return new Response(
+        JSON.stringify({
+          status: prediction.status,
+          output: prediction.output,
+          error: prediction.error,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // 1. Authenticate user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -88,7 +116,6 @@ serve(async (req) => {
     }
 
     // 3. Parse and validate input
-    const body = await req.json();
     const { type, prompt } = body;
 
     if (!type || !VALID_TYPES.includes(type)) {
@@ -200,54 +227,40 @@ serve(async (req) => {
     }
 
     if (type === "video") {
-      // Check if Replicate API key is configured
       if (!REPLICATE_API_KEY) {
         console.error("[studio-generate] REPLICATE_API_KEY not configured");
         return new Response(
-          JSON.stringify({ 
-            error: "Video generation service not configured. Please add REPLICATE_API_KEY." 
-          }),
+          JSON.stringify({ error: "Video generation service not configured." }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      console.log("[studio-generate] Starting Replicate video generation...");
+      console.log("[studio-generate] Starting Replicate video generation (async)...");
 
       try {
-        const replicate = new Replicate({
-          auth: REPLICATE_API_KEY,
+        const replicate = new Replicate({ auth: REPLICATE_API_KEY });
+
+        // Start the prediction without waiting (videos take 1-3 min)
+        const prediction = await replicate.predictions.create({
+          model: "minimax/video-01",
+          input: {
+            prompt: prompt,
+            prompt_optimizer: true,
+          }
         });
 
-        // Use Stable Video Diffusion or similar model for text-to-video
-        // Using minimax/video-01 which is a text-to-video model
-        const output = await replicate.run(
-          "minimax/video-01",
-          {
-            input: {
-              prompt: prompt,
-              prompt_optimizer: true,
-            }
-          }
-        );
+        console.log(`[studio-generate] Video prediction started: ${prediction.id}, status: ${prediction.status}`);
 
-        console.log("[studio-generate] Replicate video output:", output);
-
-        // The output is typically a URL to the generated video
-        const videoUrl = typeof output === 'string' ? output : (output as any)?.url || (Array.isArray(output) ? output[0] : null);
-
-        if (!videoUrl) {
-          console.error("[studio-generate] No video URL in Replicate response:", output);
-          throw new Error("No video URL in response");
-        }
-
+        // Return prediction ID for client to poll
         result = { 
-          url: videoUrl,
-          type: "video"
+          predictionId: prediction.id,
+          status: prediction.status,
+          type: "video",
+          polling: true
         };
       } catch (replicateError) {
         console.error("[studio-generate] Replicate error:", replicateError);
         
-        // Provide more helpful error messages
         const errorMessage = replicateError instanceof Error ? replicateError.message : "Unknown error";
         
         if (errorMessage.includes("Invalid API token")) {
@@ -321,20 +334,21 @@ serve(async (req) => {
       );
     }
 
-    // 6. Log usage for rate limiting
-    const { error: insertError } = await serviceClient.from('studio_generations').insert({
-      user_id: userId,
-      type: type,
-      prompt: prompt.substring(0, 500), // Truncate for storage
-      tier: effectiveTier,
-    });
+    // 6. Log usage for rate limiting (skip for polling requests)
+    if (!result.polling) {
+      const { error: insertError } = await serviceClient.from('studio_generations').insert({
+        user_id: userId,
+        type: type,
+        prompt: prompt.substring(0, 500),
+        tier: effectiveTier,
+      });
 
-    if (insertError) {
-      console.error("[studio-generate] Failed to log usage:", insertError.message);
-      // Continue anyway - don't block generation if logging fails
+      if (insertError) {
+        console.error("[studio-generate] Failed to log usage:", insertError.message);
+      }
     }
 
-    console.log(`[studio-generate] Successfully generated ${type} for user ${userId}`);
+    console.log(`[studio-generate] Successfully processed ${type} for user ${userId}`);
 
     return new Response(
       JSON.stringify(result),
