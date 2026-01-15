@@ -137,6 +137,68 @@ export default function Studio() {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent[]>([]);
+  const [videoProgress, setVideoProgress] = useState<string | null>(null);
+
+  // Poll for video generation status
+  const pollVideoStatus = async (predictionId: string, originalPrompt: string) => {
+    const maxAttempts = 60; // 5 minutes max (5s intervals)
+    let attempts = 0;
+
+    const poll = async (): Promise<void> => {
+      attempts++;
+      setVideoProgress(`Generating video... (${Math.min(attempts * 5, 100)}%)`);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("studio-generate", {
+          body: { predictionId }
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        console.log("Poll response:", data);
+
+        if (data.status === "succeeded" && data.output) {
+          // Video is ready
+          const videoUrl = typeof data.output === 'string' ? data.output : data.output[0];
+          setGeneratedContent(prev => [{
+            type: "video",
+            url: videoUrl,
+            prompt: originalPrompt,
+            createdAt: new Date(),
+            isBeta: false
+          }, ...prev]);
+          toast.success("Video generated successfully!");
+          setIsGenerating(false);
+          setVideoProgress(null);
+          return;
+        }
+
+        if (data.status === "failed") {
+          throw new Error(data.error || "Video generation failed");
+        }
+
+        if (data.status === "canceled") {
+          throw new Error("Video generation was canceled");
+        }
+
+        // Still processing - continue polling
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else {
+          throw new Error("Video generation timed out. Please try again.");
+        }
+      } catch (err: any) {
+        console.error("Polling error:", err);
+        toast.error(err.message || "Failed to check video status");
+        setIsGenerating(false);
+        setVideoProgress(null);
+      }
+    };
+
+    await poll();
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -145,6 +207,7 @@ export default function Studio() {
     }
 
     setIsGenerating(true);
+    setVideoProgress(null);
 
     try {
       const { data, error } = await supabase.functions.invoke("studio-generate", {
@@ -162,11 +225,20 @@ export default function Studio() {
         } else {
           throw error;
         }
+        setIsGenerating(false);
+        return;
+      }
+
+      // Handle video polling
+      if (data?.polling && data?.predictionId) {
+        toast.info("Video generation started! This may take 1-3 minutes...");
+        setPrompt("");
+        pollVideoStatus(data.predictionId, prompt.trim());
         return;
       }
 
       if (data?.url) {
-        const isBeta = activeTab === "video" || activeTab === "audio";
+        const isBeta = activeTab === "audio"; // Only audio is beta now
         setGeneratedContent(prev => [{
           type: activeTab,
           url: data.url,
@@ -181,11 +253,11 @@ export default function Studio() {
           toast.success(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} generated successfully!`);
         }
         setPrompt("");
+        setIsGenerating(false);
       }
     } catch (error: any) {
       console.error("Generation error:", error);
       toast.error(error.message || "Failed to generate content. Please try again.");
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -312,6 +384,19 @@ export default function Studio() {
                           />
                         </div>
 
+                        {/* Video progress indicator */}
+                        {videoProgress && activeTab === "video" && (
+                          <div className="p-4 rounded-lg bg-info/10 border border-info/30">
+                            <div className="flex items-center gap-3">
+                              <Loader2 className="w-5 h-5 animate-spin text-info" />
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{videoProgress}</p>
+                                <p className="text-xs text-muted-foreground">Video generation typically takes 1-3 minutes</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <Button
                           onClick={handleGenerate}
                           disabled={isGenerating || !prompt.trim()}
@@ -321,7 +406,7 @@ export default function Studio() {
                           {isGenerating ? (
                             <>
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Generating {config.label}...
+                              {videoProgress ? "Processing..." : `Generating ${config.label}...`}
                             </>
                           ) : (
                             <>
