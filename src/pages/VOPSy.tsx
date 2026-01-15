@@ -30,6 +30,7 @@ import { useVOPSyChat, ChatMessage } from "@/hooks/useVOPSyChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { useInboxIntelligence } from "@/hooks/useInboxIntelligence";
 import { useFinancialIntelligence } from "@/hooks/useFinancialIntelligence";
+import { useCalendarIntelligence, CALENDAR_KEYWORDS } from "@/hooks/useCalendarIntelligence";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
@@ -43,8 +44,8 @@ const FINANCIAL_KEYWORDS = ['cash flow', 'cashflow', 'invoices', 'invoice', 'rec
 const quickActions = [
   { icon: TrendingUp, label: "Cash flow analysis", prompt: "Show me my current cash flow and financial position from my connected accounts", category: "Finance", isFinancial: true },
   { icon: Mail, label: "Check my inbox", prompt: "Go ahead — scan my real inbox and show me what needs attention", category: "Operations", isInbox: true },
+  { icon: Calendar, label: "Check my calendar", prompt: "Show me my calendar and upcoming meetings for this week", category: "Operations", isCalendar: true },
   { icon: ListTodo, label: "Today's priorities", prompt: "What should be my top priorities today? Give me a strategic assessment.", category: "Strategy" },
-  { icon: Calendar, label: "Schedule tasks", prompt: "Help me plan and schedule my tasks for this week", category: "Operations" },
   { icon: Zap, label: "Automate workflow", prompt: "Suggest automations for my repetitive tasks. What processes can I optimize?", category: "Operations" },
   { icon: FileText, label: "Tax planning", prompt: "Help me with tax planning. What are my estimated quarterly taxes and upcoming deadlines?", category: "Finance" },
   { icon: Target, label: "Marketing insights", prompt: "Give me marketing insights. How are my campaigns performing and what should I focus on?", category: "Marketing" },
@@ -97,6 +98,7 @@ export default function VOPSy() {
   const { messages, isLoading, sendMessage, clearHistory, addAssistantMessage } = useVOPSyChat();
   const [input, setInput] = useState("");
   const [isInboxLoading, setIsInboxLoading] = useState(false);
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -126,6 +128,17 @@ export default function VOPSy() {
     isLoading: isFinancialLoading,
     status: financialStatus,
   } = useFinancialIntelligence();
+
+  // Calendar intelligence hook
+  const {
+    fetchCalendarData,
+    formatCalendarForChat,
+    formatSingleEventForChat,
+    getTodayEvents,
+    getNextEvent,
+    isLoading: isCalendarFetching,
+    data: calendarData,
+  } = useCalendarIntelligence();
 
   // Voice input hook
   const {
@@ -162,6 +175,16 @@ export default function VOPSy() {
            (lower.includes('show') || lower.includes('what') || lower.includes('analyze') || 
             lower.includes('check') || lower.includes('my') || lower.includes('current') ||
             lower.includes('how much') || lower.includes('position'));
+  }, []);
+
+  // Check if message is calendar-related
+  const isCalendarRequest = useCallback((text: string) => {
+    const lower = text.toLowerCase();
+    return CALENDAR_KEYWORDS.some(kw => lower.includes(kw)) && 
+           (lower.includes('show') || lower.includes('what') || lower.includes('check') || 
+            lower.includes('my') || lower.includes('do i have') || lower.includes('upcoming') ||
+            lower.includes('next') || lower.includes('when') || lower.includes('schedule') ||
+            lower.includes('today') || lower.includes('tomorrow') || lower.includes('week'));
   }, []);
 
   // Check if message is a draft request
@@ -354,6 +377,41 @@ Would you like help with something else?`;
     }
   }, [fetchFinancialData, formatFinancialForChat, addAssistantMessage]);
 
+  // Handle calendar data request
+  const handleCalendarRequest = useCallback(async () => {
+    setIsCalendarLoading(true);
+    addAssistantMessage(`📅 Checking your calendar...`);
+    
+    const calendar = await fetchCalendarData();
+    
+    if (!calendar) {
+      const notConnectedMsg = `🔐 **Calendar Access Check**
+
+I'd love to show you your schedule, but I don't have access yet!
+
+To enable **Calendar Intelligence**, connect one of these accounts:
+• **Google Workspace** — Google Calendar
+• **Microsoft 365** — Outlook Calendar
+
+👉 **[Go to Integrations](/integrations)** to connect your calendar.
+
+Once connected, I'll be able to:
+• Show your upcoming meetings and events
+• Tell you what's on your schedule today
+• Alert you to busy times and conflicts
+• Help you find free time for new meetings
+
+Would you like help with something else?`;
+      
+      addAssistantMessage(notConnectedMsg);
+    } else {
+      const formattedCalendar = formatCalendarForChat(calendar);
+      addAssistantMessage(formattedCalendar);
+    }
+    
+    setIsCalendarLoading(false);
+  }, [fetchCalendarData, formatCalendarForChat, addAssistantMessage]);
+
   // Show voice error as toast
   useEffect(() => {
     if (voiceError) {
@@ -373,7 +431,7 @@ Would you like help with something else?`;
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || isInboxLoading || isDrafting || isSendingEmail || isFinancialLoading) return;
+    if (!input.trim() || isLoading || isInboxLoading || isCalendarLoading || isDrafting || isSendingEmail || isFinancialLoading) return;
     stopListening();
     const message = input.trim();
     setInput("");
@@ -391,6 +449,14 @@ Would you like help with something else?`;
     if (draftCheck.isDraft) {
       await sendMessage(message, true);
       await handleDraftRequest(draftCheck.emailNum, draftCheck.keyword, draftCheck.tone);
+      textareaRef.current?.focus();
+      return;
+    }
+
+    // Check if this is a calendar request
+    if (isCalendarRequest(message)) {
+      await sendMessage(message, true);
+      await handleCalendarRequest();
       textareaRef.current?.focus();
       return;
     }
@@ -414,10 +480,13 @@ Would you like help with something else?`;
     textareaRef.current?.focus();
   };
 
-  const handleQuickAction = async (prompt: string, isInbox?: boolean, isFinancial?: boolean) => {
+  const handleQuickAction = async (prompt: string, isInbox?: boolean, isFinancial?: boolean, isCalendar?: boolean) => {
     stopListening();
     
-    if (isFinancial) {
+    if (isCalendar) {
+      await sendMessage(prompt, true);
+      await handleCalendarRequest();
+    } else if (isFinancial) {
       await sendMessage(prompt, true);
       await handleFinancialRequest();
     } else if (isInbox) {
@@ -560,12 +629,12 @@ Would you like help with something else?`;
                       size="sm"
                       className={cn(
                         "text-[10px] sm:text-xs gap-1 sm:gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/30 px-2 sm:px-3 py-1 h-auto",
-                        (action.isInbox || action.isFinancial) && "border-primary/30 bg-primary/5"
+                        (action.isInbox || action.isFinancial || action.isCalendar) && "border-primary/30 bg-primary/5"
                       )}
-                      onClick={() => handleQuickAction(action.prompt, action.isInbox, action.isFinancial)}
-                      disabled={isLoading || isInboxLoading || isFinancialLoading}
+                      onClick={() => handleQuickAction(action.prompt, action.isInbox, action.isFinancial, action.isCalendar)}
+                      disabled={isLoading || isInboxLoading || isFinancialLoading || isCalendarLoading}
                     >
-                      {(action.isInbox && isInboxLoading) || (action.isFinancial && isFinancialLoading) ? (
+                      {(action.isInbox && isInboxLoading) || (action.isFinancial && isFinancialLoading) || (action.isCalendar && isCalendarLoading) ? (
                         <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
                       ) : (
                         <action.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
