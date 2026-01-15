@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
@@ -9,12 +9,11 @@ import {
   Plus, 
   MoreHorizontal,
   Clock,
-  Users,
   CheckCircle2,
   Circle,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -23,89 +22,116 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
 
 interface Project {
   id: string;
   name: string;
-  description: string;
-  status: "active" | "completed" | "on-hold";
-  dueDate: string;
-  members: number;
-  tasks: { total: number; completed: number };
-  createdAt: string;
+  description: string | null;
+  status: string;
+  due_date: string | null;
+  created_at: string;
+  task_count?: number;
+  completed_task_count?: number;
 }
 
-const initialProjects: Project[] = [
-  {
-    id: "1",
-    name: "Q4 Tax Planning",
-    description: "Prepare quarterly tax documents and estimates",
-    status: "active",
-    dueDate: "2026-01-20",
-    members: 3,
-    tasks: { total: 12, completed: 8 },
-    createdAt: "2025-12-15"
-  },
-  {
-    id: "2",
-    name: "Website Redesign",
-    description: "Complete overhaul of company website",
-    status: "active",
-    dueDate: "2026-02-15",
-    members: 5,
-    tasks: { total: 24, completed: 10 },
-    createdAt: "2025-11-01"
-  },
-  {
-    id: "3",
-    name: "Client Onboarding System",
-    description: "Automate new client onboarding process",
-    status: "on-hold",
-    dueDate: "2026-03-01",
-    members: 2,
-    tasks: { total: 8, completed: 2 },
-    createdAt: "2025-12-01"
-  }
-];
-
-const calendarEvents = [
-  { id: "1", title: "Tax Filing Deadline", date: "2026-01-15", type: "deadline" },
-  { id: "2", title: "Team Standup", date: "2026-01-13", type: "meeting" },
-  { id: "3", title: "Client Review", date: "2026-01-14", type: "meeting" },
-  { id: "4", title: "Quarterly Report Due", date: "2026-01-20", type: "deadline" },
-  { id: "5", title: "Budget Planning", date: "2026-01-16", type: "task" },
-];
-
 function WorkflowsContent() {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [newProject, setNewProject] = useState({ name: "", description: "" });
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 0, 1)); // January 2026
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [tasks, setTasks] = useState<{ id: string; title: string; due_date: string | null; status: string }[]>([]);
 
-  const handleCreateProject = () => {
-    if (!newProject.name.trim()) return;
-    
-    const project: Project = {
-      id: Date.now().toString(),
-      name: newProject.name,
-      description: newProject.description,
-      status: "active",
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      members: 1,
-      tasks: { total: 0, completed: 0 },
-      createdAt: new Date().toISOString().split("T")[0]
-    };
-    
-    setProjects([project, ...projects]);
-    setNewProject({ name: "", description: "" });
-    setNewProjectOpen(false);
+  useEffect(() => {
+    async function fetchData() {
+      if (!user?.id) return;
+
+      try {
+        // Fetch projects
+        const { data: projectsData, error: projectsError } = await supabase
+          .from("projects")
+          .select("id, name, description, status, due_date, created_at")
+          .order("created_at", { ascending: false });
+
+        if (projectsError) throw projectsError;
+
+        // Fetch task counts for each project
+        const projectsWithCounts = await Promise.all(
+          (projectsData || []).map(async (project) => {
+            const { count: totalCount } = await supabase
+              .from("tasks")
+              .select("*", { count: "exact", head: true })
+              .eq("project_id", project.id);
+
+            const { count: completedCount } = await supabase
+              .from("tasks")
+              .select("*", { count: "exact", head: true })
+              .eq("project_id", project.id)
+              .eq("status", "completed");
+
+            return {
+              ...project,
+              task_count: totalCount || 0,
+              completed_task_count: completedCount || 0,
+            };
+          })
+        );
+
+        setProjects(projectsWithCounts);
+
+        // Fetch tasks for calendar
+        const { data: tasksData } = await supabase
+          .from("tasks")
+          .select("id, title, due_date, status")
+          .not("due_date", "is", null);
+
+        setTasks(tasksData || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [user?.id]);
+
+  const handleCreateProject = async () => {
+    if (!newProject.name.trim() || !user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          name: newProject.name,
+          description: newProject.description || null,
+          user_id: user.id,
+          status: "active",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProjects([{ ...data, task_count: 0, completed_task_count: 0 }, ...projects]);
+      setNewProject({ name: "", description: "" });
+      setNewProjectOpen(false);
+    } catch (error) {
+      console.error("Error creating project:", error);
+    }
   };
 
-  const getStatusColor = (status: Project["status"]) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "active": return "bg-success/20 text-success";
       case "completed": return "bg-primary/20 text-primary";
       case "on-hold": return "bg-warning/20 text-warning";
+      case "cancelled": return "bg-destructive/20 text-destructive";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
@@ -124,7 +150,7 @@ function WorkflowsContent() {
 
   const getEventsForDay = (day: number) => {
     const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return calendarEvents.filter(e => e.date === dateStr);
+    return tasks.filter(t => t.due_date && t.due_date.startsWith(dateStr));
   };
 
   const renderCalendar = () => {
@@ -138,9 +164,12 @@ function WorkflowsContent() {
     }
     
     // Days of the month
+    const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
-      const events = getEventsForDay(day);
-      const isToday = day === 13 && currentMonth.getMonth() === 0 && currentMonth.getFullYear() === 2026;
+      const dayTasks = getEventsForDay(day);
+      const isToday = day === today.getDate() && 
+        currentMonth.getMonth() === today.getMonth() && 
+        currentMonth.getFullYear() === today.getFullYear();
       
       days.push(
         <div
@@ -157,21 +186,21 @@ function WorkflowsContent() {
             {day}
           </span>
           <div className="mt-1 space-y-1">
-            {events.slice(0, 2).map(event => (
+            {dayTasks.slice(0, 2).map(task => (
               <div
-                key={event.id}
+                key={task.id}
                 className={cn(
                   "text-xs px-1.5 py-0.5 rounded truncate",
-                  event.type === "deadline" && "bg-destructive/20 text-destructive",
-                  event.type === "meeting" && "bg-info/20 text-info",
-                  event.type === "task" && "bg-success/20 text-success"
+                  task.status === "completed" && "bg-success/20 text-success",
+                  task.status === "pending" && "bg-warning/20 text-warning",
+                  task.status === "in-progress" && "bg-info/20 text-info"
                 )}
               >
-                {event.title}
+                {task.title}
               </div>
             ))}
-            {events.length > 2 && (
-              <span className="text-xs text-muted-foreground">+{events.length - 2} more</span>
+            {dayTasks.length > 2 && (
+              <span className="text-xs text-muted-foreground">+{dayTasks.length - 2} more</span>
             )}
           </div>
         </div>
@@ -277,82 +306,83 @@ function WorkflowsContent() {
             </TabsList>
 
             <TabsContent value="projects" className="space-y-4 sm:space-y-6">
-              {/* Projects Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {projects.map((project, index) => (
-                  <motion.div
-                    key={project.id}
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {projects.map((project, index) => (
+                    <motion.div
+                      key={project.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="glass gradient-border rounded-xl p-6 hover:shadow-lg transition-all group"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                            {project.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                            {project.description || "No description"}
+                          </p>
+                        </div>
+                        <button className="p-1 rounded-lg hover:bg-secondary transition-colors">
+                          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </div>
+
+                      <Badge className={cn("mb-4", getStatusColor(project.status))}>
+                        {project.status === "active" && <Circle className="w-2 h-2 mr-1 fill-current" />}
+                        {project.status === "completed" && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                        {project.status.replace("-", " ")}
+                      </Badge>
+
+                      {/* Progress */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="text-foreground font-medium">
+                            {project.completed_task_count || 0}/{project.task_count || 0} tasks
+                          </span>
+                        </div>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{ 
+                              width: `${(project.task_count || 0) > 0 ? ((project.completed_task_count || 0) / (project.task_count || 1)) * 100 : 0}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Meta */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{project.due_date ? `Due ${format(new Date(project.due_date), "MMM d")}` : "No due date"}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+
+                  {/* Add Project Card */}
+                  <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="glass gradient-border rounded-xl p-6 hover:shadow-lg transition-all group"
+                    transition={{ delay: projects.length * 0.1 }}
+                    onClick={() => setNewProjectOpen(true)}
+                    className="min-h-[200px] rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                          {project.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                          {project.description}
-                        </p>
-                      </div>
-                      <button className="p-1 rounded-lg hover:bg-secondary transition-colors">
-                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                      </button>
+                    <div className="p-3 rounded-xl bg-secondary">
+                      <Plus className="w-6 h-6" />
                     </div>
-
-                    <Badge className={cn("mb-4", getStatusColor(project.status))}>
-                      {project.status === "active" && <Circle className="w-2 h-2 mr-1 fill-current" />}
-                      {project.status === "completed" && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                      {project.status.replace("-", " ")}
-                    </Badge>
-
-                    {/* Progress */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="text-foreground font-medium">
-                          {project.tasks.completed}/{project.tasks.total} tasks
-                        </span>
-                      </div>
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{ 
-                            width: `${project.tasks.total > 0 ? (project.tasks.completed / project.tasks.total) * 100 : 0}%` 
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Meta */}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>Due {new Date(project.dueDate).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        <span>{project.members}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-
-                {/* Add Project Card */}
-                <motion.button
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: projects.length * 0.1 }}
-                  onClick={() => setNewProjectOpen(true)}
-                  className="min-h-[200px] rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary"
-                >
-                  <div className="p-3 rounded-xl bg-secondary">
-                    <Plus className="w-6 h-6" />
-                  </div>
-                  <span className="font-medium">Create New Project</span>
-                </motion.button>
-              </div>
+                    <span className="font-medium">Create New Project</span>
+                  </motion.button>
+                </div>
+              )}
             </TabsContent>
 
             {/* Calendar Tab */}
@@ -407,16 +437,16 @@ function WorkflowsContent() {
                 {/* Legend */}
                 <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-destructive/50" />
-                    <span className="text-xs text-muted-foreground">Deadline</span>
+                    <div className="w-3 h-3 rounded bg-success/50" />
+                    <span className="text-xs text-muted-foreground">Completed</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-info/50" />
-                    <span className="text-xs text-muted-foreground">Meeting</span>
+                    <span className="text-xs text-muted-foreground">In Progress</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-success/50" />
-                    <span className="text-xs text-muted-foreground">Task</span>
+                    <div className="w-3 h-3 rounded bg-warning/50" />
+                    <span className="text-xs text-muted-foreground">Pending</span>
                   </div>
                 </div>
               </motion.div>
