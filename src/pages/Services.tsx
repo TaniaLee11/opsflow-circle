@@ -395,99 +395,31 @@ export default function Services() {
           </div>
         </section>
 
-        {/* Services Grid */}
-        <section className="py-20 px-4 sm:px-6 border-t border-border/50">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Comprehensive Financial & Operations Services
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                From day-to-day bookkeeping to strategic advisory—we handle the full spectrum.
-              </p>
-            </motion.div>
-
-            <div className="space-y-8">
-              {serviceCategories.map((service, index) => (
-                <motion.div
-                  key={service.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.05 }}
-                  className="glass gradient-border rounded-2xl p-6 sm:p-8"
-                >
-                  <div className="grid lg:grid-cols-2 gap-8 items-start">
-                    <div>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <service.icon className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold text-foreground">{service.title}</h3>
-                          <p className="text-sm text-primary">{service.tagline}</p>
-                        </div>
-                      </div>
-                      <p className="text-muted-foreground leading-relaxed">
-                        {service.description}
-                      </p>
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {service.features.map((feature) => (
-                        <div key={feature} className="flex items-start gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                          <span className="text-sm text-foreground">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Industries Served */}
+        {/* Not Sure Where to Start - CTA First */}
         <section className="py-16 px-4 sm:px-6 bg-card/50 border-y border-border/50">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-3xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
             >
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                Industries We Serve
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
+                Not Sure Where to Start?
               </h2>
-              <p className="text-muted-foreground">
-                Experience across diverse sectors and business types.
+              <p className="text-lg text-muted-foreground mb-10">
+                Let's talk about your needs and find the right fit. No pressure, no commitment—
+                just a conversation about where you are and how we can help.
               </p>
+              <Button size="lg" onClick={handleScheduleCall} className="glow-primary text-lg px-10 h-14">
+                <Calendar className="w-5 h-5 mr-2" />
+                Schedule a Free Consultation
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
             </motion.div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {industriesServed.map((industry, index) => (
-                <motion.div
-                  key={industry}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.05 }}
-                  className="flex items-center gap-2 p-3 rounded-lg bg-background/50"
-                >
-                  <Shield className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-sm text-foreground">{industry}</span>
-                </motion.div>
-              ))}
-            </div>
           </div>
         </section>
 
-        {/* Pricing Tiers - 7 Options */}
+        {/* Choose Your Path - Pricing Section */}
         <section className="py-20 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
             <motion.div
@@ -606,27 +538,95 @@ export default function Services() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-20 px-4 sm:px-6">
-          <div className="max-w-3xl mx-auto text-center">
+        {/* Services Grid */}
+        <section className="py-20 px-4 sm:px-6 border-t border-border/50">
+          <div className="max-w-6xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              className="text-center mb-16"
             >
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-                Not Sure Where to Start?
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Comprehensive Financial & Operations Services
               </h2>
-              <p className="text-lg text-muted-foreground mb-10">
-                Let's talk about your needs and find the right fit. No pressure, no commitment—
-                just a conversation about where you are and how we can help.
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                From day-to-day bookkeeping to strategic advisory—we handle the full spectrum.
               </p>
-              <Button size="lg" onClick={handleScheduleCall} className="glow-primary text-lg px-10 h-14">
-                <Calendar className="w-5 h-5 mr-2" />
-                Schedule a Free Consultation
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </Button>
             </motion.div>
+
+            <div className="space-y-8">
+              {serviceCategories.map((service, index) => (
+                <motion.div
+                  key={service.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                  className="glass gradient-border rounded-2xl p-6 sm:p-8"
+                >
+                  <div className="grid lg:grid-cols-2 gap-8 items-start">
+                    <div>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <service.icon className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-foreground">{service.title}</h3>
+                          <p className="text-sm text-primary">{service.tagline}</p>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {service.description}
+                      </p>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {service.features.map((feature) => (
+                        <div key={feature} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <span className="text-sm text-foreground">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Industries Served */}
+        <section className="py-16 px-4 sm:px-6 bg-card/50 border-y border-border/50">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+                Industries We Serve
+              </h2>
+              <p className="text-muted-foreground">
+                Experience across diverse sectors and business types.
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {industriesServed.map((industry, index) => (
+                <motion.div
+                  key={industry}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                  className="flex items-center gap-2 p-3 rounded-lg bg-background/50"
+                >
+                  <Shield className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm text-foreground">{industry}</span>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
