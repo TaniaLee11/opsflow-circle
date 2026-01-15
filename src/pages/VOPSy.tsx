@@ -31,6 +31,7 @@ import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { useInboxIntelligence } from "@/hooks/useInboxIntelligence";
 import { useFinancialIntelligence } from "@/hooks/useFinancialIntelligence";
 import { useCalendarIntelligence, CALENDAR_KEYWORDS } from "@/hooks/useCalendarIntelligence";
+import { useTaskIntelligence, TASK_KEYWORDS, PROJECT_KEYWORDS, CALENDAR_ACTION_KEYWORDS } from "@/hooks/useTaskIntelligence";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
@@ -140,7 +141,18 @@ export default function VOPSy() {
     data: calendarData,
   } = useCalendarIntelligence();
 
-  // Voice input hook
+  // Task intelligence hook
+  const {
+    createTask,
+    updateTask,
+    createProject,
+    createCalendarEvent,
+    fetchTasks,
+    fetchProjects,
+    formatTasksForChat,
+    formatProjectsForChat,
+    isLoading: isTaskLoading,
+  } = useTaskIntelligence();
   const {
     isListening,
     isSupported: isVoiceSupported,
@@ -187,7 +199,81 @@ export default function VOPSy() {
             lower.includes('today') || lower.includes('tomorrow') || lower.includes('week'));
   }, []);
 
-  // Check if message is a draft request
+  // Check if message is a task action request
+  const isTaskActionRequest = useCallback((text: string): { isAction: boolean; action?: string; details?: string } => {
+    const lower = text.toLowerCase();
+    
+    // Create task patterns
+    if (lower.includes('add task') || lower.includes('create task') || lower.includes('new task') || 
+        (lower.includes('remind') && (lower.includes('me to') || lower.includes('to '))) ||
+        lower.match(/^task[:\s]/)) {
+      // Extract task title
+      let title = text;
+      const patterns = [
+        /(?:add|create|new)\s+task[:\s]+(.+)/i,
+        /task[:\s]+(.+)/i,
+        /remind\s+(?:me\s+)?to\s+(.+)/i,
+      ];
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          title = match[1].trim();
+          break;
+        }
+      }
+      return { isAction: true, action: 'create_task', details: title };
+    }
+
+    // Create project patterns
+    if (lower.includes('add project') || lower.includes('create project') || lower.includes('new project') ||
+        lower.match(/^project[:\s]/)) {
+      let name = text;
+      const patterns = [
+        /(?:add|create|new)\s+project[:\s]+(.+)/i,
+        /project[:\s]+(.+)/i,
+      ];
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          name = match[1].trim();
+          break;
+        }
+      }
+      return { isAction: true, action: 'create_project', details: name };
+    }
+
+    // Create calendar event patterns
+    if (CALENDAR_ACTION_KEYWORDS.some(kw => lower.includes(kw))) {
+      // Try to extract event details
+      const eventPatterns = [
+        /(?:schedule|add|create|book|set up)\s+(?:a\s+)?(?:meeting|event|call)?\s*(?:with\s+)?(.+?)(?:\s+(?:for|on|at)\s+(.+))?$/i,
+        /(?:add|put)\s+(?:it\s+)?(?:on|to)\s+(?:my\s+)?calendar[:\s]*(.+)?/i,
+      ];
+      let details = text;
+      for (const pattern of eventPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          details = match[1].trim();
+          if (match[2]) details += ' ' + match[2].trim();
+          break;
+        }
+      }
+      return { isAction: true, action: 'create_calendar_event', details };
+    }
+
+    // View tasks
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('my')) && 
+        (lower.includes('task') || lower.includes('to-do') || lower.includes('todo'))) {
+      return { isAction: true, action: 'view_tasks' };
+    }
+
+    // View projects
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('my')) && lower.includes('project')) {
+      return { isAction: true, action: 'view_projects' };
+    }
+
+    return { isAction: false };
+  }, []);
   const isDraftRequest = useCallback((text: string): { isDraft: boolean; emailNum?: number; keyword?: string; tone?: 'professional' | 'friendly' | 'brief' | 'detailed' } => {
     const lower = text.toLowerCase();
     
@@ -412,7 +498,202 @@ Would you like help with something else?`;
     setIsCalendarLoading(false);
   }, [fetchCalendarData, formatCalendarForChat, addAssistantMessage]);
 
-  // Show voice error as toast
+  // Handle task action request
+  const handleTaskActionRequest = useCallback(async (action: string, details?: string) => {
+    switch (action) {
+      case 'create_task': {
+        if (!details) {
+          addAssistantMessage(`📝 What task would you like me to add? Just say "add task [your task title]"`);
+          return;
+        }
+        
+        addAssistantMessage(`📝 Creating task: "${details}"...`);
+        
+        // Parse for priority and due date from details
+        let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
+        let dueDate: string | undefined;
+        
+        const lowerDetails = details.toLowerCase();
+        if (lowerDetails.includes('urgent') || lowerDetails.includes('asap')) {
+          priority = 'urgent';
+        } else if (lowerDetails.includes('high priority') || lowerDetails.includes('important')) {
+          priority = 'high';
+        } else if (lowerDetails.includes('low priority')) {
+          priority = 'low';
+        }
+
+        // Parse simple date references
+        const now = new Date();
+        if (lowerDetails.includes('today')) {
+          dueDate = now.toISOString();
+        } else if (lowerDetails.includes('tomorrow')) {
+          const tomorrow = new Date(now);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          dueDate = tomorrow.toISOString();
+        } else if (lowerDetails.includes('next week')) {
+          const nextWeek = new Date(now);
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          dueDate = nextWeek.toISOString();
+        }
+
+        const result = await createTask({ 
+          title: details.replace(/\b(urgent|asap|high priority|important|low priority|today|tomorrow|next week)\b/gi, '').trim(),
+          priority,
+          due_date: dueDate,
+        });
+        
+        if (result.success) {
+          addAssistantMessage(`✅ **Task created!**
+
+"${details}" has been added to your tasks.
+${priority !== 'medium' ? `Priority: **${priority}**` : ''}
+${dueDate ? `Due: **${new Date(dueDate).toLocaleDateString()}**` : ''}
+
+Would you like me to:
+• Add another task
+• Show your task list
+• Add this to your calendar too?`);
+        } else {
+          addAssistantMessage(`❌ Couldn't create task: ${result.error}`);
+        }
+        break;
+      }
+
+      case 'create_project': {
+        if (!details) {
+          addAssistantMessage(`📁 What project would you like me to create? Just say "create project [project name]"`);
+          return;
+        }
+        
+        addAssistantMessage(`📁 Creating project: "${details}"...`);
+        
+        const result = await createProject({ name: details });
+        
+        if (result.success) {
+          addAssistantMessage(`✅ **Project created!**
+
+"${details}" has been added to your projects.
+
+Would you like me to:
+• Add tasks to this project
+• Show your project list
+• Create another project?`);
+        } else {
+          addAssistantMessage(`❌ Couldn't create project: ${result.error}`);
+        }
+        break;
+      }
+
+      case 'create_calendar_event': {
+        if (!details) {
+          addAssistantMessage(`📅 What would you like me to add to your calendar? 
+          
+Please include:
+• Event title
+• Date and time (e.g., "tomorrow at 2pm")
+• Duration or end time
+
+Example: "Schedule a meeting with John tomorrow at 2pm for 1 hour"`);
+          return;
+        }
+        
+        addAssistantMessage(`📅 Adding to calendar: "${details}"...`);
+        
+        // Simple date/time parsing
+        const now = new Date();
+        let startDate = new Date(now);
+        let endDate = new Date(now);
+        
+        const lowerDetails = details.toLowerCase();
+        
+        // Parse date
+        if (lowerDetails.includes('tomorrow')) {
+          startDate.setDate(startDate.getDate() + 1);
+          endDate.setDate(endDate.getDate() + 1);
+        } else if (lowerDetails.includes('next week')) {
+          startDate.setDate(startDate.getDate() + 7);
+          endDate.setDate(endDate.getDate() + 7);
+        }
+        
+        // Parse time
+        const timeMatch = lowerDetails.match(/at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+        if (timeMatch) {
+          let hours = parseInt(timeMatch[1]);
+          const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+          const ampm = timeMatch[3]?.toLowerCase();
+          
+          if (ampm === 'pm' && hours < 12) hours += 12;
+          if (ampm === 'am' && hours === 12) hours = 0;
+          
+          startDate.setHours(hours, minutes, 0, 0);
+          endDate.setHours(hours + 1, minutes, 0, 0); // Default 1 hour duration
+        } else {
+          // Default to 10am if no time specified
+          startDate.setHours(10, 0, 0, 0);
+          endDate.setHours(11, 0, 0, 0);
+        }
+        
+        // Parse duration
+        const durationMatch = lowerDetails.match(/for\s+(\d+)\s*(hour|hr|minute|min)/i);
+        if (durationMatch) {
+          const amount = parseInt(durationMatch[1]);
+          const unit = durationMatch[2].toLowerCase();
+          if (unit.startsWith('hour') || unit === 'hr') {
+            endDate = new Date(startDate.getTime() + amount * 60 * 60 * 1000);
+          } else {
+            endDate = new Date(startDate.getTime() + amount * 60 * 1000);
+          }
+        }
+
+        // Clean up title
+        const title = details
+          .replace(/\b(tomorrow|today|next week|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?|for\s+\d+\s*(?:hours?|hrs?|minutes?|mins?))\b/gi, '')
+          .replace(/\s+/g, ' ')
+          .trim() || 'New Event';
+
+        const result = await createCalendarEvent({
+          title,
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+        });
+        
+        if (result.success) {
+          addAssistantMessage(`✅ **Calendar event created!**
+
+📅 **${title}**
+🕐 ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+The event has been added to your calendar.
+
+Would you like me to:
+• Add attendees or a location
+• Create a related task
+• Schedule another event?`);
+        } else {
+          addAssistantMessage(`❌ Couldn't create calendar event: ${result.error}
+
+Make sure you have Google Calendar or Outlook connected in **[Integrations](/integrations)**.`);
+        }
+        break;
+      }
+
+      case 'view_tasks': {
+        addAssistantMessage(`📋 Fetching your tasks...`);
+        const taskList = await fetchTasks();
+        const formatted = formatTasksForChat(taskList);
+        addAssistantMessage(formatted);
+        break;
+      }
+
+      case 'view_projects': {
+        addAssistantMessage(`📁 Fetching your projects...`);
+        const projectList = await fetchProjects();
+        const formatted = formatProjectsForChat(projectList);
+        addAssistantMessage(formatted);
+        break;
+      }
+    }
+  }, [createTask, createProject, createCalendarEvent, fetchTasks, fetchProjects, formatTasksForChat, formatProjectsForChat, addAssistantMessage]);
   useEffect(() => {
     if (voiceError) {
       toast({
@@ -431,7 +712,7 @@ Would you like help with something else?`;
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || isInboxLoading || isCalendarLoading || isDrafting || isSendingEmail || isFinancialLoading) return;
+    if (!input.trim() || isLoading || isInboxLoading || isCalendarLoading || isDrafting || isSendingEmail || isFinancialLoading || isTaskLoading) return;
     stopListening();
     const message = input.trim();
     setInput("");
@@ -453,7 +734,16 @@ Would you like help with something else?`;
       return;
     }
 
-    // Check if this is a calendar request
+    // Check if this is a task/project/calendar action request
+    const taskActionCheck = isTaskActionRequest(message);
+    if (taskActionCheck.isAction && taskActionCheck.action) {
+      await sendMessage(message, true);
+      await handleTaskActionRequest(taskActionCheck.action, taskActionCheck.details);
+      textareaRef.current?.focus();
+      return;
+    }
+
+    // Check if this is a calendar view request
     if (isCalendarRequest(message)) {
       await sendMessage(message, true);
       await handleCalendarRequest();
