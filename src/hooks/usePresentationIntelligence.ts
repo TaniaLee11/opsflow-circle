@@ -26,6 +26,7 @@ export interface PresentationResult {
     name: string;
     path: string;
     slides: number;
+    format?: string;
     downloadUrl?: string;
   };
   slides?: string[];

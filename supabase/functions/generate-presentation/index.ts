@@ -99,14 +99,29 @@ function generatePresentationHTML(slides: SlideContent[], title: string): string
   <meta charset="UTF-8">
   <title>${title}</title>
   <style>
+    * { box-sizing: border-box; }
     @page {
       size: 1280px 720px;
       margin: 0;
+    }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
     body {
       margin: 0;
       padding: 0;
       background: #f5f5f5;
+    }
+    .slide {
+      page-break-after: always;
+      page-break-inside: avoid;
+      width: 1280px;
+      height: 720px;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide:last-child {
+      page-break-after: auto;
     }
   </style>
 </head>
@@ -115,6 +130,116 @@ ${slidesHTML}
 </body>
 </html>
   `;
+}
+
+// Convert HTML to PDF using external service
+async function convertToPDF(html: string): Promise<Uint8Array | null> {
+  try {
+    // Use html2pdf.app API (free tier available)
+    const response = await fetch('https://html2pdf.app/api/v1/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        html: html,
+        width: 1280,
+        height: 720,
+        marginTop: 0,
+        marginBottom: 0,
+        marginLeft: 0,
+        marginRight: 0,
+        landscape: true,
+        printBackground: true,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('PDF conversion API error:', response.status);
+      return null;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  } catch (error) {
+    console.error('PDF conversion error:', error);
+    return null;
+  }
+}
+
+// Alternative: Generate PDF-ready HTML with embedded styles for browser print
+function generatePrintableHTML(slides: SlideContent[], title: string): string {
+  const slidesHTML = slides.map((slide, i) => {
+    const isTitle = slide.type === 'title';
+    const isCTA = slide.type === 'cta';
+    
+    let contentHTML = '';
+    
+    if (slide.type === 'bullets') {
+      contentHTML = `
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${slide.content.map(item => `
+            <li style="display: flex; align-items: flex-start; margin-bottom: 24px; font-size: 22px; color: ${VOPS_COLORS.text};">
+              <span style="color: ${VOPS_COLORS.primary}; margin-right: 16px; font-size: 28px;">●</span>
+              <span>${item}</span>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+    } else if (slide.type === 'cta') {
+      contentHTML = `
+        <div style="text-align: center;">
+          ${slide.content.map(item => `<p style="font-size: 24px; color: ${VOPS_COLORS.text}; margin-bottom: 20px;">${item}</p>`).join('')}
+          <div style="margin-top: 40px;">
+            <span style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent}); color: white; font-size: 20px; font-weight: 600; border-radius: 8px;">
+              Get Started Today
+            </span>
+          </div>
+        </div>
+      `;
+    } else {
+      contentHTML = slide.content.map(item => `<p style="font-size: 22px; color: ${VOPS_COLORS.text}; margin-bottom: 16px; line-height: 1.6;">${item}</p>`).join('');
+    }
+
+    return `
+      <div class="slide" style="padding: 60px 80px; background: ${isTitle ? `linear-gradient(135deg, ${VOPS_COLORS.dark} 0%, #2D2B55 100%)` : VOPS_COLORS.light}; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
+        <div style="position: absolute; top: 30px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent}); border-radius: 8px;"></div>
+            <span style="font-size: 18px; font-weight: 600; color: ${isTitle ? VOPS_COLORS.white : VOPS_COLORS.primary};">Virtual OPS Assist</span>
+          </div>
+          <span style="font-size: 14px; color: ${isTitle ? 'rgba(255,255,255,0.6)' : VOPS_COLORS.text};">${i + 1} / ${slides.length}</span>
+        </div>
+        
+        <div style="margin-top: ${isTitle ? '140px' : '100px'};">
+          <h2 style="font-size: ${isTitle ? '48px' : '36px'}; font-weight: 700; color: ${isTitle ? VOPS_COLORS.white : VOPS_COLORS.dark}; margin: 0 0 ${isTitle ? '30px' : '40px'} 0; ${isTitle ? 'text-align: center;' : ''}">${slide.title}</h2>
+          ${contentHTML}
+        </div>
+        
+        <div style="position: absolute; bottom: 30px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: ${isTitle ? 'rgba(255,255,255,0.4)' : '#8E9196'};">© ${new Date().getFullYear()} Virtual OPS Assist. All rights reserved.</span>
+          <span style="font-size: 12px; color: ${isTitle ? 'rgba(255,255,255,0.4)' : '#8E9196'};">virtualopsassist.com</span>
+        </div>
+      </div>
+    `;
+  }).join('\n');
+  
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: 1280px 720px landscape; margin: 0; }
+    @media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+    body { margin: 0; padding: 0; }
+    .slide { width: 1280px; height: 720px; position: relative; overflow: hidden; page-break-after: always; page-break-inside: avoid; }
+    .slide:last-child { page-break-after: auto; }
+  </style>
+</head>
+<body>${slidesHTML}</body>
+</html>`;
 }
 
 serve(async (req) => {
@@ -276,23 +401,39 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
     }
 
     // Generate HTML presentation
-    const presentationHTML = generatePresentationHTML(slides, topic);
+    const presentationHTML = generatePrintableHTML(slides, topic);
     
-    // Convert to base64 for storage
-    const htmlBlob = new TextEncoder().encode(presentationHTML);
-    const base64HTML = btoa(String.fromCharCode(...htmlBlob));
+    // Try to convert to PDF
+    let fileContent: Uint8Array;
+    let mimeType: string;
+    let fileExtension: string;
+    
+    console.log("Attempting PDF conversion...");
+    const pdfContent = await convertToPDF(presentationHTML);
+    
+    if (pdfContent && pdfContent.length > 1000) {
+      console.log("PDF conversion successful, size:", pdfContent.length);
+      fileContent = pdfContent;
+      mimeType = 'application/pdf';
+      fileExtension = 'pdf';
+    } else {
+      console.log("PDF conversion failed, falling back to HTML");
+      fileContent = new TextEncoder().encode(presentationHTML);
+      mimeType = 'text/html';
+      fileExtension = 'html';
+    }
     
     // Generate filename
     const timestamp = new Date().toISOString().split('T')[0];
     const safeTopic = topic.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
-    const fileName = `${safeTopic}_${timestamp}.html`;
+    const fileName = `${safeTopic}_${timestamp}.${fileExtension}`;
     const storagePath = `${user.id}/presentations/${fileName}`;
 
     // Upload to storage
     const { error: uploadError } = await supabase.storage
       .from('vault')
-      .upload(storagePath, htmlBlob, {
-        contentType: 'text/html',
+      .upload(storagePath, fileContent, {
+        contentType: mimeType,
         upsert: true,
       });
 
@@ -312,16 +453,17 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
         organization_id: orgId,
         name: `${topic} Presentation`,
         type: 'presentation',
-        mime_type: 'text/html',
-        size_bytes: htmlBlob.length,
+        mime_type: mimeType,
+        size_bytes: fileContent.length,
         storage_path: storagePath,
         category: 'presentations',
-        description: `AI-generated presentation: ${topic}`,
+        description: `AI-generated ${fileExtension.toUpperCase()} presentation: ${topic}`,
         metadata: {
           slides: slides.length,
           generated_at: new Date().toISOString(),
           topic,
           context,
+          format: fileExtension,
         },
       })
       .select()
@@ -341,12 +483,13 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
     return new Response(
       JSON.stringify({
         success: true,
-        message: `I've created your "${topic}" presentation with ${slides.length} slides and saved it to your Vault! 📊`,
+        message: `I've created your "${topic}" presentation with ${slides.length} slides as ${fileExtension.toUpperCase()} and saved it to your Vault! 📊`,
         document: {
           id: document?.id,
           name: `${topic} Presentation`,
           path: storagePath,
           slides: slides.length,
+          format: fileExtension,
           downloadUrl: urlData?.signedUrl,
         },
         slides: slides.map(s => s.title),
