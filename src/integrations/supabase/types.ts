@@ -760,6 +760,68 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_documents: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          mime_type: string | null
+          name: string
+          organization_id: string | null
+          shared: boolean | null
+          size_bytes: number | null
+          starred: boolean | null
+          storage_path: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          name: string
+          organization_id?: string | null
+          shared?: boolean | null
+          size_bytes?: number | null
+          starred?: boolean | null
+          storage_path: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          name?: string
+          organization_id?: string | null
+          shared?: boolean | null
+          size_bytes?: number | null
+          starred?: boolean | null
+          storage_path?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

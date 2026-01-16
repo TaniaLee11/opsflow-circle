@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   FolderLock, 
@@ -23,7 +23,9 @@ import {
   Lock,
   FileCheck,
   Sparkles,
-  Eye
+  Eye,
+  Presentation,
+  Loader2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -42,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClientView } from "@/contexts/ClientViewContext";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
+import { usePresentationIntelligence, VaultDocument } from "@/hooks/usePresentationIntelligence";
 
 // Mock data for documents
 const documents = [
@@ -165,6 +168,8 @@ const getFileIcon = (type: string) => {
       return <Image className="w-5 h-5 text-info" />;
     case "document":
       return <FileText className="w-5 h-5 text-primary" />;
+    case "presentation":
+      return <Presentation className="w-5 h-5 text-accent" />;
     default:
       return <File className="w-5 h-5 text-muted-foreground" />;
   }
@@ -176,8 +181,40 @@ function VaultContent() {
   const [activeTab, setActiveTab] = useState("my-files");
   const { isOwner } = useAuth();
   const { viewedClient, isViewingClient } = useClientView();
+  
+  // Real documents from database
+  const { 
+    documents: vaultDocuments, 
+    fetchDocuments, 
+    getDownloadUrl, 
+    deleteDocument, 
+    toggleStarred,
+    isLoading: isDocumentsLoading 
+  } = usePresentationIntelligence();
+  
+  // Fetch documents on mount
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
-  const filteredDocuments = documents.filter(doc =>
+  // Combine mock documents with real ones for display
+  const allDocuments = [
+    ...vaultDocuments.map(doc => ({
+      id: doc.id,
+      name: doc.name,
+      type: doc.type,
+      size: doc.size_bytes ? `${(doc.size_bytes / 1024).toFixed(1)} KB` : 'N/A',
+      modified: new Date(doc.updated_at).toLocaleDateString(),
+      shared: doc.shared,
+      starred: doc.starred,
+      owner: 'You',
+      isReal: true,
+      storagePath: doc.storage_path,
+    })),
+    ...documents.map(d => ({ ...d, isReal: false })),
+  ];
+
+  const filteredDocuments = allDocuments.filter(doc =>
     doc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -188,6 +225,30 @@ function VaultContent() {
 
   // Determine if we're in read-only mode (owner viewing client data)
   const isReadOnly = isOwner && isViewingClient;
+
+  // Handle document download
+  const handleDownload = async (doc: any) => {
+    if (doc.isReal && doc.storagePath) {
+      const url = await getDownloadUrl(doc.storagePath);
+      if (url) {
+        window.open(url, '_blank');
+      }
+    }
+  };
+
+  // Handle document delete
+  const handleDelete = async (doc: any) => {
+    if (doc.isReal && doc.storagePath) {
+      await deleteDocument(doc.id, doc.storagePath);
+    }
+  };
+
+  // Handle star toggle
+  const handleToggleStar = async (doc: any) => {
+    if (doc.isReal) {
+      await toggleStarred(doc.id, !doc.starred);
+    }
+  };
 
   return (
     <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
@@ -274,7 +335,7 @@ function VaultContent() {
                   <FileText className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">24</p>
+                  <p className="text-2xl font-bold">{vaultDocuments.length + documents.length}</p>
                   <p className="text-xs text-muted-foreground">Total Files</p>
                 </div>
               </CardContent>
@@ -376,7 +437,7 @@ function VaultContent() {
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDownload(doc)}>
                                     <Download className="w-4 h-4 mr-2" />
                                     Download
                                   </DropdownMenuItem>
@@ -384,12 +445,12 @@ function VaultContent() {
                                     <Share2 className="w-4 h-4 mr-2" />
                                     Share
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleToggleStar(doc)}>
                                     <Star className="w-4 h-4 mr-2" />
-                                    Star
+                                    {doc.starred ? 'Unstar' : 'Star'}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-destructive">
+                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(doc)}>
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
                                   </DropdownMenuItem>
