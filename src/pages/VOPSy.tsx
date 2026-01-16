@@ -17,7 +17,8 @@ import {
   Mic,
   MicOff,
   Volume2,
-  Link
+  Link,
+  Presentation
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -32,6 +33,7 @@ import { useInboxIntelligence } from "@/hooks/useInboxIntelligence";
 import { useFinancialIntelligence } from "@/hooks/useFinancialIntelligence";
 import { useCalendarIntelligence, CALENDAR_KEYWORDS } from "@/hooks/useCalendarIntelligence";
 import { useTaskIntelligence, TASK_KEYWORDS, PROJECT_KEYWORDS, CALENDAR_ACTION_KEYWORDS } from "@/hooks/useTaskIntelligence";
+import { usePresentationIntelligence } from "@/hooks/usePresentationIntelligence";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
@@ -41,6 +43,9 @@ const INBOX_KEYWORDS = ['inbox', 'email', 'emails', 'mail', 'messages', 'unread'
 
 // Keywords that trigger financial intelligence
 const FINANCIAL_KEYWORDS = ['cash flow', 'cashflow', 'invoices', 'invoice', 'receivables', 'financial', 'finances', 'balance', 'revenue', 'payments', 'overdue', 'stripe', 'quickbooks', 'xero', 'accounting', 'money'];
+
+// Keywords that trigger presentation generation
+const PRESENTATION_KEYWORDS = ['presentation', 'powerpoint', 'slides', 'slide deck', 'deck', 'ppt', 'pitch deck'];
 
 const quickActions = [
   { icon: TrendingUp, label: "Cash flow analysis", prompt: "Show me my current cash flow and financial position from my connected accounts", category: "Finance", isFinancial: true },
@@ -159,6 +164,12 @@ export default function VOPSy() {
     formatProjectsForChat,
     isLoading: isTaskLoading,
   } = useTaskIntelligence();
+  
+  // Presentation intelligence hook
+  const {
+    generatePresentation,
+    isLoading: isPresentationLoading,
+  } = usePresentationIntelligence();
   const {
     isListening,
     isSupported: isVoiceSupported,
@@ -193,6 +204,36 @@ export default function VOPSy() {
            (lower.includes('show') || lower.includes('what') || lower.includes('analyze') || 
             lower.includes('check') || lower.includes('my') || lower.includes('current') ||
             lower.includes('how much') || lower.includes('position'));
+  }, []);
+
+  // Check if message is a presentation request
+  const isPresentationRequest = useCallback((text: string): { isRequest: boolean; topic?: string } => {
+    const lower = text.toLowerCase();
+    const hasKeyword = PRESENTATION_KEYWORDS.some(kw => lower.includes(kw));
+    const hasAction = lower.includes('create') || lower.includes('make') || lower.includes('generate') || 
+                      lower.includes('build') || lower.includes('give me') || lower.includes('prepare');
+    
+    if (hasKeyword && hasAction) {
+      // Extract the topic from the request
+      let topic = text;
+      const patterns = [
+        /(?:create|make|generate|build|prepare|give me)\s+(?:a\s+)?(?:presentation|powerpoint|slides?|deck|ppt|pitch deck)\s+(?:on|about|for|showcasing|regarding)\s+(.+)/i,
+        /(?:presentation|powerpoint|slides?|deck|ppt|pitch deck)\s+(?:on|about|for|showcasing|regarding)\s+(.+)/i,
+        /(?:on|about|for)\s+(.+?)(?:\s+presentation|\s+slides?|\s+deck)?$/i,
+      ];
+      
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          topic = match[1].trim();
+          break;
+        }
+      }
+      
+      return { isRequest: true, topic };
+    }
+    
+    return { isRequest: false };
   }, []);
 
   // Check if message is calendar-related
@@ -817,8 +858,28 @@ Say **"show emails"** to review all emails, or **"next"** to continue.`);
     }
   }, [currentAnalysis, currentEmailIndex, isViewingEmails, getAllEmailsInOrder, formatSingleEmailForChat, formatAnalysisForChat, addAssistantMessage, handleInboxRequest]);
 
+  // Handle presentation request
+  const handlePresentationRequest = useCallback(async (topic: string) => {
+    addAssistantMessage(`📊 Creating your presentation on **"${topic}"**... This may take a moment.`);
+    
+    const result = await generatePresentation(topic);
+    
+    if (result.success && result.document) {
+      addAssistantMessage(`${result.message}
+
+**Slides Created:**
+${result.slides?.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+📁 You can find your presentation in the **Vault** under "Presentations".
+
+${result.document.downloadUrl ? `**[Download Now](${result.document.downloadUrl})**` : 'Visit the Vault to download.'}`);
+    } else {
+      addAssistantMessage(`❌ I couldn't create the presentation: ${result.error || 'Unknown error'}. Please try again.`);
+    }
+  }, [generatePresentation, addAssistantMessage]);
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading || isInboxLoading || isCalendarLoading || isDrafting || isSendingEmail || isFinancialLoading || isTaskLoading) return;
+    if (!input.trim() || isLoading || isInboxLoading || isCalendarLoading || isDrafting || isSendingEmail || isFinancialLoading || isTaskLoading || isPresentationLoading) return;
     stopListening();
     const message = input.trim();
     setInput("");
@@ -882,6 +943,15 @@ Say **"show emails"** to review all emails, or **"next"** to continue.`);
     if (isFinancialRequest(message)) {
       await sendMessage(message, true);
       await handleFinancialRequest();
+      textareaRef.current?.focus();
+      return;
+    }
+
+    // Check if this is a presentation request
+    const presentationCheck = isPresentationRequest(message);
+    if (presentationCheck.isRequest && presentationCheck.topic) {
+      await sendMessage(message, true);
+      await handlePresentationRequest(presentationCheck.topic);
       textareaRef.current?.focus();
       return;
     }
