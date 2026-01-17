@@ -29,18 +29,40 @@ function getEncryptionKey(): ArrayBuffer {
     throw new Error("OAUTH_TOKEN_ENCRYPTION_KEY not configured");
   }
   
-  // Decode base64 key
-  const binaryString = atob(keyBase64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  // Clean the key - remove any whitespace and ensure proper base64
+  const cleanedKey = keyBase64.trim().replace(/\s/g, "");
+  
+  // If key is hex-encoded (64 chars = 32 bytes), convert from hex
+  if (/^[0-9a-fA-F]{64}$/.test(cleanedKey)) {
+    const bytes = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) {
+      bytes[i] = parseInt(cleanedKey.substr(i * 2, 2), 16);
+    }
+    return bytes.buffer as ArrayBuffer;
   }
   
-  if (bytes.length !== 32) {
-    throw new Error("OAUTH_TOKEN_ENCRYPTION_KEY must be 32 bytes (256 bits)");
+  // Try base64 decode
+  try {
+    const binaryString = atob(cleanedKey);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    if (bytes.length !== 32) {
+      throw new Error(`OAUTH_TOKEN_ENCRYPTION_KEY must be 32 bytes (got ${bytes.length} bytes)`);
+    }
+    
+    return bytes.buffer as ArrayBuffer;
+  } catch (e) {
+    // If base64 fails and key is exactly 32 chars, use as raw UTF-8 passphrase
+    if (cleanedKey.length === 32) {
+      const encoder = new TextEncoder();
+      const bytes = encoder.encode(cleanedKey);
+      return bytes.buffer as ArrayBuffer;
+    }
+    throw new Error(`Failed to decode encryption key: ${e instanceof Error ? e.message : String(e)}`);
   }
-  
-  return bytes.buffer as ArrayBuffer;
 }
 
 /**
