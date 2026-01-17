@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,8 +47,14 @@ interface FinancialSummary {
   };
 }
 
-const logStep = (step: string, details?: any) => {
-  console.log(`[FINANCIAL-FETCH] ${step}`, details ? JSON.stringify(details) : '');
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  // Never log token values
+  const safeDetails = details ? { ...details } : undefined;
+  if (safeDetails) {
+    delete safeDetails.access_token;
+    delete safeDetails.refresh_token;
+  }
+  console.log(`[FINANCIAL-FETCH] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
 // Refresh QuickBooks token
@@ -69,8 +76,7 @@ async function refreshQuickBooksToken(
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    logStep("QuickBooks token refresh failed", { error });
+    logStep("QuickBooks token refresh failed", { status: response.status });
     throw new Error("Failed to refresh QuickBooks token");
   }
 
@@ -120,7 +126,6 @@ async function fetchQuickBooksData(accessToken: string, realmId: string): Promis
 
     // Fetch company info for account balance
     const companyResponse = await fetch(`${baseUrl}/companyinfo/${realmId}`, { headers });
-    let accountBalance = 0;
     let companyName = 'QuickBooks';
     
     if (companyResponse.ok) {
@@ -400,7 +405,7 @@ serve(async (req) => {
     // Check for connected financial integrations
     const { data: integrations, error: intError } = await serviceClient
       .from("integrations")
-      .select("provider, access_token, refresh_token, connected_account, scopes")
+      .select("id, provider, access_token, refresh_token, connected_account, scopes")
       .eq("user_id", user.id)
       .in("provider", ["quickbooks", "stripe", "xero"]);
 
@@ -426,21 +431,50 @@ serve(async (req) => {
 
     for (const integration of integrations) {
       try {
+        // Decrypt tokens
+        const accessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
+        const refreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
+        
+        if (!accessToken) {
+          logStep("No access token for integration", { provider: integration.provider });
+          continue;
+        }
+
         let data: Partial<FinancialSummary> | null = null;
 
         if (integration.provider === "stripe") {
-          data = await fetchStripeData(integration.access_token!);
+          data = await fetchStripeData(accessToken);
         } else if (integration.provider === "quickbooks") {
           // QuickBooks requires realm_id from scopes
           const realmId = integration.scopes?.split(',')?.[0] || '';
-          if (realmId && integration.access_token) {
-            data = await fetchQuickBooksData(integration.access_token, realmId);
+          if (realmId) {
+            // Try to refresh token if we have refresh token
+            let currentAccessToken = accessToken;
+            if (refreshToken) {
+              try {
+                const clientId = Deno.env.get("QUICKBOOKS_CLIENT_ID") || "";
+                const clientSecret = Deno.env.get("QUICKBOOKS_CLIENT_SECRET") || "";
+                if (clientId && clientSecret) {
+                  currentAccessToken = await refreshQuickBooksToken(refreshToken, clientId, clientSecret);
+                  // Encrypt and store new token
+                  const encryptedToken = await encryptToken(currentAccessToken);
+                  await serviceClient
+                    .from("integrations")
+                    .update({ access_token: encryptedToken, last_synced_at: new Date().toISOString() })
+                    .eq("id", integration.id);
+                  logStep("QuickBooks token refreshed and encrypted");
+                }
+              } catch (refreshError) {
+                logStep("QuickBooks token refresh failed", { error: String(refreshError) });
+              }
+            }
+            data = await fetchQuickBooksData(currentAccessToken, realmId);
           }
         } else if (integration.provider === "xero") {
           // Xero requires tenant_id
           const tenantId = integration.scopes?.split(',')?.[0] || '';
-          if (tenantId && integration.access_token) {
-            data = await fetchXeroData(integration.access_token, tenantId);
+          if (tenantId) {
+            data = await fetchXeroData(accessToken, tenantId);
           }
         }
 

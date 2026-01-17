@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,8 +20,15 @@ interface SendResult {
   error?: string;
 }
 
-const logStep = (step: string, details?: any) => {
-  console.log(`[SEND-EMAIL] ${step}`, details ? JSON.stringify(details) : '');
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  // Never log token values or email content
+  const safeDetails = details ? { ...details } : undefined;
+  if (safeDetails) {
+    delete safeDetails.access_token;
+    delete safeDetails.refresh_token;
+    delete safeDetails.body;
+  }
+  console.log(`[SEND-EMAIL] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
 // Refresh Google access token
@@ -41,8 +49,7 @@ async function refreshGoogleToken(
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    logStep("Google token refresh failed", { error });
+    logStep("Google token refresh failed", { status: response.status });
     throw new Error("Failed to refresh Google access token");
   }
 
@@ -69,8 +76,7 @@ async function refreshMicrosoftToken(
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    logStep("Microsoft token refresh failed", { error });
+    logStep("Microsoft token refresh failed", { status: response.status });
     throw new Error("Failed to refresh Microsoft access token");
   }
 
@@ -101,8 +107,8 @@ async function sendGmailReply(
     threadId = originalData.threadId || "";
     
     const headers = originalData.payload?.headers || [];
-    const messageId = headers.find((h: any) => h.name === "Message-ID")?.value || "";
-    const existingRefs = headers.find((h: any) => h.name === "References")?.value || "";
+    const messageId = headers.find((h: { name: string; value: string }) => h.name === "Message-ID")?.value || "";
+    const existingRefs = headers.find((h: { name: string; value: string }) => h.name === "References")?.value || "";
     
     if (messageId) {
       inReplyTo = messageId;
@@ -136,11 +142,9 @@ async function sendGmailReply(
     .replace(/=+$/, '');
 
   // Send the email
-  const sendUrl = threadId 
-    ? `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`
-    : `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
+  const sendUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
 
-  const requestBody: any = { raw: encodedEmail };
+  const requestBody: { raw: string; threadId?: string } = { raw: encodedEmail };
   if (threadId) {
     requestBody.threadId = threadId;
   }
@@ -155,8 +159,7 @@ async function sendGmailReply(
   });
 
   if (!sendResponse.ok) {
-    const error = await sendResponse.text();
-    logStep("Gmail send failed", { error, status: sendResponse.status });
+    logStep("Gmail send failed", { status: sendResponse.status });
     return { success: false, error: `Gmail API error: ${sendResponse.status}` };
   }
 
@@ -233,8 +236,7 @@ async function sendOutlookReply(
   );
 
   if (!sendResponse.ok && sendResponse.status !== 202) {
-    const error = await sendResponse.text();
-    logStep("Outlook send failed", { error, status: sendResponse.status });
+    logStep("Outlook send failed", { status: sendResponse.status });
     return { success: false, error: `Outlook API error: ${sendResponse.status}` };
   }
 
@@ -285,7 +287,7 @@ serve(async (req) => {
       );
     }
 
-    logStep("Send request received", { to, subject: subject.substring(0, 50) });
+    logStep("Send request received", { to, subjectLength: subject.length });
 
     // Check for connected email integrations
     const { data: integrations, error: intError } = await serviceClient
@@ -312,6 +314,10 @@ serve(async (req) => {
     const integration = integrations[0];
     logStep("Found integration", { provider: integration.provider });
 
+    // Decrypt tokens
+    const decryptedAccessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
+    const decryptedRefreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
+
     // Get OAuth credentials for token refresh
     const { data: integrationConfig } = await serviceClient
       .from("integration_configs")
@@ -328,25 +334,26 @@ serve(async (req) => {
     const clientId = resolveCredential(integrationConfig?.client_id, `${integration.provider.toUpperCase()}_CLIENT_ID`);
     const clientSecret = resolveCredential(integrationConfig?.client_secret, `${integration.provider.toUpperCase()}_CLIENT_SECRET`);
 
-    let accessToken = integration.access_token;
+    let accessToken = decryptedAccessToken;
 
     // Refresh token if possible
-    if (integration.refresh_token && clientId && clientSecret) {
+    if (decryptedRefreshToken && clientId && clientSecret) {
       try {
         if (integration.provider === "google") {
-          accessToken = await refreshGoogleToken(integration.refresh_token, clientId, clientSecret);
+          accessToken = await refreshGoogleToken(decryptedRefreshToken, clientId, clientSecret);
         } else if (integration.provider === "microsoft") {
-          accessToken = await refreshMicrosoftToken(integration.refresh_token, clientId, clientSecret);
+          accessToken = await refreshMicrosoftToken(decryptedRefreshToken, clientId, clientSecret);
         }
         
-        // Update stored access token
+        // Encrypt and update stored access token
+        const encryptedAccessToken = await encryptToken(accessToken!);
         await serviceClient
           .from("integrations")
-          .update({ access_token: accessToken, last_synced_at: new Date().toISOString() })
+          .update({ access_token: encryptedAccessToken, last_synced_at: new Date().toISOString() })
           .eq("user_id", user.id)
           .eq("provider", integration.provider);
           
-        logStep("Token refreshed successfully");
+        logStep("Token refreshed and encrypted successfully");
       } catch (refreshError) {
         logStep("Token refresh failed, using existing token", { error: String(refreshError) });
       }

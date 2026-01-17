@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,8 +29,14 @@ interface InboxSummary {
   };
 }
 
-const logStep = (step: string, details?: any) => {
-  console.log(`[INBOX-FETCH] ${step}`, details ? JSON.stringify(details) : '');
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  // Never log token values
+  const safeDetails = details ? { ...details } : undefined;
+  if (safeDetails) {
+    delete safeDetails.access_token;
+    delete safeDetails.refresh_token;
+  }
+  console.log(`[INBOX-FETCH] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
 // Refresh Google access token if needed
@@ -50,8 +57,7 @@ async function refreshGoogleToken(
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    logStep("Token refresh failed", { error });
+    logStep("Token refresh failed", { status: response.status });
     throw new Error("Failed to refresh access token");
   }
 
@@ -78,8 +84,7 @@ async function refreshMicrosoftToken(
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    logStep("Microsoft token refresh failed", { error });
+    logStep("Microsoft token refresh failed", { status: response.status });
     throw new Error("Failed to refresh Microsoft access token");
   }
 
@@ -98,8 +103,7 @@ async function fetchGmailMessages(accessToken: string, maxResults: number = 20):
   );
 
   if (!listResponse.ok) {
-    const error = await listResponse.text();
-    logStep("Gmail list failed", { error, status: listResponse.status });
+    logStep("Gmail list failed", { status: listResponse.status });
     throw new Error(`Gmail API error: ${listResponse.status}`);
   }
 
@@ -123,7 +127,7 @@ async function fetchGmailMessages(accessToken: string, maxResults: number = 20):
       const msgData = await msgResponse.json();
       
       const headers = msgData.payload?.headers || [];
-      const getHeader = (name: string) => headers.find((h: any) => h.name === name)?.value || '';
+      const getHeader = (name: string) => headers.find((h: { name: string; value: string }) => h.name === name)?.value || '';
       
       emails.push({
         id: msgData.id,
@@ -155,14 +159,21 @@ async function fetchOutlookMessages(accessToken: string, maxResults: number = 20
   );
 
   if (!response.ok) {
-    const error = await response.text();
-    logStep("Outlook fetch failed", { error, status: response.status });
+    logStep("Outlook fetch failed", { status: response.status });
     throw new Error(`Outlook API error: ${response.status}`);
   }
 
   const data = await response.json();
   
-  return (data.value || []).map((msg: any) => ({
+  return (data.value || []).map((msg: { 
+    id: string; 
+    subject: string; 
+    from: { emailAddress: { address?: string; name?: string } }; 
+    bodyPreview: string; 
+    receivedDateTime: string; 
+    isRead: boolean; 
+    flag: { flagStatus: string } 
+  }) => ({
     id: msg.id,
     subject: msg.subject || '(No Subject)',
     from: msg.from?.emailAddress?.address || msg.from?.emailAddress?.name || 'Unknown',
@@ -233,6 +244,10 @@ serve(async (req) => {
     const integration = integrations[0];
     logStep("Found integration", { provider: integration.provider });
 
+    // Decrypt tokens
+    const decryptedAccessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
+    const decryptedRefreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
+
     // Get OAuth credentials for token refresh
     const { data: integrationConfig } = await serviceClient
       .from("integration_configs")
@@ -249,25 +264,26 @@ serve(async (req) => {
     const clientId = resolveCredential(integrationConfig?.client_id, `${integration.provider.toUpperCase()}_CLIENT_ID`);
     const clientSecret = resolveCredential(integrationConfig?.client_secret, `${integration.provider.toUpperCase()}_CLIENT_SECRET`);
 
-    let accessToken = integration.access_token;
+    let accessToken = decryptedAccessToken;
 
     // Try to refresh the token if we have refresh token and credentials
-    if (integration.refresh_token && clientId && clientSecret) {
+    if (decryptedRefreshToken && clientId && clientSecret) {
       try {
         if (integration.provider === "google") {
-          accessToken = await refreshGoogleToken(integration.refresh_token, clientId, clientSecret);
+          accessToken = await refreshGoogleToken(decryptedRefreshToken, clientId, clientSecret);
         } else if (integration.provider === "microsoft") {
-          accessToken = await refreshMicrosoftToken(integration.refresh_token, clientId, clientSecret);
+          accessToken = await refreshMicrosoftToken(decryptedRefreshToken, clientId, clientSecret);
         }
         
-        // Update stored access token
+        // Encrypt and update stored access token
+        const encryptedAccessToken = await encryptToken(accessToken!);
         await serviceClient
           .from("integrations")
-          .update({ access_token: accessToken, last_synced_at: new Date().toISOString() })
+          .update({ access_token: encryptedAccessToken, last_synced_at: new Date().toISOString() })
           .eq("user_id", user.id)
           .eq("provider", integration.provider);
           
-        logStep("Token refreshed successfully");
+        logStep("Token refreshed and encrypted successfully");
       } catch (refreshError) {
         logStep("Token refresh failed, using existing token", { error: String(refreshError) });
       }
