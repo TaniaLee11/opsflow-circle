@@ -186,11 +186,13 @@ function VaultContent() {
   const { 
     documents: vaultDocuments, 
     fetchDocuments, 
-    getDownloadUrl, 
+    downloadDocument,
     deleteDocument, 
     toggleStarred,
     isLoading: isDocumentsLoading 
   } = usePresentationIntelligence();
+  
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   
   // Fetch documents on mount
   useEffect(() => {
@@ -229,9 +231,11 @@ function VaultContent() {
   // Handle document download
   const handleDownload = async (doc: any) => {
     if (doc.isReal && doc.storagePath) {
-      const url = await getDownloadUrl(doc.storagePath);
-      if (url) {
-        window.open(url, '_blank');
+      setDownloadingId(doc.id);
+      try {
+        await downloadDocument(doc.storagePath, doc.name);
+      } finally {
+        setDownloadingId(null);
       }
     }
   };
@@ -417,11 +421,21 @@ function VaultContent() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
                     >
-                      <Card className="hover:shadow-lg transition-all cursor-pointer group">
+                      <Card 
+                        className={cn(
+                          "hover:shadow-lg transition-all cursor-pointer group",
+                          downloadingId === doc.id && "opacity-70"
+                        )}
+                        onClick={() => doc.isReal && handleDownload(doc)}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                              {getFileIcon(doc.type)}
+                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center relative">
+                              {downloadingId === doc.id ? (
+                                <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                              ) : (
+                                getFileIcon(doc.type)
+                              )}
                             </div>
                             <div className="flex items-center gap-1">
                               {doc.starred && (
@@ -431,26 +445,36 @@ function VaultContent() {
                                 <Users className="w-4 h-4 text-info" />
                               )}
                               <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                   <button className="p-1 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity">
                                     <MoreVertical className="w-4 h-4 text-muted-foreground" />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleDownload(doc)}>
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => { e.stopPropagation(); handleDownload(doc); }}
+                                    disabled={downloadingId === doc.id}
+                                  >
+                                    {downloadingId === doc.id ? (
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                      <Download className="w-4 h-4 mr-2" />
+                                    )}
+                                    {downloadingId === doc.id ? 'Downloading...' : 'Download'}
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                                     <Share2 className="w-4 h-4 mr-2" />
                                     Share
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleToggleStar(doc)}>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggleStar(doc); }}>
                                     <Star className="w-4 h-4 mr-2" />
                                     {doc.starred ? 'Unstar' : 'Star'}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(doc)}>
+                                  <DropdownMenuItem 
+                                    className="text-destructive" 
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(doc); }}
+                                  >
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
                                   </DropdownMenuItem>
@@ -483,10 +507,21 @@ function VaultContent() {
                       </thead>
                       <tbody>
                         {filteredDocuments.map((doc) => (
-                          <tr key={doc.id} className="border-b last:border-0 hover:bg-muted/50">
+                          <tr 
+                            key={doc.id} 
+                            className={cn(
+                              "border-b last:border-0 hover:bg-muted/50 cursor-pointer",
+                              downloadingId === doc.id && "opacity-70"
+                            )}
+                            onClick={() => doc.isReal && handleDownload(doc)}
+                          >
                             <td className="p-4">
                               <div className="flex items-center gap-3">
-                                {getFileIcon(doc.type)}
+                                {downloadingId === doc.id ? (
+                                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                                ) : (
+                                  getFileIcon(doc.type)
+                                )}
                                 <span className="font-medium text-sm">{doc.name}</span>
                                 {doc.starred && <Star className="w-3 h-3 text-warning fill-warning" />}
                                 {doc.shared && <Users className="w-3 h-3 text-info" />}
@@ -495,7 +530,7 @@ function VaultContent() {
                             <td className="p-4 text-sm text-muted-foreground">{doc.owner}</td>
                             <td className="p-4 text-sm text-muted-foreground">{doc.modified}</td>
                             <td className="p-4 text-sm text-muted-foreground">{doc.size}</td>
-                            <td className="p-4 text-right">
+                            <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm">
@@ -503,16 +538,26 @@ function VaultContent() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDownload(doc)}
+                                    disabled={downloadingId === doc.id}
+                                  >
+                                    {downloadingId === doc.id ? (
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                      <Download className="w-4 h-4 mr-2" />
+                                    )}
+                                    {downloadingId === doc.id ? 'Downloading...' : 'Download'}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem>
                                     <Share2 className="w-4 h-4 mr-2" />
                                     Share
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-destructive">
+                                  <DropdownMenuItem 
+                                    className="text-destructive"
+                                    onClick={() => handleDelete(doc)}
+                                  >
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
                                   </DropdownMenuItem>

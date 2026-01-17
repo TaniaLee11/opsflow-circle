@@ -95,20 +95,58 @@ export function usePresentationIntelligence() {
     }
   }, []);
 
-  // Get download URL for a document
-  const getDownloadUrl = useCallback(async (storagePath: string): Promise<string | null> => {
+  // Get download URL for a document with optional filename for download
+  const getDownloadUrl = useCallback(async (
+    storagePath: string, 
+    forceDownload: boolean = true,
+    customFilename?: string
+  ): Promise<string | null> => {
     try {
+      // Extract filename from path if not provided
+      const filename = customFilename || storagePath.split('/').pop() || 'document';
+      
       const { data, error } = await supabase.storage
         .from('vault')
-        .createSignedUrl(storagePath, 3600);
+        .createSignedUrl(storagePath, 3600, {
+          download: forceDownload ? filename : undefined,
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Signed URL error:', error);
+        throw error;
+      }
       return data?.signedUrl || null;
     } catch (err) {
       console.error('Failed to get download URL:', err);
+      toast.error('Unable to access file. Please try again.');
       return null;
     }
   }, []);
+
+  // Download a document directly
+  const downloadDocument = useCallback(async (storagePath: string, filename?: string): Promise<boolean> => {
+    try {
+      const url = await getDownloadUrl(storagePath, true, filename);
+      if (!url) {
+        throw new Error('Could not generate download link');
+      }
+      
+      // Create a temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || storagePath.split('/').pop() || 'document';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      return true;
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast.error('Download failed. Please try again.');
+      return false;
+    }
+  }, [getDownloadUrl]);
 
   // Delete a document
   const deleteDocument = useCallback(async (documentId: string, storagePath: string): Promise<boolean> => {
@@ -159,6 +197,7 @@ export function usePresentationIntelligence() {
     generatePresentation,
     fetchDocuments,
     getDownloadUrl,
+    downloadDocument,
     deleteDocument,
     toggleStarred,
   };
