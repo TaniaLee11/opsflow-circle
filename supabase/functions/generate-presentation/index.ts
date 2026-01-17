@@ -473,10 +473,13 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
       console.error("Document record error:", docError);
     }
 
-    // Get download URL
+    // Get download URL with download flag to trigger browser download
+    const sanitizedTopic = topic.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 50);
     const { data: urlData } = await supabase.storage
       .from('vault')
-      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+      .createSignedUrl(storagePath, 3600, { 
+        download: `${sanitizedTopic} Presentation.${fileExtension}` 
+      }); // 1 hour expiry with forced download
 
     console.log(`Presentation generated successfully: ${fileName}`);
 
