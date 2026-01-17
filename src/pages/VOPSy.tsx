@@ -89,14 +89,83 @@ function formatMessage(content: string) {
   });
 }
 
-function formatInlineText(text: string) {
+function formatInlineText(text: string): React.ReactNode {
+  // First handle markdown links: [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = linkRegex.exec(text)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(...formatBoldText(text.slice(lastIndex, match.index), `pre-${match.index}`));
+    }
+    
+    const linkText = match[1];
+    const url = match[2];
+    
+    // Check if it's a download link (signed Supabase URL or contains "download")
+    const isDownloadLink = url.includes('/storage/') || linkText.toLowerCase().includes('download');
+    
+    if (isDownloadLink) {
+      // Create a download link that triggers browser download
+      parts.push(
+        <a 
+          key={`link-${match.index}`}
+          href={url}
+          download
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline font-semibold"
+          onClick={(e) => {
+            // Force download by fetching and creating blob
+            e.preventDefault();
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+        >
+          📥 {linkText}
+        </a>
+      );
+    } else {
+      // Regular link
+      parts.push(
+        <a 
+          key={`link-${match.index}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:text-primary/80 underline"
+        >
+          {linkText}
+        </a>
+      );
+    }
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(...formatBoldText(text.slice(lastIndex), `post-${lastIndex}`));
+  }
+  
+  return parts.length > 0 ? parts : formatBoldText(text, 'full');
+}
+
+function formatBoldText(text: string, keyPrefix: string): React.ReactNode[] {
   // Handle **bold** text
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={idx} className="font-semibold">{part.slice(2, -2)}</strong>;
+      return <strong key={`${keyPrefix}-${idx}`} className="font-semibold">{part.slice(2, -2)}</strong>;
     }
-    return part;
+    return <span key={`${keyPrefix}-${idx}`}>{part}</span>;
   });
 }
 
