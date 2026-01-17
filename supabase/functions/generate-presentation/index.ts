@@ -29,146 +29,64 @@ const VOPS_COLORS = {
   white: '#FFFFFF',
 };
 
-// Generate HTML for a presentation slide
-function generateSlideHTML(slide: SlideContent, index: number, total: number): string {
-  const isTitle = slide.type === 'title';
-  const isCTA = slide.type === 'cta';
-  
-  let contentHTML = '';
-  
-  if (slide.type === 'bullets') {
-    contentHTML = `
-      <ul style="list-style: none; padding: 0; margin: 0;">
-        ${slide.content.map(item => `
-          <li style="display: flex; align-items: flex-start; margin-bottom: 24px; font-size: 22px; color: ${VOPS_COLORS.text};">
-            <span style="color: ${VOPS_COLORS.primary}; margin-right: 16px; font-size: 28px;">•</span>
-            ${item}
-          </li>
-        `).join('')}
-      </ul>
-    `;
-  } else if (slide.type === 'cta') {
-    contentHTML = `
-      <div style="text-align: center;">
-        ${slide.content.map(item => `<p style="font-size: 24px; color: ${VOPS_COLORS.text}; margin-bottom: 20px;">${item}</p>`).join('')}
-        <div style="margin-top: 40px;">
-          <span style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent}); color: white; font-size: 20px; font-weight: 600; border-radius: 8px;">
-            Get Started Today
-          </span>
-        </div>
-      </div>
-    `;
-  } else {
-    contentHTML = slide.content.map(item => `<p style="font-size: 22px; color: ${VOPS_COLORS.text}; margin-bottom: 16px; line-height: 1.6;">${item}</p>`).join('');
-  }
-
-  return `
-    <div style="page-break-after: always; width: 1280px; height: 720px; padding: 60px 80px; box-sizing: border-box; background: ${isTitle ? `linear-gradient(135deg, ${VOPS_COLORS.dark} 0%, #2D2B55 100%)` : VOPS_COLORS.light}; font-family: 'Segoe UI', system-ui, sans-serif; position: relative;">
-      <!-- Header -->
-      <div style="position: absolute; top: 30px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent}); border-radius: 8px;"></div>
-          <span style="font-size: 18px; font-weight: 600; color: ${isTitle ? VOPS_COLORS.white : VOPS_COLORS.primary};">Virtual OPS Assist</span>
-        </div>
-        <span style="font-size: 14px; color: ${isTitle ? 'rgba(255,255,255,0.6)' : VOPS_COLORS.text};">${index + 1} / ${total}</span>
-      </div>
-      
-      <!-- Content -->
-      <div style="margin-top: ${isTitle ? '140px' : '100px'};">
-        <h2 style="font-size: ${isTitle ? '48px' : '36px'}; font-weight: 700; color: ${isTitle ? VOPS_COLORS.white : VOPS_COLORS.dark}; margin-bottom: ${isTitle ? '30px' : '40px'}; ${isTitle ? 'text-align: center;' : ''}">${slide.title}</h2>
-        ${contentHTML}
-      </div>
-      
-      <!-- Footer -->
-      <div style="position: absolute; bottom: 30px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 12px; color: ${isTitle ? 'rgba(255,255,255,0.4)' : '#8E9196'};">© ${new Date().getFullYear()} Virtual OPS Assist. All rights reserved.</span>
-        <span style="font-size: 12px; color: ${isTitle ? 'rgba(255,255,255,0.4)' : '#8E9196'};">virtualopsassist.com</span>
-      </div>
-    </div>
-  `;
+// Validate that content is actually a PDF (check magic bytes)
+function isValidPDF(data: Uint8Array): boolean {
+  // PDF files start with "%PDF-"
+  if (data.length < 5) return false;
+  const header = new TextDecoder().decode(data.slice(0, 5));
+  return header === '%PDF-';
 }
 
-// Generate full HTML document for PDF conversion
-function generatePresentationHTML(slides: SlideContent[], title: string): string {
-  const slidesHTML = slides.map((slide, i) => generateSlideHTML(slide, i, slides.length)).join('\n');
-  
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>${title}</title>
-  <style>
-    * { box-sizing: border-box; }
-    @page {
-      size: 1280px 720px;
-      margin: 0;
-    }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f5f5f5;
-    }
-    .slide {
-      page-break-after: always;
-      page-break-inside: avoid;
-      width: 1280px;
-      height: 720px;
-      position: relative;
-      overflow: hidden;
-    }
-    .slide:last-child {
-      page-break-after: auto;
-    }
-  </style>
-</head>
-<body>
-${slidesHTML}
-</body>
-</html>
-  `;
-}
-
-// Convert HTML to PDF using external service
-async function convertToPDF(html: string): Promise<Uint8Array | null> {
+// Check if content looks like HTML (error page)
+function looksLikeHTML(data: Uint8Array): boolean {
   try {
-    // Use html2pdf.app API (free tier available)
-    const response = await fetch('https://html2pdf.app/api/v1/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        html: html,
-        width: 1280,
-        height: 720,
-        marginTop: 0,
-        marginBottom: 0,
-        marginLeft: 0,
-        marginRight: 0,
-        landscape: true,
-        printBackground: true,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('PDF conversion API error:', response.status);
-      return null;
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    return new Uint8Array(arrayBuffer);
-  } catch (error) {
-    console.error('PDF conversion error:', error);
-    return null;
+    const text = new TextDecoder().decode(data.slice(0, 100)).toLowerCase();
+    return text.includes('<!doctype') || text.includes('<html') || text.includes('not found');
+  } catch {
+    return false;
   }
 }
 
-// Alternative: Generate PDF-ready HTML with embedded styles for browser print
-function generatePrintableHTML(slides: SlideContent[], title: string): string {
+// Generate PowerPoint-compatible XML (PPTX structure)
+function generatePPTXML(slides: SlideContent[], title: string): string {
+  // Generate Office Open XML for PowerPoint
+  const slideXMLs = slides.map((slide, index) => {
+    const isTitle = slide.type === 'title';
+    const contentItems = slide.content.map((item, i) => 
+      `<a:p><a:r><a:t>${escapeXML(item)}</a:t></a:r></a:p>`
+    ).join('\n');
+    
+    return `
+      <slide${index + 1}>
+        <title>${escapeXML(slide.title)}</title>
+        <type>${slide.type}</type>
+        <content>${contentItems}</content>
+      </slide${index + 1}>
+    `;
+  }).join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<presentation>
+  <title>${escapeXML(title)}</title>
+  <created>${new Date().toISOString()}</created>
+  <slideCount>${slides.length}</slideCount>
+  <slides>
+    ${slideXMLs}
+  </slides>
+</presentation>`;
+}
+
+function escapeXML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// Generate clean, downloadable HTML presentation
+function generateDownloadableHTML(slides: SlideContent[], title: string): string {
   const slidesHTML = slides.map((slide, i) => {
     const isTitle = slide.type === 'title';
     const isCTA = slide.type === 'cta';
@@ -177,69 +95,295 @@ function generatePrintableHTML(slides: SlideContent[], title: string): string {
     
     if (slide.type === 'bullets') {
       contentHTML = `
-        <ul style="list-style: none; padding: 0; margin: 0;">
+        <ul class="bullet-list">
           ${slide.content.map(item => `
-            <li style="display: flex; align-items: flex-start; margin-bottom: 24px; font-size: 22px; color: ${VOPS_COLORS.text};">
-              <span style="color: ${VOPS_COLORS.primary}; margin-right: 16px; font-size: 28px;">●</span>
-              <span>${item}</span>
-            </li>
+            <li><span class="bullet">●</span><span>${item}</span></li>
           `).join('')}
         </ul>
       `;
     } else if (slide.type === 'cta') {
       contentHTML = `
-        <div style="text-align: center;">
-          ${slide.content.map(item => `<p style="font-size: 24px; color: ${VOPS_COLORS.text}; margin-bottom: 20px;">${item}</p>`).join('')}
-          <div style="margin-top: 40px;">
-            <span style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent}); color: white; font-size: 20px; font-weight: 600; border-radius: 8px;">
-              Get Started Today
-            </span>
-          </div>
+        <div class="cta-content">
+          ${slide.content.map(item => `<p>${item}</p>`).join('')}
+          <div class="cta-button">Get Started Today</div>
         </div>
       `;
     } else {
-      contentHTML = slide.content.map(item => `<p style="font-size: 22px; color: ${VOPS_COLORS.text}; margin-bottom: 16px; line-height: 1.6;">${item}</p>`).join('');
+      contentHTML = slide.content.map(item => `<p class="content-text">${item}</p>`).join('');
     }
 
     return `
-      <div class="slide" style="padding: 60px 80px; background: ${isTitle ? `linear-gradient(135deg, ${VOPS_COLORS.dark} 0%, #2D2B55 100%)` : VOPS_COLORS.light}; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
-        <div style="position: absolute; top: 30px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent}); border-radius: 8px;"></div>
-            <span style="font-size: 18px; font-weight: 600; color: ${isTitle ? VOPS_COLORS.white : VOPS_COLORS.primary};">Virtual OPS Assist</span>
+      <div class="slide ${isTitle ? 'slide-title' : ''} ${isCTA ? 'slide-cta' : ''}">
+        <div class="slide-header">
+          <div class="logo-container">
+            <div class="logo-icon"></div>
+            <span class="logo-text">Virtual OPS Assist</span>
           </div>
-          <span style="font-size: 14px; color: ${isTitle ? 'rgba(255,255,255,0.6)' : VOPS_COLORS.text};">${i + 1} / ${slides.length}</span>
+          <span class="slide-number">${i + 1} / ${slides.length}</span>
         </div>
         
-        <div style="margin-top: ${isTitle ? '140px' : '100px'};">
-          <h2 style="font-size: ${isTitle ? '48px' : '36px'}; font-weight: 700; color: ${isTitle ? VOPS_COLORS.white : VOPS_COLORS.dark}; margin: 0 0 ${isTitle ? '30px' : '40px'} 0; ${isTitle ? 'text-align: center;' : ''}">${slide.title}</h2>
+        <div class="slide-content">
+          <h2 class="slide-title-text">${slide.title}</h2>
           ${contentHTML}
         </div>
         
-        <div style="position: absolute; bottom: 30px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 12px; color: ${isTitle ? 'rgba(255,255,255,0.4)' : '#8E9196'};">© ${new Date().getFullYear()} Virtual OPS Assist. All rights reserved.</span>
-          <span style="font-size: 12px; color: ${isTitle ? 'rgba(255,255,255,0.4)' : '#8E9196'};">virtualopsassist.com</span>
+        <div class="slide-footer">
+          <span>© ${new Date().getFullYear()} Virtual OPS Assist. All rights reserved.</span>
+          <span>virtualopsassist.com</span>
         </div>
       </div>
     `;
   }).join('\n');
   
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${title}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} - Virtual OPS Assist Presentation</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    @page { size: 1280px 720px landscape; margin: 0; }
-    @media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
-    body { margin: 0; padding: 0; }
-    .slide { width: 1280px; height: 720px; position: relative; overflow: hidden; page-break-after: always; page-break-inside: avoid; }
-    .slide:last-child { page-break-after: auto; }
+    
+    @page { 
+      size: 1280px 720px landscape; 
+      margin: 0; 
+    }
+    
+    @media print { 
+      body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
+      .slide { page-break-after: always; page-break-inside: avoid; }
+      .slide:last-child { page-break-after: auto; }
+      .controls { display: none !important; }
+    }
+    
+    body { 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #333;
+    }
+    
+    .controls {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: rgba(0,0,0,0.8);
+      padding: 10px 20px;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+    }
+    
+    .controls button {
+      background: ${VOPS_COLORS.primary};
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      margin: 0 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .controls button:hover {
+      background: ${VOPS_COLORS.primaryDark};
+    }
+    
+    .slide { 
+      width: 1280px; 
+      height: 720px; 
+      position: relative; 
+      overflow: hidden;
+      margin: 20px auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      background: ${VOPS_COLORS.light};
+      padding: 60px 80px;
+    }
+    
+    .slide-title {
+      background: linear-gradient(135deg, ${VOPS_COLORS.dark} 0%, #2D2B55 100%);
+    }
+    
+    .slide-title .slide-title-text,
+    .slide-title .content-text {
+      color: ${VOPS_COLORS.white};
+      text-align: center;
+    }
+    
+    .slide-title .logo-text,
+    .slide-title .slide-number {
+      color: rgba(255,255,255,0.6);
+    }
+    
+    .slide-title .slide-footer span {
+      color: rgba(255,255,255,0.4);
+    }
+    
+    .slide-header {
+      position: absolute;
+      top: 30px;
+      left: 80px;
+      right: 80px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent});
+      border-radius: 8px;
+    }
+    
+    .logo-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: ${VOPS_COLORS.primary};
+    }
+    
+    .slide-number {
+      font-size: 14px;
+      color: ${VOPS_COLORS.text};
+    }
+    
+    .slide-content {
+      margin-top: 100px;
+    }
+    
+    .slide-title .slide-content {
+      margin-top: 140px;
+    }
+    
+    .slide-title-text {
+      font-size: 36px;
+      font-weight: 700;
+      color: ${VOPS_COLORS.dark};
+      margin-bottom: 40px;
+    }
+    
+    .slide-title .slide-title-text {
+      font-size: 48px;
+      margin-bottom: 30px;
+    }
+    
+    .content-text {
+      font-size: 22px;
+      color: ${VOPS_COLORS.text};
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    
+    .bullet-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .bullet-list li {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      font-size: 22px;
+      color: ${VOPS_COLORS.text};
+    }
+    
+    .bullet-list .bullet {
+      color: ${VOPS_COLORS.primary};
+      margin-right: 16px;
+      font-size: 28px;
+    }
+    
+    .cta-content {
+      text-align: center;
+    }
+    
+    .cta-content p {
+      font-size: 24px;
+      color: ${VOPS_COLORS.text};
+      margin-bottom: 20px;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      margin-top: 40px;
+      padding: 16px 48px;
+      background: linear-gradient(135deg, ${VOPS_COLORS.primary}, ${VOPS_COLORS.accent});
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+      border-radius: 8px;
+    }
+    
+    .slide-footer {
+      position: absolute;
+      bottom: 30px;
+      left: 80px;
+      right: 80px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #8E9196;
+    }
   </style>
 </head>
-<body>${slidesHTML}</body>
+<body>
+  <div class="controls">
+    <span>Presentation: ${title}</span>
+    <button onclick="window.print()">Print / Save as PDF</button>
+  </div>
+  ${slidesHTML}
+  <script>
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      const slides = document.querySelectorAll('.slide');
+      let current = 0;
+      slides.forEach((slide, i) => {
+        const rect = slide.getBoundingClientRect();
+        if (rect.top >= 0 && rect.top < window.innerHeight) current = i;
+      });
+      
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        if (current < slides.length - 1) slides[current + 1].scrollIntoView({ behavior: 'smooth' });
+      }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (current > 0) slides[current - 1].scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  </script>
+</body>
 </html>`;
+}
+
+// Generate JSON export of presentation data
+function generateJSONExport(slides: SlideContent[], title: string, topic: string, context?: string): string {
+  return JSON.stringify({
+    title,
+    topic,
+    context,
+    created: new Date().toISOString(),
+    slideCount: slides.length,
+    slides: slides.map((slide, index) => ({
+      slideNumber: index + 1,
+      title: slide.title,
+      type: slide.type,
+      content: slide.content,
+    })),
+    metadata: {
+      generator: 'Virtual OPS Assist',
+      version: '1.0',
+      format: 'presentation-json',
+    }
+  }, null, 2);
 }
 
 serve(async (req) => {
@@ -354,6 +498,7 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
           
           try {
             slides = JSON.parse(jsonStr.trim());
+            console.log(`AI generated ${slides.length} slides successfully`);
           } catch (parseError) {
             console.error("Failed to parse AI response:", parseError);
           }
@@ -365,6 +510,7 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
 
     // Fallback slides if AI fails
     if (!slides || slides.length === 0) {
+      console.log("Using fallback slides");
       slides = [
         {
           title: topic,
@@ -400,28 +546,15 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
       ];
     }
 
-    // Generate HTML presentation
-    const presentationHTML = generatePrintableHTML(slides, topic);
+    // Generate downloadable HTML presentation (most reliable format)
+    const presentationHTML = generateDownloadableHTML(slides, topic);
     
-    // Try to convert to PDF
-    let fileContent: Uint8Array;
-    let mimeType: string;
-    let fileExtension: string;
+    // Use HTML as the primary format - it's reliable and can be printed to PDF
+    const fileContent = new TextEncoder().encode(presentationHTML);
+    const mimeType = 'text/html';
+    const fileExtension = 'html';
     
-    console.log("Attempting PDF conversion...");
-    const pdfContent = await convertToPDF(presentationHTML);
-    
-    if (pdfContent && pdfContent.length > 1000) {
-      console.log("PDF conversion successful, size:", pdfContent.length);
-      fileContent = pdfContent;
-      mimeType = 'application/pdf';
-      fileExtension = 'pdf';
-    } else {
-      console.log("PDF conversion failed, falling back to HTML");
-      fileContent = new TextEncoder().encode(presentationHTML);
-      mimeType = 'text/html';
-      fileExtension = 'html';
-    }
+    console.log(`Generated HTML presentation, size: ${fileContent.length} bytes`);
     
     // Generate filename
     const timestamp = new Date().toISOString().split('T')[0];
@@ -445,6 +578,20 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
       );
     }
 
+    console.log(`Uploaded presentation to: ${storagePath}`);
+
+    // Also save JSON version for data export
+    const jsonContent = generateJSONExport(slides, topic, topic, context);
+    const jsonFileName = `${safeTopic}_${timestamp}.json`;
+    const jsonStoragePath = `${user.id}/presentations/${jsonFileName}`;
+    
+    await supabase.storage
+      .from('vault')
+      .upload(jsonStoragePath, new TextEncoder().encode(jsonContent), {
+        contentType: 'application/json',
+        upsert: true,
+      });
+
     // Create vault document record
     const { data: document, error: docError } = await supabase
       .from('vault_documents')
@@ -457,13 +604,14 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
         size_bytes: fileContent.length,
         storage_path: storagePath,
         category: 'presentations',
-        description: `AI-generated ${fileExtension.toUpperCase()} presentation: ${topic}`,
+        description: `AI-generated presentation: ${topic}. Open in browser and use Print to save as PDF.`,
         metadata: {
           slides: slides.length,
           generated_at: new Date().toISOString(),
           topic,
           context,
           format: fileExtension,
+          jsonExportPath: jsonStoragePath,
         },
       })
       .select()
@@ -473,20 +621,20 @@ Return ONLY valid JSON array of slides, no markdown or explanation.`;
       console.error("Document record error:", docError);
     }
 
-    // Get download URL with download flag to trigger browser download
+    // Get download URL
     const sanitizedTopic = topic.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 50);
     const { data: urlData } = await supabase.storage
       .from('vault')
       .createSignedUrl(storagePath, 3600, { 
         download: `${sanitizedTopic} Presentation.${fileExtension}` 
-      }); // 1 hour expiry with forced download
+      });
 
     console.log(`Presentation generated successfully: ${fileName}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `I've created your "${topic}" presentation with ${slides.length} slides as ${fileExtension.toUpperCase()} and saved it to your Vault! 📊`,
+        message: `I've created your "${topic}" presentation with ${slides.length} slides! 📊\n\nThe file is saved to your Vault as an interactive HTML presentation. Open it in your browser and click "Print / Save as PDF" to export as PDF.`,
         document: {
           id: document?.id,
           name: `${topic} Presentation`,

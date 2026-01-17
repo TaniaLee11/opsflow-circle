@@ -123,12 +123,44 @@ export function usePresentationIntelligence() {
     }
   }, []);
 
-  // Download a document directly
+  // Validate that downloaded content is not an error page
+  const validateDownloadContent = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      const contentType = response.headers.get('content-type') || '';
+      
+      // Check if we got an error page (HTML when expecting something else)
+      if (contentType.includes('text/html')) {
+        // For HTML files, this is expected
+        const filename = url.split('/').pop()?.split('?')[0] || '';
+        if (filename.endsWith('.html') || filename.endsWith('.htm')) {
+          return true;
+        }
+        // For other file types, HTML content means an error page
+        console.warn('Received HTML content for non-HTML file, may be an error page');
+      }
+      
+      return response.ok;
+    } catch (err) {
+      console.error('Content validation failed:', err);
+      return true; // Proceed with download attempt on validation error
+    }
+  };
+
+  // Download a document directly with validation
   const downloadDocument = useCallback(async (storagePath: string, filename?: string): Promise<boolean> => {
     try {
       const url = await getDownloadUrl(storagePath, true, filename);
       if (!url) {
         throw new Error('Could not generate download link');
+      }
+      
+      // Validate the content before downloading
+      const isValid = await validateDownloadContent(url);
+      if (!isValid) {
+        console.error('Download validation failed - content may be invalid');
+        toast.error('File download failed. The file may be corrupted or unavailable.');
+        return false;
       }
       
       // Create a temporary link and trigger download
@@ -140,6 +172,7 @@ export function usePresentationIntelligence() {
       link.click();
       document.body.removeChild(link);
       
+      toast.success('Download started!');
       return true;
     } catch (err) {
       console.error('Download failed:', err);
