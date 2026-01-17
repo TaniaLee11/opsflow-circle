@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,16 @@ interface CalendarData {
   todayCount: number;
 }
 
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  // Never log token values
+  const safeDetails = details ? { ...details } : undefined;
+  if (safeDetails) {
+    delete safeDetails.access_token;
+    delete safeDetails.refresh_token;
+  }
+  console.log(`[CALENDAR-FETCH] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
+};
+
 // Refresh Google access token
 async function refreshGoogleToken(refreshToken: string): Promise<string | null> {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
@@ -51,20 +62,21 @@ async function refreshGoogleToken(refreshToken: string): Promise<string | null> 
     });
 
     if (!response.ok) {
-      console.error("Failed to refresh Google token:", await response.text());
+      logStep("Failed to refresh Google token", { status: response.status });
       return null;
     }
 
     const data = await response.json();
     return data.access_token;
   } catch (error) {
-    console.error("Error refreshing Google token:", error);
+    logStep("Error refreshing Google token", { error: String(error) });
     return null;
   }
 }
 
 // Fetch Google Calendar events
-async function fetchGoogleCalendar(accessToken: string, refreshToken: string | null): Promise<CalendarEvent[]> {
+// deno-lint-ignore no-explicit-any
+async function fetchGoogleCalendar(accessToken: string, refreshToken: string | null, supabase: any, integrationId: string): Promise<CalendarEvent[]> {
   let token = accessToken;
   
   // Calculate time range: now to 7 days from now
@@ -87,10 +99,18 @@ async function fetchGoogleCalendar(accessToken: string, refreshToken: string | n
 
   // If token expired, try to refresh
   if (response.status === 401 && refreshToken) {
-    console.log("Access token expired, attempting refresh...");
+    logStep("Access token expired, attempting refresh...");
     const newToken = await refreshGoogleToken(refreshToken);
     if (newToken) {
       token = newToken;
+      // Encrypt and store new token
+      const encryptedToken = await encryptToken(token);
+      await supabase
+        .from("integrations")
+        .update({ access_token: encryptedToken, last_synced_at: new Date().toISOString() })
+        .eq("id", integrationId);
+      logStep("Token refreshed and encrypted");
+      
       response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -114,7 +134,7 @@ async function fetchGoogleCalendar(accessToken: string, refreshToken: string | n
     // Extract meeting link
     let meetingLink = item.hangoutLink || null;
     if (!meetingLink && item.conferenceData?.entryPoints) {
-      const videoEntry = item.conferenceData.entryPoints.find((e: any) => e.entryPointType === 'video');
+      const videoEntry = item.conferenceData.entryPoints.find((e: { entryPointType: string; uri: string }) => e.entryPointType === 'video');
       meetingLink = videoEntry?.uri || null;
     }
 
@@ -125,7 +145,7 @@ async function fetchGoogleCalendar(accessToken: string, refreshToken: string | n
       end,
       location: item.location,
       description: item.description?.substring(0, 200),
-      attendees: item.attendees?.map((a: any) => a.email).filter(Boolean) || [],
+      attendees: item.attendees?.map((a: { email: string }) => a.email).filter(Boolean) || [],
       isAllDay,
       status: item.status === 'tentative' ? 'tentative' : 'confirmed',
       organizer: item.organizer?.email,
@@ -176,7 +196,7 @@ async function fetchOutlookCalendar(accessToken: string): Promise<CalendarEvent[
       end: item.end?.dateTime ? new Date(item.end.dateTime + 'Z').toISOString() : item.end?.dateTime,
       location: item.location?.displayName,
       description: item.bodyPreview?.substring(0, 200),
-      attendees: item.attendees?.map((a: any) => a.emailAddress?.address).filter(Boolean) || [],
+      attendees: item.attendees?.map((a: { emailAddress: { address: string } }) => a.emailAddress?.address).filter(Boolean) || [],
       isAllDay,
       status: item.showAs === 'tentative' ? 'tentative' : 'confirmed',
       organizer: item.organizer?.emailAddress?.address,
@@ -219,6 +239,8 @@ serve(async (req) => {
       );
     }
 
+    logStep("User authenticated", { userId: user.id });
+
     // Get user's profile to find org_id
     const { data: profile } = await supabase
       .from("profiles")
@@ -258,9 +280,13 @@ serve(async (req) => {
     // Use the first available integration
     const integration = integrations[0];
     const provider = integration.provider;
-    const accessToken = integration.access_token;
-    const refreshToken = integration.refresh_token;
     const connectedAccount = integration.connected_account || user.email || "Connected Account";
+
+    // Decrypt tokens
+    const accessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
+    const refreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
+
+    logStep("Found integration", { provider, hasAccessToken: !!accessToken });
 
     if (!accessToken) {
       return new Response(
@@ -276,7 +302,7 @@ serve(async (req) => {
     let events: CalendarEvent[] = [];
     
     if (provider === "google") {
-      events = await fetchGoogleCalendar(accessToken, refreshToken);
+      events = await fetchGoogleCalendar(accessToken, refreshToken, supabase, integration.id);
     } else if (provider === "microsoft") {
       events = await fetchOutlookCalendar(accessToken);
     }
@@ -306,7 +332,7 @@ serve(async (req) => {
       .update({ last_synced_at: new Date().toISOString() })
       .eq("id", integration.id);
 
-    console.log(`Fetched ${events.length} calendar events for user ${user.id}`);
+    logStep("Fetched calendar events", { count: events.length, userId: user.id });
 
     return new Response(
       JSON.stringify({ connected: true, data: calendarData }),
@@ -314,7 +340,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Calendar fetch error:", error);
+    logStep("Calendar fetch error", { error: String(error) });
     return new Response(
       JSON.stringify({ 
         connected: false, 

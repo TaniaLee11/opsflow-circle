@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { encryptToken } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,8 +41,14 @@ const TOKEN_CONFIGS: Record<string, {
   },
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  // Never log token values
+  const safeDetails = details ? { ...details } : undefined;
+  if (safeDetails) {
+    delete safeDetails.access_token;
+    delete safeDetails.refresh_token;
+  }
+  const detailsStr = safeDetails ? ` - ${JSON.stringify(safeDetails)}` : '';
   console.log(`[OAUTH-CALLBACK] ${step}${detailsStr}`);
 };
 
@@ -183,12 +190,17 @@ serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      logStep("Token exchange failed", { status: tokenResponse.status, error: errorText });
+      logStep("Token exchange failed", { status: tokenResponse.status });
       throw new Error(`Token exchange failed: ${tokenResponse.status}`);
     }
 
     const tokens = await tokenResponse.json();
     logStep("Tokens received", { hasAccessToken: !!tokens.access_token });
+
+    // Encrypt tokens before storing
+    const encryptedAccessToken = tokens.access_token ? await encryptToken(tokens.access_token) : null;
+    const encryptedRefreshToken = tokens.refresh_token ? await encryptToken(tokens.refresh_token) : null;
+    logStep("Tokens encrypted for storage");
 
     // Get user's organization (optional - platform owners may not have one)
     const { data: profile } = await supabaseClient
@@ -210,20 +222,19 @@ serve(async (req) => {
       }
       
       // For platform owners, we'll use their user_id as org_id
-      // First check if there's a default org for this user, or create a virtual reference
       logStep("Platform owner without org - using user_id as org reference", { userId });
-      orgId = userId; // Use user_id as fallback org_id for platform owners
+      orgId = userId;
     }
 
-    // Store integration in database
+    // Store integration in database with encrypted tokens
     const { error: insertError } = await supabaseClient
       .from("integrations")
       .upsert({
         org_id: orgId,
         user_id: userId,
         provider,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        access_token: encryptedAccessToken,
+        refresh_token: encryptedRefreshToken,
         scopes: tokens.scope,
         connected_account: tokens.email || tokens.team?.name || provider,
         health: "ok",
@@ -237,7 +248,7 @@ serve(async (req) => {
       throw new Error("Failed to store integration: " + insertError.message);
     }
 
-    logStep("Integration stored successfully");
+    logStep("Integration stored successfully with encrypted tokens");
 
     return new Response(
       JSON.stringify({ success: true, provider }),
