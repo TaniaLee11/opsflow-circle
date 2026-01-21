@@ -10,6 +10,7 @@ import { CourseBuilder } from "@/components/academy/CourseBuilder";
 import { CourseViewer } from "@/components/academy/CourseViewer";
 import { GamificationPanel } from "@/components/academy/GamificationPanel";
 import { CertificateCard } from "@/components/academy/CertificateCard";
+import { AICourseGenerator } from "@/components/academy/AICourseGenerator";
 import { 
   GraduationCap, 
   Plus, 
@@ -25,7 +26,8 @@ import {
   Loader2,
   Award,
   Flame,
-  Zap
+  Zap,
+  Wand2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -43,11 +45,14 @@ function AcademyContent() {
   const [editingCourse, setEditingCourse] = useState<Course | undefined>();
   const [activeTab, setActiveTab] = useState("courses");
   const [viewingCourse, setViewingCourse] = useState<Course | undefined>();
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
 
+  // Owners can see all courses (including drafts), others only see published
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (course.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch && course.status === "published";
+    const canView = isOwner || course.status === "published";
+    return matchesSearch && canView;
   });
 
   const getProgress = (course: Course) => {
@@ -112,13 +117,22 @@ function AcademyContent() {
               )}
               
               {canCreateCourses && !isReadOnly && (
-                <button 
-                  onClick={() => handleOpenBuilder()}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-xs sm:text-sm font-medium flex items-center gap-2 glow-primary-sm w-fit"
-                >
-                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  Create Course
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setAiGeneratorOpen(true)}
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-2 glow-primary-sm"
+                  >
+                    <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    AI Generate
+                  </button>
+                  <button 
+                    onClick={() => handleOpenBuilder()}
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-xs sm:text-sm font-medium flex items-center gap-2"
+                  >
+                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    Manual
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -351,6 +365,12 @@ function AcademyContent() {
         course={editingCourse}
         isOpen={builderOpen}
         onClose={handleCloseBuilder}
+      />
+
+      {/* AI Course Generator Modal */}
+      <AICourseGenerator
+        isOpen={aiGeneratorOpen}
+        onClose={() => setAiGeneratorOpen(false)}
       />
 
       {/* Course Viewer Modal */}
