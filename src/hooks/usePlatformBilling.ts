@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface SubscriptionSummary {
   tier: string;
@@ -173,7 +174,7 @@ export function usePlatformBilling() {
           report_type: reportType,
           period_start: periodStart,
           period_end: periodEnd,
-          data: reportData,
+          data: reportData as Json,
           generated_by: user.id
         }])
         .select()
