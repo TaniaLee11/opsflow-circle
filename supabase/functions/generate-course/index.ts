@@ -125,21 +125,20 @@ Return ONLY valid JSON, no markdown code blocks or additional text.`;
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    const response = await fetch("https://api.lovable.dev/api/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${lovableApiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "user",
             content: prompt,
           },
         ],
-        max_tokens: 8000,
       }),
     });
 
