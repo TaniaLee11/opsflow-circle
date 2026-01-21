@@ -111,8 +111,8 @@ function AcademyContent() {
             </div>
             
             <div className="flex items-center gap-4">
-              {/* Compact gamification stats in header */}
-              {stats && !isReadOnly && (
+              {/* Compact gamification stats in header - only for sub-users, not owners */}
+              {stats && !isReadOnly && !isOwner && (
                 <GamificationPanel compact />
               )}
               
@@ -145,72 +145,113 @@ function AcademyContent() {
             </div>
           ) : (
             <>
-              {/* Tabs for different sections */}
+              {/* Tabs for different sections - owners only see Courses, sub-users see gamification */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="mb-6">
                   <TabsTrigger value="courses" className="gap-2">
                     <BookOpen className="w-4 h-4" />
-                    Courses
+                    {isOwner ? "Manage Courses" : "Courses"}
                   </TabsTrigger>
-                  <TabsTrigger value="progress" className="gap-2">
-                    <Trophy className="w-4 h-4" />
-                    My Progress
-                  </TabsTrigger>
-                  <TabsTrigger value="certificates" className="gap-2">
-                    <Award className="w-4 h-4" />
-                    Certificates
-                    {certificates.length > 0 && (
-                      <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                        {certificates.length}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
+                  {!isOwner && (
+                    <>
+                      <TabsTrigger value="progress" className="gap-2">
+                        <Trophy className="w-4 h-4" />
+                        My Progress
+                      </TabsTrigger>
+                      <TabsTrigger value="certificates" className="gap-2">
+                        <Award className="w-4 h-4" />
+                        Certificates
+                        {certificates.length > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                            {certificates.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    </>
+                  )}
                 </TabsList>
 
                 {/* Courses Tab */}
                 <TabsContent value="courses" className="space-y-6">
-                  {/* Progress Overview */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass gradient-border rounded-xl p-5">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-primary/10 text-primary"><Target className="w-5 h-5" /></div>
-                        <div>
-                          <p className="text-xl font-bold text-foreground">{inProgressCourses.length}</p>
-                          <p className="text-xs text-muted-foreground">In Progress</p>
+                  {/* Progress Overview - only for sub-users, not owners */}
+                  {!isOwner && (
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6">
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass gradient-border rounded-xl p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-primary/10 text-primary"><Target className="w-5 h-5" /></div>
+                          <div>
+                            <p className="text-xl font-bold text-foreground">{inProgressCourses.length}</p>
+                            <p className="text-xs text-muted-foreground">In Progress</p>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass gradient-border rounded-xl p-5">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-success/10 text-success"><Trophy className="w-5 h-5" /></div>
-                        <div>
-                          <p className="text-xl font-bold text-foreground">{completedCourses.length}</p>
-                          <p className="text-xs text-muted-foreground">Completed</p>
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass gradient-border rounded-xl p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-success/10 text-success"><Trophy className="w-5 h-5" /></div>
+                          <div>
+                            <p className="text-xl font-bold text-foreground">{completedCourses.length}</p>
+                            <p className="text-xs text-muted-foreground">Completed</p>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass gradient-border rounded-xl p-5">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-destructive/10 text-destructive"><Flame className="w-5 h-5" /></div>
-                        <div>
-                          <p className="text-xl font-bold text-foreground">{stats?.current_streak || 0}</p>
-                          <p className="text-xs text-muted-foreground">Day Streak</p>
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass gradient-border rounded-xl p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-destructive/10 text-destructive"><Flame className="w-5 h-5" /></div>
+                          <div>
+                            <p className="text-xl font-bold text-foreground">{stats?.current_streak || 0}</p>
+                            <p className="text-xs text-muted-foreground">Day Streak</p>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass gradient-border rounded-xl p-5">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-warning/10 text-warning"><Zap className="w-5 h-5" /></div>
-                        <div>
-                          <p className="text-xl font-bold text-foreground">{stats?.total_xp?.toLocaleString() || 0}</p>
-                          <p className="text-xs text-muted-foreground">Total XP</p>
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass gradient-border rounded-xl p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-warning/10 text-warning"><Zap className="w-5 h-5" /></div>
+                          <div>
+                            <p className="text-xl font-bold text-foreground">{stats?.total_xp?.toLocaleString() || 0}</p>
+                            <p className="text-xs text-muted-foreground">Total XP</p>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  </div>
+                      </motion.div>
+                    </div>
+                  )}
+                  
+                  {/* Owner Course Stats */}
+                  {isOwner && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass gradient-border rounded-xl p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-primary/10 text-primary"><BookOpen className="w-5 h-5" /></div>
+                          <div>
+                            <p className="text-xl font-bold text-foreground">{courses.length}</p>
+                            <p className="text-xs text-muted-foreground">Total Courses</p>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass gradient-border rounded-xl p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-success/10 text-success"><CheckCircle2 className="w-5 h-5" /></div>
+                          <div>
+                            <p className="text-xl font-bold text-foreground">{courses.filter(c => c.status === 'published').length}</p>
+                            <p className="text-xs text-muted-foreground">Published</p>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass gradient-border rounded-xl p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-warning/10 text-warning"><Edit className="w-5 h-5" /></div>
+                          <div>
+                            <p className="text-xl font-bold text-foreground">{courses.filter(c => c.status === 'draft').length}</p>
+                            <p className="text-xs text-muted-foreground">Drafts</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
 
                   {/* Search */}
                   <div className="relative max-w-md">
@@ -325,35 +366,39 @@ function AcademyContent() {
                   )}
                 </TabsContent>
 
-                {/* Progress Tab */}
-                <TabsContent value="progress" className="space-y-6">
-                  <GamificationPanel />
-                </TabsContent>
+                {/* Progress Tab - only for sub-users */}
+                {!isOwner && (
+                  <TabsContent value="progress" className="space-y-6">
+                    <GamificationPanel />
+                  </TabsContent>
+                )}
 
-                {/* Certificates Tab */}
-                <TabsContent value="certificates" className="space-y-6">
-                  {certificates.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {certificates.map((cert) => {
-                        const course = courses.find(c => c.id === cert.course_id);
-                        return (
-                          <CertificateCard
-                            key={cert.id}
-                            courseName={course?.title || "Course"}
-                            certificateNumber={cert.certificate_number}
-                            issuedAt={cert.issued_at}
-                          />
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Award className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>No certificates earned yet</p>
-                      <p className="text-sm">Complete courses to earn certificates</p>
-                    </div>
-                  )}
-                </TabsContent>
+                {/* Certificates Tab - only for sub-users */}
+                {!isOwner && (
+                  <TabsContent value="certificates" className="space-y-6">
+                    {certificates.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {certificates.map((cert) => {
+                          const course = courses.find(c => c.id === cert.course_id);
+                          return (
+                            <CertificateCard
+                              key={cert.id}
+                              courseName={course?.title || "Course"}
+                              certificateNumber={cert.certificate_number}
+                              issuedAt={cert.issued_at}
+                            />
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Award className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No certificates earned yet</p>
+                        <p className="text-sm">Complete courses to earn certificates</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                )}
               </Tabs>
             </>
           )}
