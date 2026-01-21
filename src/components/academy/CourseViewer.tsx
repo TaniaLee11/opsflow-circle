@@ -13,7 +13,10 @@ import {
   Download,
   Clock,
   BookOpen,
-  Trophy
+  Trophy,
+  Award,
+  Zap,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +24,10 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Course, CourseLesson, CourseQuiz, useCourses } from "@/hooks/useCourses";
+import { useGamification } from "@/hooks/useGamification";
+import { LevelUpAnimation } from "./LevelUpAnimation";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface CourseViewerProps {
   course: Course;
@@ -32,10 +38,14 @@ interface CourseViewerProps {
 export function CourseViewer({ course, isOpen, onClose }: CourseViewerProps) {
   const { user } = useAuth();
   const { enroll, updateProgress } = useCourses();
+  const { awardXp, issueCertificate, stats } = useGamification();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [quizResults, setQuizResults] = useState<Record<string, boolean>>({});
   const [showQuizResults, setShowQuizResults] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpLevel, setLevelUpLevel] = useState(1);
+  const [previousLevel, setPreviousLevel] = useState(stats?.current_level || 1);
 
   const lessons = course.lessons || [];
   const currentLesson = lessons[currentLessonIndex];
@@ -49,13 +59,46 @@ export function CourseViewer({ course, isOpen, onClose }: CourseViewerProps) {
     ? Math.round((completedLessons.size / lessons.length) * 100)
     : 0;
 
+  // Check for level up
+  useEffect(() => {
+    if (stats && stats.current_level > previousLevel) {
+      setLevelUpLevel(stats.current_level);
+      setShowLevelUp(true);
+      setPreviousLevel(stats.current_level);
+    }
+  }, [stats?.current_level, previousLevel]);
+
   const handleEnroll = () => {
     enroll(course.id);
   };
 
   const handleMarkComplete = () => {
     if (!enrollment || !currentLesson) return;
+    
+    const wasAlreadyComplete = completedLessons.has(currentLesson.id);
     updateProgress({ enrollmentId: enrollment.id, lessonId: currentLesson.id });
+    
+    // Award XP for completing lesson (only if not already complete)
+    if (!wasAlreadyComplete) {
+      awardXp({ xp: 25, type: 'lesson' });
+      toast.success("+25 XP", { 
+        description: "Lesson completed!",
+        icon: <Zap className="w-4 h-4 text-warning" />
+      });
+
+      // Check if this completes the course
+      const newCompletedCount = completedLessons.size + 1;
+      if (newCompletedCount >= lessons.length) {
+        // Award course completion XP and certificate
+        setTimeout(() => {
+          awardXp({ xp: 100, type: 'course' });
+          issueCertificate(course.id);
+          toast.success("🎓 Course Completed!", {
+            description: "+100 XP bonus",
+          });
+        }, 500);
+      }
+    }
   };
 
   const handleNextLesson = () => {
@@ -85,6 +128,15 @@ export function CourseViewer({ course, isOpen, onClose }: CourseViewerProps) {
     });
     setQuizResults(results);
     setShowQuizResults(true);
+
+    // Check if all correct - award XP for perfect quiz
+    const allCorrect = Object.values(results).every(Boolean);
+    if (allCorrect && currentLesson.quizzes.length > 0) {
+      awardXp({ xp: 50, type: 'quiz_perfect' });
+      toast.success("+50 XP Perfect Score!", {
+        icon: <Sparkles className="w-4 h-4 text-warning" />
+      });
+    }
   };
 
   const allQuizzesCorrect = currentLesson?.quizzes?.every(q => quizResults[q.id]) ?? true;
@@ -368,6 +420,13 @@ export function CourseViewer({ course, isOpen, onClose }: CourseViewerProps) {
             )}
           </div>
         </div>
+
+        {/* Level Up Animation */}
+        <LevelUpAnimation
+          level={levelUpLevel}
+          show={showLevelUp}
+          onComplete={() => setShowLevelUp(false)}
+        />
       </DialogContent>
     </Dialog>
   );
