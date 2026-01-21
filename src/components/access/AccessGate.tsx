@@ -43,9 +43,9 @@ export function AccessGate({
     );
   }
 
-  // Not authenticated
+  // Not authenticated - redirect to auth page
   if (!isAuthenticated) {
-    navigate("/");
+    navigate("/auth");
     return null;
   }
 

@@ -28,6 +28,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { AccessGate } from "@/components/access/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -737,5 +738,9 @@ function VaultContent() {
 }
 
 export default function Vault() {
-  return <VaultContent />;
+  return (
+    <AccessGate>
+      <VaultContent />
+    </AccessGate>
+  );
 }

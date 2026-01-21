@@ -35,7 +35,7 @@ export default function TierSelection() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      navigate("/");
+      navigate("/auth");
     }
   }, [isAuthenticated, authLoading, navigate]);
 
