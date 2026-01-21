@@ -21,10 +21,18 @@ const TIER_RATE_LIMITS: Record<string, number> = {
 // Valid generation types
 const VALID_TYPES = ['image', 'video', 'audio'];
 
+// Max failed auth attempts per IP per hour
+const MAX_AUTH_FAILURES_PER_HOUR = 100;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Extract client IP for rate limiting
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                   req.headers.get('cf-connecting-ip') || 
+                   'unknown';
 
   try {
     const body = await req.json();
@@ -55,10 +63,37 @@ serve(async (req) => {
       );
     }
 
+    // Create service client for auth failure tracking
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Check for failed auth rate limit before processing
+    const hourAgoForAuth = new Date(Date.now() - 3600000).toISOString();
+    const { count: failedAttempts } = await serviceClient
+      .from('auth_failures')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', clientIP)
+      .gte('created_at', hourAgoForAuth);
+
+    if ((failedAttempts || 0) >= MAX_AUTH_FAILURES_PER_HOUR) {
+      console.log(`[studio-generate] IP ${clientIP} blocked: ${failedAttempts} failed auth attempts`);
+      return new Response(
+        JSON.stringify({ error: "Too many failed authentication attempts. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // 1. Authenticate user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       console.log("[studio-generate] Missing or invalid authorization header");
+      // Log failed attempt
+      await serviceClient.from('auth_failures').insert({
+        ip_address: clientIP,
+        endpoint: 'studio-generate'
+      });
       return new Response(
         JSON.stringify({ error: "Authentication required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -75,6 +110,11 @@ serve(async (req) => {
     const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
       console.log("[studio-generate] Invalid token:", claimsError?.message);
+      // Log failed attempt
+      await serviceClient.from('auth_failures').insert({
+        ip_address: clientIP,
+        endpoint: 'studio-generate'
+      });
       return new Response(
         JSON.stringify({ error: "Invalid authentication" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -84,11 +124,7 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     console.log(`[studio-generate] Authenticated user: ${userId}`);
 
-    // 2. Check subscription tier using service role
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // 2. Check subscription tier using service role (already created above)
 
     const { data: effectiveTier, error: tierError } = await serviceClient.rpc(
       'get_user_effective_tier',

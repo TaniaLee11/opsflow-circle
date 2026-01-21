@@ -185,6 +185,9 @@ const TIER_RATE_LIMITS: Record<string, number> = {
 // Tiers that have VOPSy access
 const ALLOWED_TIERS = ['owner', 'ai_enterprise', 'ai_operations', 'ai_assistant', 'cohort'];
 
+// Max failed auth attempts per IP per hour
+const MAX_AUTH_FAILURES_PER_HOUR = 100;
+
 serve(async (req) => {
 
   // Handle CORS preflight requests
@@ -192,11 +195,43 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Extract client IP for rate limiting
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                   req.headers.get('cf-connecting-ip') || 
+                   'unknown';
+
+  // Create service client for auth failure tracking and other service operations
+  const serviceClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
   try {
+    // Check for failed auth rate limit before processing
+    const hourAgoForAuth = new Date(Date.now() - 3600000).toISOString();
+    const { count: failedAttempts } = await serviceClient
+      .from('auth_failures')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', clientIP)
+      .gte('created_at', hourAgoForAuth);
+
+    if ((failedAttempts || 0) >= MAX_AUTH_FAILURES_PER_HOUR) {
+      console.log(`[vopsy-chat] IP ${clientIP} blocked: ${failedAttempts} failed auth attempts`);
+      return new Response(
+        JSON.stringify({ error: 'Too many failed authentication attempts. Please try again later.', success: false }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // 1. Validate authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('Missing authorization header');
+      // Log failed attempt
+      await serviceClient.from('auth_failures').insert({
+        ip_address: clientIP,
+        endpoint: 'vopsy-chat'
+      });
       return new Response(
         JSON.stringify({ error: 'Authentication required', success: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -217,6 +252,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       console.error('Invalid authentication:', authError?.message);
+      // Log failed attempt
+      await serviceClient.from('auth_failures').insert({
+        ip_address: clientIP,
+        endpoint: 'vopsy-chat'
+      });
       return new Response(
         JSON.stringify({ error: 'Invalid authentication', success: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -225,11 +265,7 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    // 2. Get user's effective tier using the database function
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // 2. Get user's effective tier using the database function (service client created above)
 
     const { data: effectiveTier, error: tierError } = await serviceClient.rpc(
       'get_user_effective_tier',
