@@ -30,7 +30,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("subscription");
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   const tabs = [

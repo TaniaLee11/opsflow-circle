@@ -120,7 +120,7 @@ export default function ProductSelection() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      navigate("/");
+      navigate("/auth");
     }
   }, [isAuthenticated, authLoading, navigate]);
 
