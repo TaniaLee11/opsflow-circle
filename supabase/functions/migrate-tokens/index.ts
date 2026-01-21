@@ -1,9 +1,10 @@
 /**
- * One-time migration function to encrypt existing plaintext OAuth tokens
+ * One-time migration function to encrypt existing plaintext OAuth tokens and client secrets
  * This should be run once after deploying the encryption changes
  * 
  * IMPORTANT: This function uses service role key and should only be called
- * by administrators. It will encrypt all plaintext tokens in the integrations table.
+ * by administrators. It will encrypt all plaintext tokens in the integrations table
+ * and client_secret values in the integration_configs table.
  */
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -68,7 +69,7 @@ serve(async (req) => {
 
     logStep("User authorized for migration", { userId: user.id, role: profile.role });
 
-    // Fetch all integrations with tokens
+    // --- Migrate integration tokens ---
     const { data: integrations, error: fetchError } = await serviceClient
       .from("integrations")
       .select("id, access_token, refresh_token");
@@ -77,63 +78,105 @@ serve(async (req) => {
       throw new Error(`Failed to fetch integrations: ${fetchError.message}`);
     }
 
-    if (!integrations || integrations.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, message: "No integrations found to migrate", migrated: 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    let tokensMigrated = 0;
+    let tokensSkipped = 0;
+    let tokensErrors = 0;
 
-    logStep("Found integrations", { count: integrations.length });
+    if (integrations && integrations.length > 0) {
+      logStep("Found integrations", { count: integrations.length });
 
-    let migratedCount = 0;
-    let skippedCount = 0;
-    let errorCount = 0;
-
-    for (const integration of integrations) {
-      try {
-        const updates: Record<string, string> = {};
-        
-        // Check and encrypt access_token if needed
-        if (integration.access_token && !isEncrypted(integration.access_token)) {
-          updates.access_token = await encryptToken(integration.access_token);
-        }
-        
-        // Check and encrypt refresh_token if needed
-        if (integration.refresh_token && !isEncrypted(integration.refresh_token)) {
-          updates.refresh_token = await encryptToken(integration.refresh_token);
-        }
-
-        if (Object.keys(updates).length > 0) {
-          const { error: updateError } = await serviceClient
-            .from("integrations")
-            .update(updates)
-            .eq("id", integration.id);
-
-          if (updateError) {
-            logStep("Failed to update integration", { id: integration.id, error: updateError.message });
-            errorCount++;
-          } else {
-            migratedCount++;
+      for (const integration of integrations) {
+        try {
+          const updates: Record<string, string> = {};
+          
+          if (integration.access_token && !isEncrypted(integration.access_token)) {
+            updates.access_token = await encryptToken(integration.access_token);
           }
-        } else {
-          skippedCount++;
+          
+          if (integration.refresh_token && !isEncrypted(integration.refresh_token)) {
+            updates.refresh_token = await encryptToken(integration.refresh_token);
+          }
+
+          if (Object.keys(updates).length > 0) {
+            const { error: updateError } = await serviceClient
+              .from("integrations")
+              .update(updates)
+              .eq("id", integration.id);
+
+            if (updateError) {
+              logStep("Failed to update integration", { id: integration.id, error: updateError.message });
+              tokensErrors++;
+            } else {
+              tokensMigrated++;
+            }
+          } else {
+            tokensSkipped++;
+          }
+        } catch (encryptError) {
+          logStep("Encryption error for integration", { id: integration.id, error: String(encryptError) });
+          tokensErrors++;
         }
-      } catch (encryptError) {
-        logStep("Encryption error for integration", { id: integration.id, error: String(encryptError) });
-        errorCount++;
       }
     }
 
-    logStep("Migration complete", { migrated: migratedCount, skipped: skippedCount, errors: errorCount });
+    // --- Migrate integration_configs client_secret ---
+    const { data: configs, error: configFetchError } = await serviceClient
+      .from("integration_configs")
+      .select("id, client_secret, provider");
+
+    if (configFetchError) {
+      throw new Error(`Failed to fetch integration_configs: ${configFetchError.message}`);
+    }
+
+    let configsMigrated = 0;
+    let configsSkipped = 0;
+    let configsErrors = 0;
+
+    if (configs && configs.length > 0) {
+      logStep("Found integration configs", { count: configs.length });
+
+      for (const config of configs) {
+        try {
+          // Skip if already encrypted or uses env: prefix
+          if (!config.client_secret || 
+              isEncrypted(config.client_secret) || 
+              config.client_secret.startsWith("env:")) {
+            configsSkipped++;
+            continue;
+          }
+
+          const encryptedSecret = await encryptToken(config.client_secret);
+          
+          const { error: updateError } = await serviceClient
+            .from("integration_configs")
+            .update({ client_secret: encryptedSecret })
+            .eq("id", config.id);
+
+          if (updateError) {
+            logStep("Failed to update config", { provider: config.provider, error: updateError.message });
+            configsErrors++;
+          } else {
+            configsMigrated++;
+            logStep("Encrypted client_secret", { provider: config.provider });
+          }
+        } catch (encryptError) {
+          logStep("Encryption error for config", { provider: config.provider, error: String(encryptError) });
+          configsErrors++;
+        }
+      }
+    }
+
+    logStep("Migration complete", { 
+      tokens: { migrated: tokensMigrated, skipped: tokensSkipped, errors: tokensErrors },
+      configs: { migrated: configsMigrated, skipped: configsSkipped, errors: configsErrors }
+    });
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Token migration complete",
-        migrated: migratedCount,
-        skipped: skippedCount,
-        errors: errorCount,
+        message: "Token and config migration complete",
+        tokens: { migrated: tokensMigrated, skipped: tokensSkipped, errors: tokensErrors },
+        configs: { migrated: configsMigrated, skipped: configsSkipped, errors: configsErrors },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

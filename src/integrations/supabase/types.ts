@@ -828,6 +828,10 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
+      get_safe_profile_email: {
+        Args: { profile_email: string; profile_user_id: string }
+        Returns: string
+      }
       get_user_effective_tier: {
         Args: { check_user_id: string }
         Returns: string
