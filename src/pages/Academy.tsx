@@ -28,7 +28,8 @@ import {
   Award,
   Flame,
   Zap,
-  Wand2
+  Wand2,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,7 @@ import { Progress } from "@/components/ui/progress";
 function AcademyContent() {
   const { canCreateCourses, isOwner } = useAuth();
   const { viewedClient, isViewingClient } = useClientView();
-  const { courses, isLoading } = useCourses();
+  const { courses, isLoading, deleteCourse } = useCourses();
   const { stats, certificates, levelProgress, earnedBadges } = useGamification();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -347,16 +348,29 @@ function AcademyContent() {
 
                             {/* Owner edit button */}
                             {isOwner && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenBuilder(course);
-                                }}
-                                className="mt-3 w-full py-2 rounded-lg bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors text-xs font-medium flex items-center justify-center gap-1"
-                              >
-                                <Edit className="w-3 h-3" />
-                                Edit Course
-                              </button>
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenBuilder(course);
+                                  }}
+                                  className="flex-1 py-2 rounded-lg bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors text-xs font-medium flex items-center justify-center gap-1"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Delete "${course.title}"? This cannot be undone.`)) {
+                                      deleteCourse(course.id);
+                                    }
+                                  }}
+                                  className="py-2 px-3 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors text-xs font-medium flex items-center justify-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
                             )}
                           </div>
                         </motion.div>
