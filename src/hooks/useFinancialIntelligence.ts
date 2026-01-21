@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export interface Invoice {
@@ -50,13 +51,17 @@ export interface FinancialStatus {
 }
 
 export function useFinancialIntelligence() {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<FinancialStatus | null>(null);
   const [data, setData] = useState<FinancialSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
 
   // Fetch financial data from all connected providers
   const fetchFinancialData = useCallback(async (): Promise<FinancialSummary[] | null> => {
+    if (!user?.id) return null;
+    
     setIsLoading(true);
     setError(null);
     
@@ -69,11 +74,13 @@ export function useFinancialIntelligence() {
 
       if (!fetchData.connected) {
         setStatus({ connected: false, message: fetchData.message, error: fetchData.error });
+        setLastFetchedAt(new Date());
         return null;
       }
 
       if (fetchData.error) {
         setStatus({ connected: true, error: fetchData.error });
+        setLastFetchedAt(new Date());
         return null;
       }
 
@@ -83,18 +90,27 @@ export function useFinancialIntelligence() {
         connected: true, 
         providers: financialData.map(d => d.provider),
       });
+      setLastFetchedAt(new Date());
       
       return financialData;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Financial data fetch failed';
       setError(errorMsg);
       setStatus({ connected: false, error: errorMsg });
+      setLastFetchedAt(new Date());
       toast.error(errorMsg);
       return null;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user?.id]);
+
+  // Auto-fetch on login/mount
+  useEffect(() => {
+    if (user?.id) {
+      fetchFinancialData();
+    }
+  }, [user?.id, fetchFinancialData]);
 
   // Format financial data for chat display
   const formatFinancialForChat = useCallback((financialData: FinancialSummary[]): string => {
@@ -218,6 +234,7 @@ export function useFinancialIntelligence() {
     status,
     data,
     error,
+    lastFetchedAt,
     fetchFinancialData,
     formatFinancialForChat,
   };

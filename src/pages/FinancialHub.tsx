@@ -54,11 +54,12 @@ export default function FinancialHub() {
   const [invoiceFilter, setInvoiceFilter] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   
-  // Real data from integrations
+  // Real data from integrations (auto-fetches on login)
   const { 
     isLoading: isLoadingIntegrations, 
     data: financialData, 
     fetchFinancialData,
+    lastFetchedAt,
     status: integrationStatus
   } = useFinancialIntelligence();
 
@@ -70,11 +71,10 @@ export default function FinancialHub() {
     uploadDocument 
   } = useFinancialDocuments();
 
-  // Fetch data on mount
+  // Only fetch documents on mount (financial data auto-fetches via hook)
   useEffect(() => {
-    fetchFinancialData();
     fetchDocuments();
-  }, [fetchFinancialData, fetchDocuments]);
+  }, [fetchDocuments]);
 
   // Compute metrics from real data
   const metrics = useMemo((): FinancialMetric[] => {
@@ -304,7 +304,11 @@ export default function FinancialHub() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financial Hub</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground">Your money, explained simply</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {lastFetchedAt 
+                    ? `Last synced: ${lastFetchedAt.toLocaleTimeString()}`
+                    : 'Your money, explained simply'}
+                </p>
               </div>
             </div>
             
