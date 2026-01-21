@@ -532,6 +532,57 @@ export type Database = {
           },
         ]
       }
+      financial_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          extracted_data: Json | null
+          extraction_status: string | null
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          name: string
+          organization_id: string | null
+          period_end: string | null
+          period_start: string | null
+          storage_path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type?: string
+          extracted_data?: Json | null
+          extraction_status?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          name: string
+          organization_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          storage_path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          extracted_data?: Json | null
+          extraction_status?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          name?: string
+          organization_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       hour_purchases: {
         Row: {
           amount_cents: number
@@ -792,6 +843,36 @@ export type Database = {
           stripe_customer_id?: string | null
           subscription_tier?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_billing_reports: {
+        Row: {
+          created_at: string
+          data: Json
+          generated_by: string
+          id: string
+          period_end: string
+          period_start: string
+          report_type: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          generated_by: string
+          id?: string
+          period_end: string
+          period_start: string
+          report_type: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          generated_by?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          report_type?: string
         }
         Relationships: []
       }
