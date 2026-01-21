@@ -402,7 +402,17 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id });
 
-    // Check for connected financial integrations
+    // Check for platform owner or admin - they get direct Stripe access via secret key
+    const { data: userRole } = await serviceClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    const isOwnerOrAdmin = userRole?.role === 'owner' || userRole?.role === 'admin';
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    
+    // Check for connected financial integrations (OAuth-based)
     const { data: integrations, error: intError } = await serviceClient
       .from("integrations")
       .select("id, provider, access_token, refresh_token, connected_account, scopes")
@@ -414,7 +424,11 @@ serve(async (req) => {
       throw new Error("Failed to check integrations");
     }
 
-    if (!integrations || integrations.length === 0) {
+    // For owner/admin: Stripe is available via secret key even without OAuth integration
+    const hasStripeViaSecretKey = isOwnerOrAdmin && stripeSecretKey;
+    const hasOAuthIntegrations = integrations && integrations.length > 0;
+
+    if (!hasStripeViaSecretKey && !hasOAuthIntegrations) {
       return new Response(
         JSON.stringify({
           connected: false,
@@ -424,12 +438,51 @@ serve(async (req) => {
       );
     }
 
-    logStep("Found integrations", { count: integrations.length, providers: integrations.map(i => i.provider) });
+    const providers: string[] = [];
+    if (hasStripeViaSecretKey) providers.push('stripe (secret key)');
+    if (hasOAuthIntegrations) providers.push(...integrations.map(i => i.provider));
+    
+    logStep("Found integrations", { 
+      count: (integrations?.length || 0) + (hasStripeViaSecretKey ? 1 : 0), 
+      providers,
+      isOwnerOrAdmin 
+    });
 
     // Aggregate data from all connected financial providers
     const allData: FinancialSummary[] = [];
 
-    for (const integration of integrations) {
+    // First: Fetch Stripe data using secret key for owner/admin
+    if (hasStripeViaSecretKey && stripeSecretKey) {
+      try {
+        logStep("Fetching Stripe data via secret key");
+        const stripeData = await fetchStripeData(stripeSecretKey);
+        if (stripeData) {
+          allData.push({
+            provider: 'Stripe',
+            connectedAccount: stripeData.connectedAccount || 'Stripe Account',
+            lastSync: new Date().toISOString(),
+            cashFlow: stripeData.cashFlow || null,
+            invoices: stripeData.invoices || [],
+            recentTransactions: stripeData.recentTransactions || [],
+            metrics: stripeData.metrics || {
+              totalReceivable: 0,
+              totalPayable: 0,
+              overdueCount: 0,
+              upcomingPayments: 0,
+            },
+          });
+          logStep("Stripe data fetched successfully", { 
+            invoiceCount: stripeData.invoices?.length || 0,
+            transactionCount: stripeData.recentTransactions?.length || 0 
+          });
+        }
+      } catch (stripeError) {
+        logStep("Error fetching Stripe data via secret key", { error: String(stripeError) });
+      }
+    }
+
+    // Then: Process OAuth integrations (skip Stripe if already fetched via secret key)
+    for (const integration of integrations || []) {
       try {
         // Decrypt tokens
         const accessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
@@ -442,9 +495,14 @@ serve(async (req) => {
 
         let data: Partial<FinancialSummary> | null = null;
 
+        // Skip Stripe OAuth if we already fetched via secret key
+        if (integration.provider === "stripe" && hasStripeViaSecretKey) {
+          logStep("Skipping Stripe OAuth - already using secret key");
+          continue;
+        }
+
         if (integration.provider === "stripe") {
           data = await fetchStripeData(accessToken);
-        } else if (integration.provider === "quickbooks") {
           // QuickBooks requires realm_id from scopes
           const realmId = integration.scopes?.split(',')?.[0] || '';
           if (realmId) {
