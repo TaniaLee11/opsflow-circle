@@ -33,6 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useCourses } from "@/hooks/useCourses";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const TIER_OPTIONS = [
@@ -85,6 +86,7 @@ interface AICourseGeneratorProps {
 
 export function AICourseGenerator({ isOpen, onClose }: AICourseGeneratorProps) {
   const { createCourse, createLesson, addQuiz } = useCourses();
+  const queryClient = useQueryClient();
   
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -213,6 +215,9 @@ export function AICourseGenerator({ isOpen, onClose }: AICourseGeneratorProps) {
         }
       }
 
+      // Invalidate the courses query to refresh the list
+      await queryClient.invalidateQueries({ queryKey: ["courses"] });
+      
       toast.success("Course created successfully! You can now publish it.");
       onClose();
       resetForm();
