@@ -11,7 +11,8 @@ import { CourseViewer } from "@/components/academy/CourseViewer";
 import { GamificationPanel } from "@/components/academy/GamificationPanel";
 import { CertificateCard } from "@/components/academy/CertificateCard";
 import { AICourseGenerator } from "@/components/academy/AICourseGenerator";
-import { 
+import { AcademyAnalytics } from "@/components/academy/AcademyAnalytics";
+import {
   GraduationCap, 
   Plus, 
   Clock, 
@@ -152,6 +153,12 @@ function AcademyContent() {
                     <BookOpen className="w-4 h-4" />
                     {isOwner ? "Manage Courses" : "Courses"}
                   </TabsTrigger>
+                  {isOwner && (
+                    <TabsTrigger value="analytics" className="gap-2">
+                      <Target className="w-4 h-4" />
+                      Analytics
+                    </TabsTrigger>
+                  )}
                   {!isOwner && (
                     <>
                       <TabsTrigger value="progress" className="gap-2">
@@ -365,6 +372,13 @@ function AcademyContent() {
                     </div>
                   )}
                 </TabsContent>
+
+                {/* Analytics Tab - only for owners */}
+                {isOwner && (
+                  <TabsContent value="analytics" className="space-y-6">
+                    <AcademyAnalytics />
+                  </TabsContent>
+                )}
 
                 {/* Progress Tab - only for sub-users */}
                 {!isOwner && (
