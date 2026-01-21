@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
@@ -72,6 +72,19 @@ export function CourseBuilder({ course, isOpen, onClose }: CourseBuilderProps) {
 
   const isEditing = !!course;
   const lessons = course?.lessons || [];
+
+  // Sync state when course prop changes
+  useEffect(() => {
+    if (course) {
+      setTitle(course.title || "");
+      setDescription(course.description || "");
+      setTierAccess(course.tier_access || ["free"]);
+    } else {
+      setTitle("");
+      setDescription("");
+      setTierAccess(["free"]);
+    }
+  }, [course]);
 
   const handleSave = () => {
     if (isEditing && course) {
