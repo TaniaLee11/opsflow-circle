@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { encryptToken } from "../_shared/token-encryption.ts";
+import { encryptToken, decryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -136,19 +136,23 @@ serve(async (req) => {
       .eq("provider", provider)
       .maybeSingle();
 
-    // Helper to resolve credentials - supports env: prefix or direct values
-    const resolveCredential = (value: string | null | undefined, envKey: string): string => {
+    // Helper to resolve credentials - supports env: prefix, encrypted values, or direct values
+    const resolveCredential = async (value: string | null | undefined, envKey: string): Promise<string> => {
       if (!value) return Deno.env.get(envKey) || "";
       if (value.startsWith("env:")) {
         const envName = value.replace("env:", "");
         return Deno.env.get(envName) || "";
       }
+      // Check if value is encrypted and decrypt it
+      if (isEncrypted(value)) {
+        return await decryptToken(value);
+      }
       return value;
     };
 
     // Use configured credentials or fall back to environment variables
-    const clientId = resolveCredential(integrationConfig?.client_id, `${provider.toUpperCase()}_CLIENT_ID`);
-    const clientSecret = resolveCredential(integrationConfig?.client_secret, `${provider.toUpperCase()}_CLIENT_SECRET`);
+    const clientId = await resolveCredential(integrationConfig?.client_id, `${provider.toUpperCase()}_CLIENT_ID`);
+    const clientSecret = await resolveCredential(integrationConfig?.client_secret, `${provider.toUpperCase()}_CLIENT_SECRET`);
 
     if (!clientId || !clientSecret) {
       logStep("No credentials available", { provider });
