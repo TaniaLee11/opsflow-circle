@@ -34,6 +34,7 @@ import IntegrationCallback from "./pages/IntegrationCallback";
 import Workflows from "./pages/Workflows";
 import Settings from "./pages/Settings";
 import TaxSeason2026 from "./pages/TaxSeason2026";
+import TaxServices from "./pages/TaxServices";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 
@@ -69,6 +70,7 @@ const App = () => (
                   <Route path="/services" element={<Services />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
+                  <Route path="/tax-services" element={<TaxServices />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/auth" element={<Auth />} />
