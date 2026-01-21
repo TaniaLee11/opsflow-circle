@@ -47,69 +47,24 @@ import { useClientView } from "@/contexts/ClientViewContext";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { usePresentationIntelligence, VaultDocument } from "@/hooks/usePresentationIntelligence";
 
-// Mock data for documents
-const documents = [
-  {
-    id: "1",
-    name: "Business Plan 2024.pdf",
-    type: "pdf",
-    size: "2.4 MB",
-    modified: "2024-01-10",
-    shared: true,
-    starred: true,
-    owner: "You",
-  },
-  {
-    id: "2",
-    name: "Q4 Financial Report.xlsx",
-    type: "spreadsheet",
-    size: "1.8 MB",
-    modified: "2024-01-08",
-    shared: true,
-    starred: false,
-    owner: "You",
-  },
-  {
-    id: "3",
-    name: "Tax Documents 2023",
-    type: "folder",
-    size: "12 files",
-    modified: "2024-01-05",
-    shared: false,
-    starred: true,
-    owner: "You",
-  },
-  {
-    id: "4",
-    name: "Marketing Assets",
-    type: "folder",
-    size: "24 files",
-    modified: "2024-01-03",
-    shared: true,
-    starred: false,
-    owner: "Advisor",
-  },
-  {
-    id: "5",
-    name: "Logo Design Final.png",
-    type: "image",
-    size: "4.2 MB",
-    modified: "2024-01-02",
-    shared: false,
-    starred: false,
-    owner: "You",
-  },
-  {
-    id: "6",
-    name: "Contract Template.docx",
-    type: "document",
-    size: "156 KB",
-    modified: "2023-12-28",
-    shared: true,
-    starred: true,
-    owner: "Advisor",
-  },
-];
+const getFileIcon = (type: string) => {
+  switch (type) {
+    case "pdf":
+      return <FileText className="w-5 h-5 text-destructive" />;
+    case "spreadsheet":
+      return <FileSpreadsheet className="w-5 h-5 text-success" />;
+    case "folder":
+      return <FolderOpen className="w-5 h-5 text-warning" />;
+    case "image":
+      return <Image className="w-5 h-5 text-info" />;
+    case "document":
+      return <FileText className="w-5 h-5 text-primary" />;
+    case "presentation":
+      return <Presentation className="w-5 h-5 text-accent" />;
+    default:
+      return <File className="w-5 h-5 text-muted-foreground" />;
+  }
+};
 
 // Templates for new business owners
 const templates = [
@@ -157,25 +112,6 @@ const templates = [
   },
 ];
 
-const getFileIcon = (type: string) => {
-  switch (type) {
-    case "pdf":
-      return <FileText className="w-5 h-5 text-destructive" />;
-    case "spreadsheet":
-      return <FileSpreadsheet className="w-5 h-5 text-success" />;
-    case "folder":
-      return <FolderOpen className="w-5 h-5 text-warning" />;
-    case "image":
-      return <Image className="w-5 h-5 text-info" />;
-    case "document":
-      return <FileText className="w-5 h-5 text-primary" />;
-    case "presentation":
-      return <Presentation className="w-5 h-5 text-accent" />;
-    default:
-      return <File className="w-5 h-5 text-muted-foreground" />;
-  }
-};
-
 function VaultContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -200,22 +136,20 @@ function VaultContent() {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  // Combine mock documents with real ones for display
-  const allDocuments = [
-    ...vaultDocuments.map(doc => ({
-      id: doc.id,
-      name: doc.name,
-      type: doc.type,
-      size: doc.size_bytes ? `${(doc.size_bytes / 1024).toFixed(1)} KB` : 'N/A',
-      modified: new Date(doc.updated_at).toLocaleDateString(),
-      shared: doc.shared,
-      starred: doc.starred,
-      owner: 'You',
-      isReal: true,
-      storagePath: doc.storage_path,
-    })),
-    ...documents.map(d => ({ ...d, isReal: false })),
-  ];
+  // Map real documents for display
+  const allDocuments = vaultDocuments.map(doc => ({
+    id: doc.id,
+    name: doc.name,
+    type: doc.type,
+    size: doc.size_bytes ? `${(doc.size_bytes / 1024).toFixed(1)} KB` : 'N/A',
+    modified: new Date(doc.updated_at).toLocaleDateString(),
+    shared: doc.shared,
+    starred: doc.starred,
+    owner: 'You',
+    storagePath: doc.storage_path,
+    category: doc.category,
+    description: doc.description,
+  }));
 
   const filteredDocuments = allDocuments.filter(doc =>
     doc.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -231,7 +165,7 @@ function VaultContent() {
 
   // Handle document download
   const handleDownload = async (doc: any) => {
-    if (doc.isReal && doc.storagePath) {
+    if (doc.storagePath) {
       setDownloadingId(doc.id);
       try {
         await downloadDocument(doc.storagePath, doc.name);
@@ -243,16 +177,14 @@ function VaultContent() {
 
   // Handle document delete
   const handleDelete = async (doc: any) => {
-    if (doc.isReal && doc.storagePath) {
+    if (doc.storagePath) {
       await deleteDocument(doc.id, doc.storagePath);
     }
   };
 
   // Handle star toggle
   const handleToggleStar = async (doc: any) => {
-    if (doc.isReal) {
-      await toggleStarred(doc.id, !doc.starred);
-    }
+    await toggleStarred(doc.id, !doc.starred);
   };
 
   return (
@@ -340,7 +272,7 @@ function VaultContent() {
                   <FileText className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{vaultDocuments.length + documents.length}</p>
+                  <p className="text-2xl font-bold">{vaultDocuments.length}</p>
                   <p className="text-xs text-muted-foreground">Total Files</p>
                 </div>
               </CardContent>
@@ -351,7 +283,7 @@ function VaultContent() {
                   <Share2 className="w-5 h-5 text-info" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">8</p>
+                  <p className="text-2xl font-bold">{vaultDocuments.filter(d => d.shared).length}</p>
                   <p className="text-xs text-muted-foreground">Shared</p>
                 </div>
               </CardContent>
@@ -362,7 +294,7 @@ function VaultContent() {
                   <Star className="w-5 h-5 text-warning" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">5</p>
+                  <p className="text-2xl font-bold">{vaultDocuments.filter(d => d.starred).length}</p>
                   <p className="text-xs text-muted-foreground">Starred</p>
                 </div>
               </CardContent>
@@ -402,7 +334,25 @@ function VaultContent() {
             </TabsList>
 
             <TabsContent value="my-files" className="space-y-4">
-              {viewMode === "grid" ? (
+              {isDocumentsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+              ) : filteredDocuments.length === 0 ? (
+                <Card className="bg-card/50">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <FolderOpen className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">No documents yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Upload your first document to get started</p>
+                    <Button className="gap-2">
+                      <Upload className="w-4 h-4" />
+                      Upload Document
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {/* New Folder Card */}
                   <motion.div
@@ -427,7 +377,7 @@ function VaultContent() {
                           "hover:shadow-lg transition-all cursor-pointer group",
                           downloadingId === doc.id && "opacity-70"
                         )}
-                        onClick={() => doc.isReal && handleDownload(doc)}
+                        onClick={() => handleDownload(doc)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-4">
@@ -514,7 +464,7 @@ function VaultContent() {
                               "border-b last:border-0 hover:bg-muted/50 cursor-pointer",
                               downloadingId === doc.id && "opacity-70"
                             )}
-                            onClick={() => doc.isReal && handleDownload(doc)}
+                            onClick={() => handleDownload(doc)}
                           >
                             <td className="p-4">
                               <div className="flex items-center gap-3">
