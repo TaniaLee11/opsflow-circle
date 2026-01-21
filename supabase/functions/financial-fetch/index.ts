@@ -186,7 +186,204 @@ async function fetchQuickBooksData(accessToken: string, realmId: string): Promis
   }
 }
 
-// Fetch Stripe data
+// Fetch ALL Stripe data for platform owner (full access)
+async function fetchStripeDataForOwner(stripeSecretKey: string): Promise<Partial<FinancialSummary>> {
+  const headers = {
+    Authorization: `Bearer ${stripeSecretKey}`,
+  };
+
+  const invoices: Invoice[] = [];
+  const recentTransactions: FinancialSummary['recentTransactions'] = [];
+
+  try {
+    // Fetch balance
+    const balanceResponse = await fetch("https://api.stripe.com/v1/balance", { headers });
+    let balance = 0;
+    let currency = 'usd';
+    
+    if (balanceResponse.ok) {
+      const balanceData = await balanceResponse.json();
+      balance = (balanceData.available?.[0]?.amount || 0) / 100;
+      currency = balanceData.available?.[0]?.currency || 'usd';
+    }
+
+    // Fetch recent invoices (ALL platform invoices)
+    const invoiceResponse = await fetch(
+      "https://api.stripe.com/v1/invoices?limit=50",
+      { headers }
+    );
+
+    if (invoiceResponse.ok) {
+      const invoiceData = await invoiceResponse.json();
+      
+      for (const inv of invoiceData.data || []) {
+        const dueDate = inv.due_date ? new Date(inv.due_date * 1000).toISOString() : null;
+        const isOverdue = inv.status === 'open' && dueDate && new Date(dueDate) < new Date();
+        
+        invoices.push({
+          id: inv.id,
+          number: inv.number || inv.id,
+          customerName: inv.customer_name || inv.customer_email || 'Customer',
+          amount: (inv.total || 0) / 100,
+          currency: inv.currency || 'usd',
+          status: inv.status === 'paid' ? 'paid' : isOverdue ? 'overdue' : inv.status === 'draft' ? 'draft' : 'unpaid',
+          dueDate: dueDate || new Date().toISOString(),
+          createdDate: new Date(inv.created * 1000).toISOString(),
+        });
+      }
+    }
+
+    // Fetch recent charges (ALL platform charges)
+    const chargeResponse = await fetch(
+      "https://api.stripe.com/v1/charges?limit=20",
+      { headers }
+    );
+
+    if (chargeResponse.ok) {
+      const chargeData = await chargeResponse.json();
+      
+      for (const charge of chargeData.data || []) {
+        if (charge.status === 'succeeded') {
+          recentTransactions.push({
+            id: charge.id,
+            date: new Date(charge.created * 1000).toISOString(),
+            description: charge.description || 'Payment received',
+            amount: (charge.amount || 0) / 100,
+            type: 'income',
+          });
+        }
+      }
+    }
+
+    // Get account info
+    const accountResponse = await fetch("https://api.stripe.com/v1/account", { headers });
+    let accountName = 'Platform Stripe';
+    
+    if (accountResponse.ok) {
+      const accountData = await accountResponse.json();
+      accountName = accountData.business_profile?.name || accountData.email || 'Platform Stripe';
+    }
+
+    // Calculate metrics
+    const totalReceivable = invoices
+      .filter(i => i.status !== 'paid' && i.status !== 'draft')
+      .reduce((sum, i) => sum + i.amount, 0);
+    
+    const overdueCount = invoices.filter(i => i.status === 'overdue').length;
+
+    return {
+      provider: 'Stripe',
+      connectedAccount: accountName,
+      invoices,
+      recentTransactions,
+      cashFlow: {
+        balance,
+        income: recentTransactions.reduce((sum, t) => sum + t.amount, 0),
+        expenses: 0,
+        currency: currency.toUpperCase(),
+        period: 'last 30 days',
+      },
+      metrics: {
+        totalReceivable,
+        totalPayable: 0,
+        overdueCount,
+        upcomingPayments: invoices.filter(i => i.status === 'unpaid').length,
+      },
+    };
+  } catch (error) {
+    logStep("Stripe owner data fetch error", { error: String(error) });
+    throw error;
+  }
+}
+
+// Fetch Stripe data for a specific customer (sub-user) - only their invoices/charges
+async function fetchStripeDataForCustomer(stripeSecretKey: string, customerId: string): Promise<Partial<FinancialSummary>> {
+  const headers = {
+    Authorization: `Bearer ${stripeSecretKey}`,
+  };
+
+  const invoices: Invoice[] = [];
+  const recentTransactions: FinancialSummary['recentTransactions'] = [];
+
+  try {
+    logStep("Fetching Stripe data for customer", { customerId });
+
+    // Fetch invoices for this customer only
+    const invoiceResponse = await fetch(
+      `https://api.stripe.com/v1/invoices?customer=${customerId}&limit=20`,
+      { headers }
+    );
+
+    if (invoiceResponse.ok) {
+      const invoiceData = await invoiceResponse.json();
+      
+      for (const inv of invoiceData.data || []) {
+        const dueDate = inv.due_date ? new Date(inv.due_date * 1000).toISOString() : null;
+        const isOverdue = inv.status === 'open' && dueDate && new Date(dueDate) < new Date();
+        
+        invoices.push({
+          id: inv.id,
+          number: inv.number || inv.id,
+          customerName: inv.customer_name || inv.customer_email || 'My Invoice',
+          amount: (inv.total || 0) / 100,
+          currency: inv.currency || 'usd',
+          status: inv.status === 'paid' ? 'paid' : isOverdue ? 'overdue' : inv.status === 'draft' ? 'draft' : 'unpaid',
+          dueDate: dueDate || new Date().toISOString(),
+          createdDate: new Date(inv.created * 1000).toISOString(),
+        });
+      }
+    }
+
+    // Fetch charges for this customer only
+    const chargeResponse = await fetch(
+      `https://api.stripe.com/v1/charges?customer=${customerId}&limit=10`,
+      { headers }
+    );
+
+    if (chargeResponse.ok) {
+      const chargeData = await chargeResponse.json();
+      
+      for (const charge of chargeData.data || []) {
+        if (charge.status === 'succeeded') {
+          recentTransactions.push({
+            id: charge.id,
+            date: new Date(charge.created * 1000).toISOString(),
+            description: charge.description || 'Payment',
+            amount: (charge.amount || 0) / 100,
+            type: 'expense', // From user's perspective, these are their payments (expenses)
+          });
+        }
+      }
+    }
+
+    // Calculate metrics for user's invoices
+    const totalReceivable = 0; // Users don't have receivables
+    const totalPayable = invoices
+      .filter(i => i.status !== 'paid' && i.status !== 'draft')
+      .reduce((sum, i) => sum + i.amount, 0);
+    
+    const overdueCount = invoices.filter(i => i.status === 'overdue').length;
+
+    return {
+      provider: 'Stripe',
+      connectedAccount: 'My Account',
+      invoices,
+      recentTransactions,
+      cashFlow: null, // Users don't see platform cash flow
+      metrics: {
+        totalReceivable,
+        totalPayable,
+        overdueCount,
+        upcomingPayments: invoices.filter(i => i.status === 'unpaid').length,
+      },
+    };
+  } catch (error) {
+    logStep("Stripe customer data fetch error", { error: String(error), customerId });
+    throw error;
+  }
+}
+
+// Fetch Stripe data using OAuth token (original function for OAuth integrations)
 async function fetchStripeData(accessToken: string): Promise<Partial<FinancialSummary>> {
   const headers = {
     Authorization: `Bearer ${accessToken}`,
@@ -402,64 +599,30 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id });
 
-    // Check for platform owner or admin - they get direct Stripe access via secret key
+    // Check if user is platform owner
     const { data: userRole } = await serviceClient
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .single();
 
-    const isOwnerOrAdmin = userRole?.role === 'owner' || userRole?.role === 'admin';
+    const isOwner = userRole?.role === 'owner';
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    
-    // Check for connected financial integrations (OAuth-based)
-    const { data: integrations, error: intError } = await serviceClient
-      .from("integrations")
-      .select("id, provider, access_token, refresh_token, connected_account, scopes")
-      .eq("user_id", user.id)
-      .in("provider", ["quickbooks", "stripe", "xero"]);
 
-    if (intError) {
-      logStep("Integration lookup error", { error: intError.message });
-      throw new Error("Failed to check integrations");
-    }
-
-    // For owner/admin: Stripe is available via secret key even without OAuth integration
-    const hasStripeViaSecretKey = isOwnerOrAdmin && stripeSecretKey;
-    const hasOAuthIntegrations = integrations && integrations.length > 0;
-
-    if (!hasStripeViaSecretKey && !hasOAuthIntegrations) {
-      return new Response(
-        JSON.stringify({
-          connected: false,
-          message: "No financial account connected. Please connect QuickBooks, Stripe, or Xero in the Integrations page.",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const providers: string[] = [];
-    if (hasStripeViaSecretKey) providers.push('stripe (secret key)');
-    if (hasOAuthIntegrations) providers.push(...integrations.map(i => i.provider));
-    
-    logStep("Found integrations", { 
-      count: (integrations?.length || 0) + (hasStripeViaSecretKey ? 1 : 0), 
-      providers,
-      isOwnerOrAdmin 
-    });
+    logStep("User role check", { isOwner, hasStripeKey: !!stripeSecretKey });
 
     // Aggregate data from all connected financial providers
     const allData: FinancialSummary[] = [];
 
-    // First: Fetch Stripe data using secret key for owner/admin
-    if (hasStripeViaSecretKey && stripeSecretKey) {
+    // OWNER: Gets full platform Stripe data via secret key
+    if (isOwner && stripeSecretKey) {
       try {
-        logStep("Fetching Stripe data via secret key");
-        const stripeData = await fetchStripeData(stripeSecretKey);
+        logStep("Owner: Fetching full platform Stripe data");
+        const stripeData = await fetchStripeDataForOwner(stripeSecretKey);
         if (stripeData) {
           allData.push({
             provider: 'Stripe',
-            connectedAccount: stripeData.connectedAccount || 'Stripe Account',
+            connectedAccount: stripeData.connectedAccount || 'Platform Stripe',
             lastSync: new Date().toISOString(),
             cashFlow: stripeData.cashFlow || null,
             invoices: stripeData.invoices || [],
@@ -471,17 +634,81 @@ serve(async (req) => {
               upcomingPayments: 0,
             },
           });
-          logStep("Stripe data fetched successfully", { 
+          logStep("Owner: Stripe data fetched successfully", { 
             invoiceCount: stripeData.invoices?.length || 0,
             transactionCount: stripeData.recentTransactions?.length || 0 
           });
         }
       } catch (stripeError) {
-        logStep("Error fetching Stripe data via secret key", { error: String(stripeError) });
+        logStep("Owner: Error fetching Stripe data", { error: String(stripeError) });
+      }
+    }
+    
+    // SUB-USER: Gets only their own Stripe data (filtered by their customer ID)
+    if (!isOwner && stripeSecretKey) {
+      // Get user's stripe_customer_id from their profile or organization
+      const { data: profile } = await serviceClient
+        .from("profiles")
+        .select("stripe_customer_id, organization_id")
+        .eq("user_id", user.id)
+        .single();
+
+      let stripeCustomerId = profile?.stripe_customer_id;
+
+      // If not on profile, check organization
+      if (!stripeCustomerId && profile?.organization_id) {
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("stripe_customer_id")
+          .eq("id", profile.organization_id)
+          .single();
+        stripeCustomerId = org?.stripe_customer_id;
+      }
+
+      if (stripeCustomerId) {
+        try {
+          logStep("Sub-user: Fetching their Stripe data", { customerId: stripeCustomerId });
+          const stripeData = await fetchStripeDataForCustomer(stripeSecretKey, stripeCustomerId);
+          if (stripeData) {
+            allData.push({
+              provider: 'Stripe',
+              connectedAccount: stripeData.connectedAccount || 'My Account',
+              lastSync: new Date().toISOString(),
+              cashFlow: stripeData.cashFlow || null,
+              invoices: stripeData.invoices || [],
+              recentTransactions: stripeData.recentTransactions || [],
+              metrics: stripeData.metrics || {
+                totalReceivable: 0,
+                totalPayable: 0,
+                overdueCount: 0,
+                upcomingPayments: 0,
+              },
+            });
+            logStep("Sub-user: Stripe data fetched successfully", { 
+              invoiceCount: stripeData.invoices?.length || 0,
+              transactionCount: stripeData.recentTransactions?.length || 0 
+            });
+          }
+        } catch (stripeError) {
+          logStep("Sub-user: Error fetching Stripe data", { error: String(stripeError) });
+        }
+      } else {
+        logStep("Sub-user: No stripe_customer_id found");
       }
     }
 
-    // Then: Process OAuth integrations (skip Stripe if already fetched via secret key)
+    // Check for OAuth-based financial integrations (for users who connected their own accounts)
+    const { data: integrations, error: intError } = await serviceClient
+      .from("integrations")
+      .select("id, provider, access_token, refresh_token, connected_account, scopes")
+      .eq("user_id", user.id)
+      .in("provider", ["quickbooks", "stripe", "xero"]);
+
+    if (intError) {
+      logStep("Integration lookup error", { error: intError.message });
+    }
+
+    // Process OAuth integrations
     for (const integration of integrations || []) {
       try {
         // Decrypt tokens
@@ -495,14 +722,9 @@ serve(async (req) => {
 
         let data: Partial<FinancialSummary> | null = null;
 
-        // Skip Stripe OAuth if we already fetched via secret key
-        if (integration.provider === "stripe" && hasStripeViaSecretKey) {
-          logStep("Skipping Stripe OAuth - already using secret key");
-          continue;
-        }
-
         if (integration.provider === "stripe") {
           data = await fetchStripeData(accessToken);
+        } else if (integration.provider === "quickbooks") {
           // QuickBooks requires realm_id from scopes
           const realmId = integration.scopes?.split(',')?.[0] || '';
           if (realmId) {
@@ -559,16 +781,21 @@ serve(async (req) => {
     }
 
     if (allData.length === 0) {
+      // Different message for owner vs sub-user
+      const message = isOwner
+        ? "No financial data available. Make sure Stripe is configured correctly."
+        : "No financial account connected. Your invoices and payments will appear here once you have activity.";
+      
       return new Response(
         JSON.stringify({
-          connected: true,
-          error: "Failed to fetch data from connected accounts. Your access may have expired.",
+          connected: false,
+          message,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    logStep("Financial data fetched", { providers: allData.map(d => d.provider) });
+    logStep("Financial data fetched", { providers: allData.map(d => d.provider), isOwner });
 
     return new Response(
       JSON.stringify({ connected: true, data: allData }),
