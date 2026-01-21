@@ -106,6 +106,27 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_failures: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       cohort_invites: {
         Row: {
           accepted_at: string | null
