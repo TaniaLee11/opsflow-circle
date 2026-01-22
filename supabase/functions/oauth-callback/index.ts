@@ -98,9 +98,10 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get callback params
-    const { code, state, provider } = await req.json();
+    // realmId is passed for QuickBooks (company identifier)
+    const { code, state, provider, realmId } = await req.json();
     if (!code || !provider) throw new Error("Missing required parameters");
-    logStep("Callback params", { provider, hasCode: !!code });
+    logStep("Callback params", { provider, hasCode: !!code, hasRealmId: !!realmId });
 
     const config = TOKEN_CONFIGS[provider];
     if (!config) {
@@ -254,6 +255,14 @@ serve(async (req) => {
       orgId = userId;
     }
 
+    // For QuickBooks, realmId is the company identifier - store in scopes field
+    // realmId comes from URL param (passed by frontend), not from token response
+    const scopeValue = provider === 'quickbooks' && realmId 
+      ? realmId 
+      : (tokens.scope || null);
+    
+    logStep("Storing integration", { provider, hasRealmId: !!realmId, scopeValue });
+
     // Store integration in database with encrypted tokens
     const { error: insertError } = await supabaseClient
       .from("integrations")
@@ -263,7 +272,7 @@ serve(async (req) => {
         provider,
         access_token: encryptedAccessToken,
         refresh_token: encryptedRefreshToken,
-        scopes: tokens.scope || tokens.realmId, // QuickBooks returns realmId
+        scopes: scopeValue,
         connected_account: tokens.email || tokens.team?.name || provider,
         health: "ok",
         last_synced_at: new Date().toISOString(),
