@@ -7,7 +7,11 @@ const corsHeaders = {
 
 // Map UI tier IDs to database-valid subscription_tier values
 // Database constraint: AI_FREE, AI_ASSISTANT, AI_OPERATIONS, AI_COHORT, AI_OPERATIONS_FULL
-const mapTierToDbSubscriptionTier = (tierId: string): string => {
+const mapTierToDbSubscriptionTier = (tierId: string, isCohortUser: boolean): string => {
+  // Cohort users get special "AI_COHORT" tier (mimics AI Operations but time-limited)
+  if (isCohortUser) {
+    return "AI_COHORT";
+  }
   const mapping: Record<string, string> = {
     free: "AI_FREE",
     ai_assistant: "AI_ASSISTANT",
@@ -22,7 +26,12 @@ const mapTierToDbSubscriptionTier = (tierId: string): string => {
 
 // Map UI tier to account_type enum values
 // The accounts.type column uses account_type enum which matches UI tier IDs
-const mapTierToAccountType = (tierId: string): string => {
+// Cohort users use "ai_operations" account type since they get AI Operations capabilities
+const mapTierToAccountType = (tierId: string, isCohortUser: boolean): string => {
+  // Cohort users get ai_operations type (they get AI Operations capabilities)
+  if (isCohortUser) {
+    return "ai_operations";
+  }
   // These must match the account_type enum in the database
   const validAccountTypes = ["free", "ai_assistant", "ai_operations", "ai_enterprise", "ai_advisory", "ai_tax", "ai_compliance"];
   return validAccountTypes.includes(tierId) ? tierId : "free";
@@ -102,7 +111,7 @@ Deno.serve(async (req) => {
 
     // ==== STEP A: Create Organization ====
     console.log("[onboard-create-org-account] Step A: Creating organization");
-    const dbSubscriptionTier = mapTierToDbSubscriptionTier(payload.selectedTier);
+    const dbSubscriptionTier = mapTierToDbSubscriptionTier(payload.selectedTier, payload.isCohortUser || false);
     
     const { data: organization, error: orgError } = await serviceClient
       .from("organizations")
@@ -128,7 +137,7 @@ Deno.serve(async (req) => {
 
     // ==== STEP B: Create Account ====
     console.log("[onboard-create-org-account] Step B: Creating account");
-    const accountType = mapTierToAccountType(payload.selectedTier);
+    const accountType = mapTierToAccountType(payload.selectedTier, payload.isCohortUser || false);
     
     const { data: account, error: accountError } = await serviceClient
       .from("accounts")
@@ -138,7 +147,8 @@ Deno.serve(async (req) => {
         phone: payload.phone || null,
         industry: payload.industry || null,
         type: accountType,
-        subscription_tier: payload.selectedTier,
+        // Cohort users get "cohort" tier, not the selectedTier from UI
+        subscription_tier: payload.isCohortUser ? "cohort" : payload.selectedTier,
         address: payload.location ? { location: payload.location } : null,
         settings: {
           operatingIdentity: payload.operatingIdentity,
@@ -192,10 +202,13 @@ Deno.serve(async (req) => {
       .update({
         organization_id: organization.id,
         primary_account_id: account.id,
-        selected_tier: payload.selectedTier,
+        // Cohort users get "cohort" as their tier
+        selected_tier: payload.isCohortUser ? "cohort" : payload.selectedTier,
         tier_selected: true,
+        // Cohort is pre-confirmed (no payment needed), free is also pre-confirmed
         subscription_confirmed: payload.selectedTier === "free" || payload.isCohortUser,
-        subscription_tier: payload.selectedTier === "free" ? payload.selectedTier : (payload.isCohortUser ? "ai_operations" : null),
+        // Cohort gets "cohort" tier which grants AI Operations-like access for 90 days
+        subscription_tier: payload.isCohortUser ? "cohort" : (payload.selectedTier === "free" ? payload.selectedTier : null),
         display_name: payload.contactName || null,
       })
       .eq("user_id", userId);

@@ -106,7 +106,8 @@ export default function Onboarding() {
   // Onboarding data
   const [operatingIdentity, setOperatingIdentity] = useState<UserIdentityType | null>(null);
   const [organizationType, setOrganizationType] = useState<"for_profit" | "non_profit" | null>(null);
-  // For cohort users, auto-select ai_operations tier
+  // Cohort users don't select a tier - they get "cohort" tier automatically
+  // "cohort" tier mimics AI Operations but is time-limited (90 days)
   const [selectedTier, setSelectedTier] = useState<UserTierId | null>(isCohortUser ? "ai_operations" : null);
   const [profile, setProfile] = useState({
     organizationName: "",
