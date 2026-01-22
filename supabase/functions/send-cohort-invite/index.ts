@@ -41,16 +41,24 @@ serve(async (req) => {
       throw new Error("Not authenticated");
     }
 
-    // Check if user is an owner
-    const { data: profile, error: profileError } = await supabaseClient
-      .from("profiles")
-      .select("role, organization_id")
+    // Check if user is an owner via user_roles table
+    const { data: ownerRole, error: roleError } = await supabaseClient
+      .from("user_roles")
+      .select("role")
       .eq("user_id", user.id)
-      .single();
+      .eq("role", "owner")
+      .maybeSingle();
 
-    if (profileError || profile?.role !== "owner") {
+    if (roleError || !ownerRole) {
       throw new Error("Only owners can send cohort invites");
     }
+
+    // Get organization_id from profile
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .single();
 
     const { email } = await req.json();
     
@@ -69,7 +77,7 @@ serve(async (req) => {
         invite_code: inviteCode,
         email: email.toLowerCase(),
         invited_by: user.id,
-        organization_id: profile.organization_id,
+        organization_id: profile?.organization_id ?? null,
         expires_at: expiresAt.toISOString(),
         status: "pending"
       })
