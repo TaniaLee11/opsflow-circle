@@ -94,9 +94,18 @@ export default function IntegrationCallback() {
         setStatus("success");
         setMessage(`Successfully connected to ${provider}!`);
 
-        // If opened as popup, close after success
+        // If opened as popup, notify opener and close
         if (isPopup) {
-          // The opener (main app) will detect connection via polling
+          // Notify the opener via postMessage
+          try {
+            window.opener?.postMessage(
+              { type: 'oauth-success', provider },
+              window.location.origin
+            );
+          } catch (e) {
+            console.log('Could not postMessage to opener');
+          }
+          // Close popup after success
           setTimeout(() => {
             window.close();
           }, 1500);

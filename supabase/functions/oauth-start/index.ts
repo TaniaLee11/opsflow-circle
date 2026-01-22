@@ -39,6 +39,7 @@ const OAUTH_CONFIGS: Record<string, {
       "User.Read",
       "Mail.Read",
       "Calendars.Read",
+      "offline_access",
     ],
   },
   quickbooks: {
@@ -54,6 +55,7 @@ const OAUTH_CONFIGS: Record<string, {
     scopes: ["crm.objects.contacts.read", "crm.objects.companies.read"],
   },
   stripe: {
+    // Stripe Connect OAuth - NOT platform billing
     authUrl: "https://connect.stripe.com/oauth/authorize",
     scopes: ["read_write"],
     extraParams: { response_type: "code" },
@@ -65,7 +67,12 @@ const OAUTH_CONFIGS: Record<string, {
   },
   xero: {
     authUrl: "https://login.xero.com/identity/connect/authorize",
-    scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts"],
+    scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts", "offline_access"],
+  },
+  zoom: {
+    authUrl: "https://zoom.us/oauth/authorize",
+    scopes: [],
+    // Zoom OAuth doesn't use scope param in auth URL - scopes are configured in the Zoom App
   },
 };
 
