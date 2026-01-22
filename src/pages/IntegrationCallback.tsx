@@ -21,6 +21,8 @@ export default function IntegrationCallback() {
       const code = searchParams.get("code");
       const state = searchParams.get("state");
       const error = searchParams.get("error");
+      // QuickBooks returns realmId as a query parameter
+      const realmId = searchParams.get("realmId");
 
       // Handle OAuth errors from provider
       if (error) {
@@ -66,7 +68,7 @@ export default function IntegrationCallback() {
         setMessage(`Connecting to ${provider}...`);
 
         const { data, error: fnError } = await supabase.functions.invoke("oauth-callback", {
-          body: { code, state: stateId, provider },
+          body: { code, state: stateId, provider, realmId },
         });
 
         // Handle edge function errors with JSON body
