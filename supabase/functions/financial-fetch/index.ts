@@ -63,6 +63,9 @@ interface FinancialSummary {
     overdueCount: number;
     upcomingPayments: number;
   };
+  // Error state fields for handling re-auth requirements
+  error?: string;
+  errorMessage?: string;
 }
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
@@ -123,11 +126,18 @@ async function getOAuthCredentials(
 /**
  * Refresh QuickBooks token using user's OAuth credentials
  */
+interface TokenRefreshResult {
+  accessToken: string;
+  refreshToken?: string;
+  requiresReauth?: boolean;
+  error?: string;
+}
+
 async function refreshQuickBooksToken(
   refreshToken: string,
   clientId: string,
   clientSecret: string
-): Promise<{ accessToken: string; refreshToken?: string }> {
+): Promise<TokenRefreshResult> {
   const response = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
     method: "POST",
     headers: {
@@ -143,7 +153,26 @@ async function refreshQuickBooksToken(
   if (!response.ok) {
     const errorText = await response.text();
     logStep("QuickBooks token refresh failed", { status: response.status, error: errorText });
-    throw new Error("Failed to refresh QuickBooks token - user may need to re-authenticate");
+    
+    // Parse error to detect invalid_grant (requires re-authentication)
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error === "invalid_grant") {
+        return {
+          accessToken: "",
+          requiresReauth: true,
+          error: "QuickBooks authorization has expired. Please reconnect your account.",
+        };
+      }
+    } catch {
+      // Not JSON, continue with generic error
+    }
+    
+    return {
+      accessToken: "",
+      requiresReauth: true,
+      error: "Failed to refresh QuickBooks token. Please reconnect your account.",
+    };
   }
 
   const tokens = await response.json();
@@ -542,32 +571,58 @@ serve(async (req) => {
             logStep("QuickBooks missing realm_id - user needs to re-authenticate", { 
               integrationId: integration.id 
             });
+            // Mark as needing re-auth
+            await serviceClient
+              .from("integrations")
+              .update({ health: "reauth_required" })
+              .eq("id", integration.id);
             continue;
           }
 
           // Get OAuth credentials for token refresh
           const qbCredentials = await getOAuthCredentials(serviceClient, "quickbooks");
           let currentAccessToken = accessToken;
+          let needsReauth = false;
           
+          // QuickBooks access tokens expire in 1 hour - ALWAYS try to refresh first
           if (refreshToken && qbCredentials) {
-            try {
-              const refreshResult = await refreshQuickBooksToken(
-                refreshToken, 
-                qbCredentials.clientId, 
-                qbCredentials.clientSecret
-              );
+            const refreshResult = await refreshQuickBooksToken(
+              refreshToken, 
+              qbCredentials.clientId, 
+              qbCredentials.clientSecret
+            );
+            
+            if (refreshResult.requiresReauth) {
+              logStep("QuickBooks requires re-authentication", { 
+                error: refreshResult.error 
+              });
               
+              // Mark integration as needing re-auth
+              await serviceClient
+                .from("integrations")
+                .update({ 
+                  health: "reauth_required",
+                  last_synced_at: new Date().toISOString(),
+                })
+                .eq("id", integration.id);
+              
+              needsReauth = true;
+            } else if (refreshResult.accessToken) {
               currentAccessToken = refreshResult.accessToken;
               
               // Encrypt and store new tokens
               const encryptedAccessToken = await encryptToken(refreshResult.accessToken);
               const updateData: Record<string, string> = {
                 access_token: encryptedAccessToken,
+                health: "ok",
                 last_synced_at: new Date().toISOString(),
               };
               
+              // CRITICAL: QuickBooks issues new refresh tokens with each refresh
+              // We MUST store the new refresh token or subsequent refreshes will fail
               if (refreshResult.refreshToken) {
                 updateData.refresh_token = await encryptToken(refreshResult.refreshToken);
+                logStep("QuickBooks new refresh token stored");
               }
               
               await serviceClient
@@ -576,11 +631,29 @@ serve(async (req) => {
                 .eq("id", integration.id);
               
               logStep("QuickBooks token refreshed successfully");
-            } catch (refreshError) {
-              logStep("QuickBooks token refresh failed - using existing token", { 
-                error: String(refreshError) 
-              });
             }
+          }
+          
+          if (needsReauth) {
+            // Add a placeholder entry so UI knows reconnection is needed
+            allData.push({
+              provider: 'QuickBooks',
+              connectedAccount: integration.connected_account || 'QuickBooks',
+              lastSync: new Date().toISOString(),
+              cashFlow: null,
+              invoices: [],
+              recentTransactions: [],
+              metrics: {
+                totalReceivable: 0,
+                totalPayable: 0,
+                overdueCount: 0,
+                upcomingPayments: 0,
+              },
+              // @ts-ignore - adding custom field for error state
+              error: "REAUTH_REQUIRED",
+              errorMessage: "QuickBooks authorization expired. Please reconnect.",
+            });
+            continue;
           }
           
           data = await fetchQuickBooksData(currentAccessToken, realmId);

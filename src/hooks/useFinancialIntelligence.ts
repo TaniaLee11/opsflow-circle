@@ -41,6 +41,9 @@ export interface FinancialSummary {
     overdueCount: number;
     upcomingPayments: number;
   };
+  // Error state fields for handling re-auth requirements
+  error?: string;
+  errorMessage?: string;
 }
 
 export interface FinancialStatus {
@@ -50,6 +53,8 @@ export interface FinancialStatus {
   message?: string;
   action?: string;
   oauthRequired?: boolean;
+  reauthRequired?: boolean;
+  reauthProviders?: string[];
 }
 
 export function useFinancialIntelligence() {
@@ -94,10 +99,33 @@ export function useFinancialIntelligence() {
 
       const financialData = fetchData.data as FinancialSummary[];
       setData(financialData);
-      setStatus({ 
-        connected: true, 
-        providers: financialData.map(d => d.provider),
-      });
+      
+      // Check if any providers need re-authentication
+      const reauthProviders = financialData
+        .filter(d => d.error === 'REAUTH_REQUIRED')
+        .map(d => d.provider);
+      
+      if (reauthProviders.length > 0) {
+        setStatus({ 
+          connected: true, 
+          providers: financialData.map(d => d.provider),
+          reauthRequired: true,
+          reauthProviders,
+          message: `${reauthProviders.join(', ')} authorization expired. Please reconnect.`,
+        });
+        toast.warning(`${reauthProviders.join(', ')} needs to be reconnected`, {
+          description: 'Authorization expired. Go to Integrations to reconnect.',
+          action: {
+            label: 'Reconnect',
+            onClick: () => window.location.href = '/integrations',
+          },
+        });
+      } else {
+        setStatus({ 
+          connected: true, 
+          providers: financialData.map(d => d.provider),
+        });
+      }
       setLastFetchedAt(new Date());
       
       return financialData;
@@ -128,7 +156,19 @@ export function useFinancialIntelligence() {
     lines.push(`Last sync: ${new Date().toLocaleTimeString()}`);
     lines.push('');
 
-    // Aggregate metrics across all providers
+    // Check for any providers needing re-authentication
+    const reauthProviders = financialData.filter(s => s.error === 'REAUTH_REQUIRED');
+    if (reauthProviders.length > 0) {
+      lines.push('---');
+      lines.push('⚠️ **Action Required**');
+      for (const provider of reauthProviders) {
+        lines.push(`• **${provider.provider}**: ${provider.errorMessage || 'Authorization expired. Please reconnect on the Integrations page.'}`);
+      }
+      lines.push('');
+    }
+
+    // Aggregate metrics across all providers (excluding error states)
+    const validData = financialData.filter(s => !s.error);
     let totalReceivable = 0;
     let totalOverdue = 0;
     let totalBalance = 0;
@@ -136,7 +176,7 @@ export function useFinancialIntelligence() {
     const allInvoices: (Invoice & { provider: string })[] = [];
     const allTransactions: (FinancialSummary['recentTransactions'][0] & { provider: string })[] = [];
 
-    for (const summary of financialData) {
+    for (const summary of validData) {
       lines.push(`---`);
       lines.push(`📊 **${summary.provider}** (${summary.connectedAccount})`);
       
