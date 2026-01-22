@@ -135,34 +135,54 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    // Verify the user is authenticated
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error("Not authenticated");
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+      throw new Error("Missing Supabase environment variables");
     }
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
+
+    // Validate JWT using claims
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    const userEmail = (claimsData.claims as any).email as string | undefined;
+    console.log("User authenticated:", { userId, userEmail });
 
     // Check if user is an owner (use admin client to bypass RLS)
     const { data: ownerRole, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("role", "owner")
       .maybeSingle();
 
-    console.log("Role check result:", { userId: user.id, ownerRole, roleError });
+    console.log("Role check result:", { userId, ownerRole, roleError });
 
     if (roleError || !ownerRole) {
       throw new Error("Only owners can send cohort invites");
@@ -172,7 +192,7 @@ serve(async (req) => {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("organization_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     const orgId = profile?.organization_id;
@@ -183,7 +203,7 @@ serve(async (req) => {
     const { data: googleIntegration } = await supabaseAdmin
       .from("integrations")
       .select("access_token, refresh_token, health")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("org_id", orgId)
       .eq("provider", "google")
       .maybeSingle();
@@ -216,7 +236,7 @@ serve(async (req) => {
       await supabaseAdmin
         .from("integrations")
         .update({ health: "reauth_required" })
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("org_id", orgId)
         .eq("provider", "google");
       throw new Error("Google token expired. Please reconnect Google from Integrations page.");
@@ -248,7 +268,7 @@ serve(async (req) => {
       .insert({
         invite_code: inviteCode,
         email: email.toLowerCase(),
-        invited_by: user.id,
+        invited_by: userId,
         organization_id: orgId,
         expires_at: expiresAt.toISOString(),
         status: "pending"
