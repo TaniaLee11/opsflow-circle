@@ -243,6 +243,9 @@ export default function Integrations() {
     slack: "slack",
     hubspot: "hubspot",
     stripe: "stripe",
+    zoom: "zoom",
+    xero: "xero",
+    dropbox: "dropbox",
   };
 
   // Update integration statuses based on database
@@ -623,6 +626,8 @@ function IntegrationCard({
     "hubspot": "hubspot",
     "dropbox": "dropbox",
     "xero": "xero",
+    "zoom": "zoom",
+    "stripe": "stripe",
   };
   const provider = integration.oauthProvider || providerMap[integration.id];
   
