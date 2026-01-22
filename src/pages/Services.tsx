@@ -288,9 +288,9 @@ const tiers = [
       "Expert tax preparation",
       "IRS notice support",
       "Year-round tax planning",
-      "Platform read access"
+      "AI Free platform access"
     ],
-    accessNote: "Human-led — expert tax preparation",
+    accessNote: "Human-led + guidance platform",
     cta: "Schedule Tax Review",
     type: "human",
     highlight: false
@@ -462,8 +462,8 @@ export default function Services() {
                   <strong>AI Advisory, AI Tax, AI Compliance & AI Enterprise</strong> — Work directly with Tanya Potter and her team.
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• <strong>AI Tax:</strong> Human-led tax preparation</li>
-                  <li>• <strong>Advisory, Compliance, Enterprise:</strong> Full execution + expert guidance</li>
+                  <li>• <strong>AI Tax:</strong> Human-led + AI Free platform</li>
+                  <li>• <strong>Advisory, Compliance, Enterprise:</strong> Human-led + full execution</li>
                 </ul>
               </motion.div>
             </div>
@@ -513,7 +513,7 @@ export default function Services() {
                       <p className={`text-[10px] mt-2 px-2 py-1 rounded-full inline-block ${
                         tier.id === 'ai_operations' || tier.id === 'ai_advisory' || tier.id === 'ai_compliance' || tier.id === 'ai_enterprise'
                           ? 'bg-success/20 text-success'
-                          : tier.id === 'ai_assistant' || tier.id === 'ai_tax'
+                          : tier.id === 'ai_assistant'
                             ? 'bg-primary/10 text-primary'
                             : 'bg-muted text-muted-foreground'
                       }`}>

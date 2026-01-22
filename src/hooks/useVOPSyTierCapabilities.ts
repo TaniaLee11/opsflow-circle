@@ -85,11 +85,11 @@ function mapTierToVOPSyTier(tierId: UserTierId | string | null): VOPSyTier {
   switch (tierId) {
     // === AI Free (Guidance only) ===
     case 'free':
+    case 'ai_tax': // AI Tax is human-led; platform access mimics AI Free
       return 'free';
     
     // === Advisory-only with READ access (NO execution) ===
     case 'ai_assistant':
-    case 'ai_tax': // AI Tax can READ integrations but NOT execute
       return 'assistant';
     
     // === Full Execution Authority ===
