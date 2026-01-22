@@ -41,13 +41,15 @@ serve(async (req) => {
       throw new Error("Not authenticated");
     }
 
-    // Check if user is an owner via user_roles table
-    const { data: ownerRole, error: roleError } = await supabaseClient
+    // Check if user is an owner via user_roles table (use admin client to bypass RLS)
+    const { data: ownerRole, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "owner")
       .maybeSingle();
+
+    console.log("Role check result:", { userId: user.id, ownerRole, roleError });
 
     if (roleError || !ownerRole) {
       throw new Error("Only owners can send cohort invites");
