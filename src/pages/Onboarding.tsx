@@ -96,9 +96,19 @@ export default function Onboarding() {
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated, isLoading: authLoading, isOwner } = useAuth();
   
-  // Check if this is a cohort user from URL params
-  const isCohortUser = searchParams.get("cohort") === "true";
-  const cohortInviteCode = searchParams.get("code") || undefined;
+  // Cohort must be detected defensively (URL params may be lost on reload)
+  const cohortFromUrl = searchParams.get("cohort") === "true";
+  let cohortFromStorage = false;
+  let storedInviteCode: string | null = null;
+  try {
+    cohortFromStorage = typeof window !== "undefined" && localStorage.getItem("vopsy_cohort_invite") === "true";
+    storedInviteCode = typeof window !== "undefined" ? localStorage.getItem("vopsy_cohort_invite_code") : null;
+  } catch {
+    cohortFromStorage = false;
+    storedInviteCode = null;
+  }
+  const isCohortUser = cohortFromUrl || cohortFromStorage;
+  const cohortInviteCode = searchParams.get("code") || (cohortFromStorage ? storedInviteCode || undefined : undefined);
   
   const [step, setStep] = useState<OnboardingStep>("identity");
   const [isLoading, setIsLoading] = useState(false);
@@ -106,9 +116,9 @@ export default function Onboarding() {
   // Onboarding data
   const [operatingIdentity, setOperatingIdentity] = useState<UserIdentityType | null>(null);
   const [organizationType, setOrganizationType] = useState<"for_profit" | "non_profit" | null>(null);
-  // Cohort users don't select a tier - they get "cohort" tier automatically
-  // "cohort" tier mimics AI Operations but is time-limited (90 days)
-  const [selectedTier, setSelectedTier] = useState<UserTierId | null>(isCohortUser ? "ai_operations" : null);
+  // Cohort users don't select a tier - they get cohort tier automatically
+  // (mimics AI Operations but is time-limited)
+  const [selectedTier, setSelectedTier] = useState<UserTierId | null>(null);
   const [profile, setProfile] = useState({
     organizationName: "",
     contactName: "",
@@ -132,6 +142,13 @@ export default function Onboarding() {
       setProfile(prev => ({ ...prev, email: user.email || "", contactName: user.name || "" }));
     }
   }, [authLoading, isAuthenticated, isOwner, navigate, user]);
+
+  // Ensure cohort users always have a tier assigned without showing tier selection
+  useEffect(() => {
+    if (isCohortUser && !selectedTier) {
+      setSelectedTier("ai_operations");
+    }
+  }, [isCohortUser, selectedTier]);
 
   // For cohort users, skip tier selection step
   const steps: OnboardingStep[] = isCohortUser 
@@ -179,8 +196,8 @@ export default function Onboarding() {
           selectedTier,
           operatingIdentity,
           organizationType,
-          isCohortUser, // Pass cohort status from URL params
-          cohortInviteCode, // Pass invite code for tracking
+          isCohortUser, // Pass cohort status (defensive)
+          cohortInviteCode, // Pass invite code for tracking (if available)
         },
       });
 
@@ -199,6 +216,14 @@ export default function Onboarding() {
       // Cohort users always go to dashboard (they have full AI Operations access)
       if (isCohortUser) {
         toast.success("Welcome to the AI Cohort! Your 90-day access has started.");
+        // Clear invite marker so it never affects future logins
+        try {
+          localStorage.removeItem("vopsy_cohort_invite");
+          localStorage.removeItem("vopsy_cohort_invite_code");
+          localStorage.removeItem("vopsy_cohort_invite_email");
+        } catch {
+          // ignore
+        }
         navigate("/dashboard");
       } else if (selectedTier === "free") {
         toast.success("Welcome aboard! Your workspace is ready.");

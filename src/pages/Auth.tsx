@@ -26,6 +26,23 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const { login, signup, isAuthenticated, user, isLoading: authLoading, isOwner } = useAuth();
 
+  // Persist cohort invite context to survive reloads (defensive against session recycling)
+  useEffect(() => {
+    if (inviteData?.valid) {
+      try {
+        localStorage.setItem("vopsy_cohort_invite", "true");
+        if (inviteData.inviteCode) {
+          localStorage.setItem("vopsy_cohort_invite_code", inviteData.inviteCode);
+        }
+        if (inviteData.email) {
+          localStorage.setItem("vopsy_cohort_invite_email", inviteData.email);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [inviteData]);
+
   // Check for invite code and force logout if present
   useEffect(() => {
     const inviteCode = searchParams.get("invite");
@@ -86,13 +103,28 @@ export default function Auth() {
         if (inviteData?.valid) {
           navigate(`/onboarding?cohort=true&code=${inviteData.inviteCode}`);
         } else {
-          navigate("/onboarding");
+          // Defensive: cohort invite state may survive reloads; use it to skip tier selection.
+          let cohortInvite = false;
+          let storedCode: string | null = null;
+          try {
+            cohortInvite = localStorage.getItem("vopsy_cohort_invite") === "true";
+            storedCode = localStorage.getItem("vopsy_cohort_invite_code");
+          } catch {
+            cohortInvite = false;
+            storedCode = null;
+          }
+
+          if (cohortInvite) {
+            navigate(storedCode ? `/onboarding?cohort=true&code=${storedCode}` : "/onboarding?cohort=true");
+          } else {
+            navigate("/onboarding");
+          }
         }
       } else {
         navigate("/dashboard");
       }
     }
-  }, [isAuthenticated, user, authLoading, isOwner, navigate, searchParams, inviteChecking]);
+  }, [isAuthenticated, user, authLoading, isOwner, navigate, searchParams, inviteChecking, inviteData]);
 
   // Check for mode from URL params (only if not invite flow)
   useEffect(() => {
