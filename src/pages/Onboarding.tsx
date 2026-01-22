@@ -89,6 +89,21 @@ const tierIcons: Record<UserTierId, typeof Gift> = {
   ai_compliance: Shield
 };
 
+// Map UI tier IDs to database-valid subscription_tier values
+// Database constraint: AI_FREE, AI_ASSISTANT, AI_OPERATIONS, AI_COHORT, AI_OPERATIONS_FULL
+const mapTierToDbSubscriptionTier = (tierId: UserTierId): string => {
+  const mapping: Record<UserTierId, string> = {
+    free: "AI_FREE",
+    ai_assistant: "AI_ASSISTANT",
+    ai_operations: "AI_OPERATIONS",
+    ai_enterprise: "AI_OPERATIONS_FULL",
+    ai_advisory: "AI_OPERATIONS", // Advisory maps to operations-level access
+    ai_tax: "AI_OPERATIONS",      // Tax maps to operations-level access
+    ai_compliance: "AI_OPERATIONS" // Compliance maps to operations-level access
+  };
+  return mapping[tierId] || "AI_FREE";
+};
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading, isOwner } = useAuth();
@@ -172,7 +187,7 @@ export default function Onboarding() {
           .from("organizations")
           .insert({
             name: profile.organizationName,
-            subscription_tier: selectedTier
+            subscription_tier: mapTierToDbSubscriptionTier(selectedTier)
           })
           .select()
           .single();
@@ -196,7 +211,7 @@ export default function Onboarding() {
           company_name: profile.organizationName,
           phone: profile.phone,
           industry: profile.industry,
-          type: selectedTier as any,
+          type: selectedTier, // account_type enum matches UI tier IDs
           subscription_tier: selectedTier,
           address: { location: profile.location },
           settings: { 
