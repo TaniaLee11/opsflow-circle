@@ -196,7 +196,7 @@ serve(async (req) => {
     // NOTE: Lovable preview URLs are ephemeral. We use the published URL for redirects so
     // Google can reliably whitelist it.
     // If you change your published domain, update this fallback accordingly.
-    const origin = "https://opsflow-circle.lovable.app";
+    const origin = "https://virtualops.lovable.app";
     const redirectUri = `${origin}/integrations/callback`;
 
     // Build OAuth URL
