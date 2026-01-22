@@ -35,41 +35,42 @@ export default function Auth() {
       
       // Force logout any existing session when invite link is clicked
       const handleInviteFlow = async () => {
-        // Sign out current user silently
-        await supabase.auth.signOut();
-        
-        // Validate invite code via edge function (bypasses RLS)
-        const { data, error } = await supabase.functions.invoke("validate-invite", {
-          body: { inviteCode }
-        });
-        
-        if (error || !data?.valid) {
-          setError(data?.error || "Invalid invite code. Please check your invite link.");
+        try {
+          // Sign out current user silently
+          await supabase.auth.signOut();
+
+          // Validate invite code via backend function (bypasses RLS)
+          const { data, error } = await supabase.functions.invoke("validate-invite", {
+            body: { inviteCode },
+          });
+
+          if (error || !data?.valid) {
+            setError(data?.error || "Invalid invite code. Please check your invite link.");
+            return;
+          }
+
+          // Valid invite - pre-fill email and switch to signup
+          setInviteData({
+            email: data.email,
+            inviteCode: data.inviteCode,
+            valid: true,
+          });
+          setEmail(data.email);
+          setMode("signup");
+        } catch (err: any) {
+          setError(err?.message || "Failed to validate invite. Please try again.");
+        } finally {
           setInviteChecking(false);
-          return;
         }
-        
-        // Valid invite - pre-fill email and switch to signup
-        setInviteData({
-          email: data.email,
-          inviteCode: data.inviteCode,
-          valid: true,
-        });
-        setEmail(data.email);
-        setMode("signup");
-        setInviteChecking(false);
       };
       
       handleInviteFlow();
     }
   }, [searchParams]);
 
-  // Redirect if already authenticated (but NOT during invite flow)
+  // Redirect if already authenticated (skip only while invite is being validated)
   useEffect(() => {
-    const inviteCode = searchParams.get("invite");
-    
-    // Skip auto-redirect if we're handling an invite
-    if (inviteCode || inviteChecking) {
+    if (inviteChecking) {
       return;
     }
     
@@ -109,25 +110,26 @@ export default function Auth() {
       } else {
         if (!name.trim()) {
           setError("Please enter your name");
-          setIsLoading(false);
           return;
         }
         await signup(email, password, name);
-        
-        // If this was an invite signup, mark invite as accepted
+
+        // If this was an invite signup, accept the invite via backend (bypasses RLS)
         if (inviteData?.valid && inviteData.inviteCode) {
-          await supabase
-            .from("cohort_invites")
-            .update({ 
-              status: "accepted",
-              accepted_at: new Date().toISOString()
-            })
-            .eq("invite_code", inviteData.inviteCode);
+          const { error: acceptError } = await supabase.functions.invoke("accept-invite", {
+            body: { inviteCode: inviteData.inviteCode },
+          });
+
+          if (acceptError) {
+            // Don't block login/redirect; show a helpful message if needed.
+            console.warn("[Auth] Failed to accept invite:", acceptError.message);
+          }
         }
       }
       // Navigation will be handled by the useEffect
     } catch (err: any) {
       setError(err?.message || "Authentication failed. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
