@@ -9,7 +9,8 @@ export function CohortBanner() {
   const { isOwner } = useAuth();
   const [isDismissed, setIsDismissed] = useState(false);
 
-  if (!isCohort || isDismissed) return null;
+  // Don't show for platform owners - they have full access, not cohort access
+  if (isOwner || !isCohort || isDismissed) return null;
 
   const daysRemaining = cohortConfig?.expiresAt 
     ? Math.ceil((cohortConfig.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))

@@ -22,8 +22,7 @@ import {
   ChevronDown,
   AlertTriangle,
   Sparkles,
-  ArrowRight,
-  Crown
+  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -85,17 +84,10 @@ function DashboardContent() {
               <motion.div 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 sm:gap-3 flex-wrap"
               >
                 <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
                   Welcome back, {user?.name?.split(" ")[0]} 👋
                 </h1>
-                {isOwner && (
-                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded-lg bg-primary/20 text-primary flex items-center gap-1">
-                    <Crown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    Platform Owner
-                  </span>
-                )}
               </motion.div>
               <motion.p 
                 initial={{ opacity: 0, y: -10 }}
