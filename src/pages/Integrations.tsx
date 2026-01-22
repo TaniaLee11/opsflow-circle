@@ -262,6 +262,8 @@ export default function Integrations() {
   const connectedCount = integrationsWithRealStatus.filter(i => i.status === "connected").length;
   const popularIntegrations = integrationsWithRealStatus.filter(i => i.popular);
 
+  const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
+
   const handleConnect = async (integration: Integration) => {
     if (integration.status === "connected") {
       toast.info(`${integration.name} is already connected`);
@@ -294,7 +296,8 @@ export default function Integrations() {
     }
 
     try {
-      toast.info(`Redirecting to ${integration.name} for authorization...`);
+      setConnectingProvider(provider);
+      toast.info(`Opening ${integration.name} authorization...`);
       
       const { data, error } = await supabase.functions.invoke("oauth-start", {
         body: { provider },
@@ -309,9 +312,9 @@ export default function Integrations() {
       const errorMessage = body?.error || (error instanceof Error ? error.message : null);
       
       if (errorMessage) {
+        setConnectingProvider(null);
         // Handle specific error codes
         if (errorMessage.startsWith("OAUTH_APP_NOT_CONFIGURED:")) {
-          // This is a builder/admin issue - OAuth app credentials not set up
           console.error(`[Builder Issue] OAuth app not configured for ${provider}`);
           toast.error(`${integration.name} OAuth is not available yet. The integration requires configuration.`);
           return;
@@ -323,15 +326,53 @@ export default function Integrations() {
         throw new Error(errorMessage);
       }
 
-      // SUCCESS: Redirect user to third-party provider's OAuth page
+      // SUCCESS: Open OAuth in NEW TAB (not replacing current page)
       if (data?.url) {
-        // User will be redirected to provider's site (e.g., accounts.google.com, stripe.com)
-        // After login, provider redirects back with authorization code
-        window.location.href = data.url;
+        // Open provider's OAuth page in new tab
+        const oauthWindow = window.open(data.url, '_blank', 'noopener,noreferrer');
+        
+        if (!oauthWindow) {
+          toast.error("Popup blocked. Please allow popups and try again.");
+          setConnectingProvider(null);
+          return;
+        }
+
+        toast.info(`Waiting for ${integration.name} authorization...`, {
+          duration: 60000,
+          id: `oauth-waiting-${provider}`,
+        });
+
+        // Poll for OAuth completion
+        const pollInterval = setInterval(async () => {
+          const { data: integrations } = await supabase
+            .from("integrations")
+            .select("provider")
+            .eq("provider", provider)
+            .maybeSingle();
+          
+          if (integrations) {
+            clearInterval(pollInterval);
+            setConnectingProvider(null);
+            toast.dismiss(`oauth-waiting-${provider}`);
+            toast.success(`${integration.name} connected successfully!`);
+            queryClient.invalidateQueries({ queryKey: ["integrations"] });
+          }
+        }, 2000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          if (connectingProvider === provider) {
+            setConnectingProvider(null);
+            toast.dismiss(`oauth-waiting-${provider}`);
+          }
+        }, 300000);
       } else {
+        setConnectingProvider(null);
         toast.error("Failed to generate authorization URL");
       }
     } catch (err) {
+      setConnectingProvider(null);
       console.error("OAuth start error:", err);
       toast.error(err instanceof Error ? err.message : "Failed to start authorization");
     }
@@ -471,6 +512,7 @@ export default function Integrations() {
                       integration={integration}
                       onConnect={handleConnect}
                       onDisconnect={handleDisconnect}
+                      isConnecting={connectingProvider === (integration.oauthProvider || integration.id.replace('-workspace', '').replace('-365', ''))}
                     />
                   ))}
                 </div>
@@ -498,6 +540,7 @@ export default function Integrations() {
                       integration={integration}
                       onConnect={handleConnect}
                       onDisconnect={handleDisconnect}
+                      isConnecting={connectingProvider === (integration.oauthProvider || integration.id.replace('-workspace', '').replace('-365', ''))}
                     />
                   ))}
                 </div>
@@ -513,11 +556,13 @@ export default function Integrations() {
 function IntegrationCard({ 
   integration, 
   onConnect, 
-  onDisconnect 
+  onDisconnect,
+  isConnecting = false
 }: { 
   integration: Integration;
   onConnect: (i: Integration) => void;
   onDisconnect: (i: Integration) => void;
+  isConnecting?: boolean;
 }) {
   const status = statusConfig[integration.status];
   const StatusIcon = status.icon;
@@ -529,7 +574,7 @@ function IntegrationCard({
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="bg-card border-border hover:border-primary/30 transition-colors h-full">
+      <Card className={`bg-card border-border hover:border-primary/30 transition-colors h-full ${isConnecting ? 'ring-2 ring-primary/50' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -541,7 +586,6 @@ function IntegrationCard({
                   onError={(e) => {
                     const target = e.currentTarget;
                     target.style.display = "none";
-                    // Create fallback span
                     const fallback = document.createElement("span");
                     fallback.className = "text-xl font-bold text-muted-foreground";
                     fallback.textContent = integration.name[0];
@@ -558,9 +602,18 @@ function IntegrationCard({
                     </Badge>
                   )}
                 </CardTitle>
-                <div className={`flex items-center gap-1 text-xs ${status.color}`}>
-                  <StatusIcon className="w-3 h-3" />
-                  {status.label}
+                <div className={`flex items-center gap-1 text-xs ${isConnecting ? 'text-primary' : status.color}`}>
+                  {isConnecting ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      Waiting for authorization...
+                    </>
+                  ) : (
+                    <>
+                      <StatusIcon className="w-3 h-3" />
+                      {status.label}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -604,9 +657,19 @@ function IntegrationCard({
                 size="sm"
                 className="flex-1"
                 onClick={() => onConnect(integration)}
+                disabled={isConnecting}
               >
-                <Link2 className="w-4 h-4 mr-2" />
-                Connect
+                {isConnecting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Connect
+                  </>
+                )}
               </Button>
             )}
 
