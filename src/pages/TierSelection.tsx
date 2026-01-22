@@ -23,7 +23,16 @@ export default function TierSelection() {
   const [selectedTier, setSelectedTier] = useState<UserTierId | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading: authLoading, refreshSubscription } = useAuth();
+  const { 
+    user, 
+    isAuthenticated, 
+    isLoading: authLoading, 
+    refreshSubscription,
+    isOwner,
+    isCohort,
+    hasAccess,
+    isCheckingSubscription
+  } = useAuth();
 
   const openCheckout = (url: string) => {
     // In embedded previews (iframes), top-level navigation can be blocked.
@@ -32,15 +41,40 @@ export default function TierSelection() {
     if (!w) window.location.href = url;
   };
 
-  // Redirect to login if not authenticated
+  // Redirect logic - AI_COHORT users NEVER see this page
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate("/auth");
+    if (authLoading || isCheckingSubscription) {
+      return;
     }
-  }, [isAuthenticated, authLoading, navigate]);
 
-  // Show loading while checking auth
-  if (authLoading) {
+    // Not authenticated - go to auth
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+
+    // Owner goes directly to dashboard
+    if (isOwner) {
+      navigate("/dashboard");
+      return;
+    }
+
+    // CRITICAL: AI_COHORT users NEVER see tier selection
+    // This is a system-assigned tier detected from backend cohort_memberships
+    if (isCohort) {
+      navigate("/dashboard");
+      return;
+    }
+
+    // Users with active access go to dashboard
+    if (hasAccess) {
+      navigate("/dashboard");
+      return;
+    }
+  }, [isAuthenticated, authLoading, isOwner, isCohort, hasAccess, isCheckingSubscription, navigate]);
+
+  // Show loading while checking auth or subscription
+  if (authLoading || isCheckingSubscription) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -48,8 +82,8 @@ export default function TierSelection() {
     );
   }
 
-  // Don't render if not authenticated (will redirect)
-  if (!isAuthenticated) {
+  // Don't render if user should be redirected (will redirect via useEffect)
+  if (!isAuthenticated || isOwner || isCohort || hasAccess) {
     return null;
   }
 
@@ -170,6 +204,7 @@ export default function TierSelection() {
   };
 
   // Custom order: Free, Assistant, Operations first row; Advisory, Tax, Compliance second row; Enterprise last
+  // NOTE: AI_COHORT is NEVER shown here - it's system-assigned only
   const tierOrder: UserTierId[] = ["free", "ai_assistant", "ai_operations", "ai_advisory", "ai_tax", "ai_compliance", "ai_enterprise"];
   const tiers = tierOrder.map(id => USER_TIERS[id]);
 

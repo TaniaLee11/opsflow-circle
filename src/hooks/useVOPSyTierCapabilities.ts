@@ -62,6 +62,7 @@ const TIER_CAPABILITIES: Record<VOPSyTier, TierCapabilities> = {
 };
 
 // Map UserTierId to VOPSyTier
+// AI_COHORT is treated IDENTICALLY to AI_OPERATIONS for capabilities
 function mapTierToVOPSyTier(tierId: UserTierId | string | null): VOPSyTier {
   if (!tierId) return 'free';
   
@@ -75,10 +76,13 @@ function mapTierToVOPSyTier(tierId: UserTierId | string | null): VOPSyTier {
     case 'ai_advisory':
     case 'ai_tax':
     case 'ai_compliance':
+    // AI_COHORT gets FULL operations capabilities (system-assigned tier)
+    case 'cohort':
+    case 'AI_COHORT':
       return 'operations';
     default:
       // Handle cohort and owner as operations-level
-      if (tierId === 'cohort' || tierId === 'owner') {
+      if (tierId === 'owner') {
         return 'operations';
       }
       return 'free';
@@ -98,7 +102,10 @@ export interface CapabilityCheckResult {
  * VOPSy always exists as the intelligence layer, but what it can DO depends on tier.
  * - AI Free: Orientation, thinking, document interaction. No integrations, no execution.
  * - AI Assistant: Read-only intelligence. Can analyze and recommend, cannot execute.
- * - AI Operations: Full execution authority. Can read, write, and execute.
+ * - AI Operations / AI_COHORT: Full execution authority. Can read, write, and execute.
+ * 
+ * CRITICAL: AI_COHORT is treated IDENTICALLY to AI_OPERATIONS.
+ * The only difference is time limitation (90 days), not capability.
  */
 export function useVOPSyTierCapabilities() {
   const { currentTier } = useUserTier();
@@ -108,7 +115,7 @@ export function useVOPSyTierCapabilities() {
     // Owner always has full access
     if (isOwner) return 'operations';
     
-    // Map based on access type and tier
+    // Cohort users get FULL operations capabilities (system-assigned)
     if (accessType === 'cohort') return 'operations';
     
     return mapTierToVOPSyTier(currentTier.id);
