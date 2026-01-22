@@ -263,7 +263,7 @@ const tiers = [
     price: "$150",
     period: "/hour",
     priceNote: "$125/hour for nonprofits",
-    description: "Strategic guidance from Tanya Potter with full platform execution",
+    description: "Strategic guidance from Tania Potter with full platform execution",
     features: [
       "One-on-one advisory sessions",
       "Strategic financial planning",
@@ -282,7 +282,7 @@ const tiers = [
     icon: Receipt,
     price: "From $125",
     priceNote: "Personal $125 • Personal w/Business $175 • Business $250",
-    description: "Professional tax preparation with expert human review",
+    description: "Professional tax preparation reviewed by Tania Potter",
     features: [
       "Personal & business returns",
       "Expert tax preparation",
@@ -459,7 +459,7 @@ export default function Services() {
                   <h3 className="font-semibold text-foreground">Human-Led Services</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  <strong>AI Advisory, AI Tax, AI Compliance & AI Enterprise</strong> — Work directly with Tanya Potter and her team.
+                  <strong>AI Advisory, AI Tax, AI Compliance & AI Enterprise</strong> — Work directly with Tania Potter and her team.
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>• <strong>AI Tax:</strong> Human-led + AI Free platform</li>
