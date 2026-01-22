@@ -643,6 +643,62 @@ serve(async (req) => {
         logStep("Owner: Error fetching Stripe data", { error: String(stripeError) });
       }
     }
+
+    // OWNER: Gets QuickBooks data via pre-configured credentials (no OAuth needed)
+    if (isOwner) {
+      const qbClientId = Deno.env.get("QUICKBOOKS_CLIENT_ID");
+      const qbClientSecret = Deno.env.get("QUICKBOOKS_CLIENT_SECRET");
+      
+      // Check if owner has a QuickBooks integration with realm_id stored
+      const { data: ownerQBIntegration } = await serviceClient
+        .from("integrations")
+        .select("id, access_token, refresh_token, scopes")
+        .eq("user_id", user.id)
+        .eq("provider", "quickbooks")
+        .single();
+      
+      if (ownerQBIntegration && qbClientId && qbClientSecret) {
+        try {
+          logStep("Owner: Fetching QuickBooks data via pre-configured credentials");
+          const realmId = ownerQBIntegration.scopes?.split(',')?.[0] || '';
+          
+          if (realmId && ownerQBIntegration.refresh_token) {
+            const refreshToken = await decryptToken(ownerQBIntegration.refresh_token);
+            const accessToken = await refreshQuickBooksToken(refreshToken, qbClientId, qbClientSecret);
+            
+            // Store refreshed token
+            const encryptedToken = await encryptToken(accessToken);
+            await serviceClient
+              .from("integrations")
+              .update({ access_token: encryptedToken, last_synced_at: new Date().toISOString() })
+              .eq("id", ownerQBIntegration.id);
+            
+            const qbData = await fetchQuickBooksData(accessToken, realmId);
+            if (qbData) {
+              allData.push({
+                provider: 'QuickBooks',
+                connectedAccount: qbData.connectedAccount || 'Platform QuickBooks',
+                lastSync: new Date().toISOString(),
+                cashFlow: qbData.cashFlow || null,
+                invoices: qbData.invoices || [],
+                recentTransactions: qbData.recentTransactions || [],
+                metrics: qbData.metrics || {
+                  totalReceivable: 0,
+                  totalPayable: 0,
+                  overdueCount: 0,
+                  upcomingPayments: 0,
+                },
+              });
+              logStep("Owner: QuickBooks data fetched successfully", { 
+                invoiceCount: qbData.invoices?.length || 0 
+              });
+            }
+          }
+        } catch (qbError) {
+          logStep("Owner: Error fetching QuickBooks data", { error: String(qbError) });
+        }
+      }
+    }
     
     // SUB-USER: Gets only their own Stripe data (filtered by their customer ID)
     if (!isOwner && stripeSecretKey) {
@@ -697,86 +753,89 @@ serve(async (req) => {
       }
     }
 
-    // Check for OAuth-based financial integrations (for users who connected their own accounts)
-    const { data: integrations, error: intError } = await serviceClient
-      .from("integrations")
-      .select("id, provider, access_token, refresh_token, connected_account, scopes")
-      .eq("user_id", user.id)
-      .in("provider", ["quickbooks", "stripe", "xero"]);
+    // SUB-USER ONLY: Check for OAuth-based financial integrations (they must connect their own accounts)
+    // Owner already handles QuickBooks above via pre-configured credentials
+    if (!isOwner) {
+      const { data: integrations, error: intError } = await serviceClient
+        .from("integrations")
+        .select("id, provider, access_token, refresh_token, connected_account, scopes")
+        .eq("user_id", user.id)
+        .in("provider", ["quickbooks", "stripe", "xero"]);
 
-    if (intError) {
-      logStep("Integration lookup error", { error: intError.message });
-    }
+      if (intError) {
+        logStep("Integration lookup error", { error: intError.message });
+      }
 
-    // Process OAuth integrations
-    for (const integration of integrations || []) {
-      try {
-        // Decrypt tokens
-        const accessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
-        const refreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
-        
-        if (!accessToken) {
-          logStep("No access token for integration", { provider: integration.provider });
-          continue;
-        }
+      // Process OAuth integrations for sub-users
+      for (const integration of integrations || []) {
+        try {
+          // Decrypt tokens
+          const accessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
+          const refreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
+          
+          if (!accessToken) {
+            logStep("No access token for integration", { provider: integration.provider });
+            continue;
+          }
 
-        let data: Partial<FinancialSummary> | null = null;
+          let data: Partial<FinancialSummary> | null = null;
 
-        if (integration.provider === "stripe") {
-          data = await fetchStripeData(accessToken);
-        } else if (integration.provider === "quickbooks") {
-          // QuickBooks requires realm_id from scopes
-          const realmId = integration.scopes?.split(',')?.[0] || '';
-          if (realmId) {
-            // Try to refresh token if we have refresh token
-            let currentAccessToken = accessToken;
-            if (refreshToken) {
-              try {
-                const clientId = Deno.env.get("QUICKBOOKS_CLIENT_ID") || "";
-                const clientSecret = Deno.env.get("QUICKBOOKS_CLIENT_SECRET") || "";
-                if (clientId && clientSecret) {
-                  currentAccessToken = await refreshQuickBooksToken(refreshToken, clientId, clientSecret);
-                  // Encrypt and store new token
-                  const encryptedToken = await encryptToken(currentAccessToken);
-                  await serviceClient
-                    .from("integrations")
-                    .update({ access_token: encryptedToken, last_synced_at: new Date().toISOString() })
-                    .eq("id", integration.id);
-                  logStep("QuickBooks token refreshed and encrypted");
+          if (integration.provider === "stripe") {
+            data = await fetchStripeData(accessToken);
+          } else if (integration.provider === "quickbooks") {
+            // QuickBooks requires realm_id from scopes - sub-users must OAuth connect
+            const realmId = integration.scopes?.split(',')?.[0] || '';
+            if (realmId) {
+              // Try to refresh token if we have refresh token
+              let currentAccessToken = accessToken;
+              if (refreshToken) {
+                try {
+                  const clientId = Deno.env.get("QUICKBOOKS_CLIENT_ID") || "";
+                  const clientSecret = Deno.env.get("QUICKBOOKS_CLIENT_SECRET") || "";
+                  if (clientId && clientSecret) {
+                    currentAccessToken = await refreshQuickBooksToken(refreshToken, clientId, clientSecret);
+                    // Encrypt and store new token
+                    const encryptedToken = await encryptToken(currentAccessToken);
+                    await serviceClient
+                      .from("integrations")
+                      .update({ access_token: encryptedToken, last_synced_at: new Date().toISOString() })
+                      .eq("id", integration.id);
+                    logStep("QuickBooks token refreshed and encrypted");
+                  }
+                } catch (refreshError) {
+                  logStep("QuickBooks token refresh failed", { error: String(refreshError) });
                 }
-              } catch (refreshError) {
-                logStep("QuickBooks token refresh failed", { error: String(refreshError) });
               }
+              data = await fetchQuickBooksData(currentAccessToken, realmId);
             }
-            data = await fetchQuickBooksData(currentAccessToken, realmId);
+          } else if (integration.provider === "xero") {
+            // Xero requires tenant_id
+            const tenantId = integration.scopes?.split(',')?.[0] || '';
+            if (tenantId) {
+              data = await fetchXeroData(accessToken, tenantId);
+            }
           }
-        } else if (integration.provider === "xero") {
-          // Xero requires tenant_id
-          const tenantId = integration.scopes?.split(',')?.[0] || '';
-          if (tenantId) {
-            data = await fetchXeroData(accessToken, tenantId);
-          }
-        }
 
-        if (data) {
-          allData.push({
-            provider: data.provider || integration.provider,
-            connectedAccount: data.connectedAccount || integration.connected_account || integration.provider,
-            lastSync: new Date().toISOString(),
-            cashFlow: data.cashFlow || null,
-            invoices: data.invoices || [],
-            recentTransactions: data.recentTransactions || [],
-            metrics: data.metrics || {
-              totalReceivable: 0,
-              totalPayable: 0,
-              overdueCount: 0,
-              upcomingPayments: 0,
-            },
-          });
+          if (data) {
+            allData.push({
+              provider: data.provider || integration.provider,
+              connectedAccount: data.connectedAccount || integration.connected_account || integration.provider,
+              lastSync: new Date().toISOString(),
+              cashFlow: data.cashFlow || null,
+              invoices: data.invoices || [],
+              recentTransactions: data.recentTransactions || [],
+              metrics: data.metrics || {
+                totalReceivable: 0,
+                totalPayable: 0,
+                overdueCount: 0,
+                upcomingPayments: 0,
+              },
+            });
+          }
+        } catch (providerError) {
+          logStep(`Error fetching from ${integration.provider}`, { error: String(providerError) });
+          // Continue with other providers
         }
-      } catch (providerError) {
-        logStep(`Error fetching from ${integration.provider}`, { error: String(providerError) });
-        // Continue with other providers
       }
     }
 
