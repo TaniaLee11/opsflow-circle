@@ -1,6 +1,15 @@
+/**
+ * Inbox Fetch - OAuth-Only Architecture
+ * 
+ * SECURITY MANDATE: This function ONLY accesses email via user-authenticated OAuth.
+ * - NO system keys
+ * - Every user must authenticate their own Google/Microsoft account
+ * - Credentials come from integration_configs ONLY
+ */
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
+import { decryptToken, encryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +39,6 @@ interface InboxSummary {
 }
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
-  // Never log token values
   const safeDetails = details ? { ...details } : undefined;
   if (safeDetails) {
     delete safeDetails.access_token;
@@ -39,7 +47,49 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[INBOX-FETCH] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
-// Refresh Google access token if needed
+/**
+ * Get OAuth credentials from integration_configs ONLY
+ */
+async function getOAuthCredentials(
+  supabase: any,
+  provider: string
+): Promise<{ clientId: string; clientSecret: string } | null> {
+  const { data: config } = await supabase
+    .from("integration_configs")
+    .select("client_id, client_secret")
+    .eq("provider", provider)
+    .maybeSingle();
+
+  if (!config?.client_id || !config?.client_secret) {
+    logStep(`${provider} OAuth credentials not configured`);
+    return null;
+  }
+
+  let clientId = config.client_id as string;
+  let clientSecret = config.client_secret as string;
+
+  if (clientId.startsWith("env:")) {
+    clientId = Deno.env.get(clientId.replace("env:", "")) || "";
+  } else if (isEncrypted(clientId)) {
+    clientId = await decryptToken(clientId);
+  }
+
+  if (clientSecret.startsWith("env:")) {
+    clientSecret = Deno.env.get(clientSecret.replace("env:", "")) || "";
+  } else if (isEncrypted(clientSecret)) {
+    clientSecret = await decryptToken(clientSecret);
+  }
+
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  return { clientId, clientSecret };
+}
+
+/**
+ * Refresh Google access token using credentials from integration_configs
+ */
 async function refreshGoogleToken(
   refreshToken: string,
   clientId: string,
@@ -65,7 +115,9 @@ async function refreshGoogleToken(
   return tokens.access_token;
 }
 
-// Refresh Microsoft access token if needed
+/**
+ * Refresh Microsoft access token using credentials from integration_configs
+ */
 async function refreshMicrosoftToken(
   refreshToken: string,
   clientId: string,
@@ -94,7 +146,6 @@ async function refreshMicrosoftToken(
 
 // Fetch Gmail messages
 async function fetchGmailMessages(accessToken: string, maxResults: number = 20): Promise<EmailMessage[]> {
-  // Get list of message IDs (unread or flagged from today)
   const listResponse = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&q=is:unread OR is:starred newer_than:1d`,
     {
@@ -103,21 +154,15 @@ async function fetchGmailMessages(accessToken: string, maxResults: number = 20):
   );
 
   if (!listResponse.ok) {
-    logStep("Gmail list failed", { status: listResponse.status });
     throw new Error(`Gmail API error: ${listResponse.status}`);
   }
 
   const listData = await listResponse.json();
-  if (!listData.messages || listData.messages.length === 0) {
-    return [];
-  }
+  const messages: EmailMessage[] = [];
 
-  // Fetch full details for each message (batch of IDs)
-  const emails: EmailMessage[] = [];
-  
-  for (const msg of listData.messages.slice(0, maxResults)) {
+  for (const msg of (listData.messages || []).slice(0, maxResults)) {
     const msgResponse = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
@@ -125,63 +170,58 @@ async function fetchGmailMessages(accessToken: string, maxResults: number = 20):
 
     if (msgResponse.ok) {
       const msgData = await msgResponse.json();
-      
       const headers = msgData.payload?.headers || [];
-      const getHeader = (name: string) => headers.find((h: { name: string; value: string }) => h.name === name)?.value || '';
       
-      emails.push({
-        id: msgData.id,
-        subject: getHeader('Subject') || '(No Subject)',
+      const getHeader = (name: string) => headers.find((h: any) => h.name === name)?.value || '';
+      
+      messages.push({
+        id: msg.id,
+        subject: getHeader('Subject') || '(No subject)',
         from: getHeader('From'),
         snippet: msgData.snippet || '',
         date: getHeader('Date'),
-        isUnread: msgData.labelIds?.includes('UNREAD') || false,
+        isUnread: (msgData.labelIds || []).includes('UNREAD'),
         labels: msgData.labelIds || [],
       });
     }
   }
 
-  return emails;
+  return messages;
 }
 
-// Fetch Microsoft Outlook messages
+// Fetch Outlook messages
 async function fetchOutlookMessages(accessToken: string, maxResults: number = 20): Promise<EmailMessage[]> {
-  // Fetch unread or flagged messages from the last day
-  const today = new Date();
-  today.setDate(today.getDate() - 1);
-  const dateFilter = today.toISOString();
-
   const response = await fetch(
-    `https://graph.microsoft.com/v1.0/me/messages?$top=${maxResults}&$filter=isRead eq false or flag/flagStatus eq 'flagged' or receivedDateTime ge ${dateFilter}&$select=id,subject,from,bodyPreview,receivedDateTime,isRead,flag&$orderby=receivedDateTime desc`,
+    `https://graph.microsoft.com/v1.0/me/messages?$top=${maxResults}&$filter=isRead eq false or flag/flagStatus eq 'flagged'&$orderby=receivedDateTime desc`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
     }
   );
 
   if (!response.ok) {
-    logStep("Outlook fetch failed", { status: response.status });
     throw new Error(`Outlook API error: ${response.status}`);
   }
 
   const data = await response.json();
-  
-  return (data.value || []).map((msg: { 
-    id: string; 
-    subject: string; 
-    from: { emailAddress: { address?: string; name?: string } }; 
-    bodyPreview: string; 
-    receivedDateTime: string; 
-    isRead: boolean; 
-    flag: { flagStatus: string } 
-  }) => ({
-    id: msg.id,
-    subject: msg.subject || '(No Subject)',
-    from: msg.from?.emailAddress?.address || msg.from?.emailAddress?.name || 'Unknown',
-    snippet: msg.bodyPreview || '',
-    date: msg.receivedDateTime,
-    isUnread: !msg.isRead,
-    labels: msg.flag?.flagStatus === 'flagged' ? ['STARRED'] : [],
-  }));
+  const messages: EmailMessage[] = [];
+
+  for (const msg of data.value || []) {
+    const labels: string[] = [];
+    if (!msg.isRead) labels.push('UNREAD');
+    if (msg.flag?.flagStatus === 'flagged') labels.push('IMPORTANT');
+
+    messages.push({
+      id: msg.id,
+      subject: msg.subject || '(No subject)',
+      from: msg.from?.emailAddress?.address || '',
+      snippet: msg.bodyPreview || '',
+      date: msg.receivedDateTime,
+      isUnread: !msg.isRead,
+      labels,
+    });
+  }
+
+  return messages;
 }
 
 serve(async (req) => {
@@ -190,7 +230,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
+    logStep("Function started - OAuth-only mode");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -234,13 +274,12 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           connected: false,
-          message: "No email account connected. Please connect Google Workspace or Microsoft 365 in the Integrations page to enable Inbox Intelligence.",
+          message: "No email account connected. Please connect Google Workspace or Microsoft 365 in Integrations.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Use the first available email integration
     const integration = integrations[0];
     logStep("Found integration", { provider: integration.provider });
 
@@ -248,31 +287,36 @@ serve(async (req) => {
     const decryptedAccessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
     const decryptedRefreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
 
-    // Get OAuth credentials for token refresh
-    const { data: integrationConfig } = await serviceClient
-      .from("integration_configs")
-      .select("client_id, client_secret")
-      .eq("provider", integration.provider)
-      .maybeSingle();
+    // Get OAuth credentials from integration_configs ONLY
+    const credentials = await getOAuthCredentials(serviceClient, integration.provider);
 
-    const resolveCredential = (value: string | null | undefined, envKey: string): string => {
-      if (!value) return Deno.env.get(envKey) || "";
-      if (value.startsWith("env:")) return Deno.env.get(value.replace("env:", "")) || "";
-      return value;
-    };
-
-    const clientId = resolveCredential(integrationConfig?.client_id, `${integration.provider.toUpperCase()}_CLIENT_ID`);
-    const clientSecret = resolveCredential(integrationConfig?.client_secret, `${integration.provider.toUpperCase()}_CLIENT_SECRET`);
+    if (!credentials) {
+      return new Response(
+        JSON.stringify({
+          connected: true,
+          error: `${integration.provider} OAuth not configured. Please contact the administrator.`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     let accessToken = decryptedAccessToken;
 
     // Try to refresh the token if we have refresh token and credentials
-    if (decryptedRefreshToken && clientId && clientSecret) {
+    if (decryptedRefreshToken) {
       try {
         if (integration.provider === "google") {
-          accessToken = await refreshGoogleToken(decryptedRefreshToken, clientId, clientSecret);
+          accessToken = await refreshGoogleToken(
+            decryptedRefreshToken, 
+            credentials.clientId, 
+            credentials.clientSecret
+          );
         } else if (integration.provider === "microsoft") {
-          accessToken = await refreshMicrosoftToken(decryptedRefreshToken, clientId, clientSecret);
+          accessToken = await refreshMicrosoftToken(
+            decryptedRefreshToken, 
+            credentials.clientId, 
+            credentials.clientSecret
+          );
         }
         
         // Encrypt and update stored access token

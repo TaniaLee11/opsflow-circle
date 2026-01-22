@@ -1,6 +1,15 @@
+/**
+ * Calendar Fetch - OAuth-Only Architecture
+ * 
+ * SECURITY MANDATE: This function ONLY accesses calendars via user-authenticated OAuth.
+ * - NO system keys
+ * - Every user must authenticate their own Google/Microsoft account
+ * - Credentials come from integration_configs ONLY
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
+import { decryptToken, encryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +39,6 @@ interface CalendarData {
 }
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
-  // Never log token values
   const safeDetails = details ? { ...details } : undefined;
   if (safeDetails) {
     delete safeDetails.access_token;
@@ -39,16 +47,54 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[CALENDAR-FETCH] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
-// Refresh Google access token
-async function refreshGoogleToken(refreshToken: string): Promise<string | null> {
-  const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
-  const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+/**
+ * Get OAuth credentials from integration_configs ONLY
+ */
+async function getOAuthCredentials(
+  supabase: any,
+  provider: string
+): Promise<{ clientId: string; clientSecret: string } | null> {
+  const { data: config } = await supabase
+    .from("integration_configs")
+    .select("client_id, client_secret")
+    .eq("provider", provider)
+    .maybeSingle();
 
-  if (!clientId || !clientSecret) {
-    console.error("Missing Google OAuth credentials");
+  if (!config?.client_id || !config?.client_secret) {
+    logStep(`${provider} OAuth credentials not configured`);
     return null;
   }
 
+  let clientId = config.client_id as string;
+  let clientSecret = config.client_secret as string;
+
+  if (clientId.startsWith("env:")) {
+    clientId = Deno.env.get(clientId.replace("env:", "")) || "";
+  } else if (isEncrypted(clientId)) {
+    clientId = await decryptToken(clientId);
+  }
+
+  if (clientSecret.startsWith("env:")) {
+    clientSecret = Deno.env.get(clientSecret.replace("env:", "")) || "";
+  } else if (isEncrypted(clientSecret)) {
+    clientSecret = await decryptToken(clientSecret);
+  }
+
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  return { clientId, clientSecret };
+}
+
+/**
+ * Refresh Google access token using credentials from integration_configs
+ */
+async function refreshGoogleToken(
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string
+): Promise<string | null> {
   try {
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -75,11 +121,15 @@ async function refreshGoogleToken(refreshToken: string): Promise<string | null> 
 }
 
 // Fetch Google Calendar events
-// deno-lint-ignore no-explicit-any
-async function fetchGoogleCalendar(accessToken: string, refreshToken: string | null, supabase: any, integrationId: string): Promise<CalendarEvent[]> {
+async function fetchGoogleCalendar(
+  accessToken: string, 
+  refreshToken: string | null, 
+  supabase: any, 
+  integrationId: string,
+  credentials: { clientId: string; clientSecret: string } | null
+): Promise<CalendarEvent[]> {
   let token = accessToken;
   
-  // Calculate time range: now to 7 days from now
   const now = new Date();
   const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   
@@ -98,12 +148,16 @@ async function fetchGoogleCalendar(accessToken: string, refreshToken: string | n
   });
 
   // If token expired, try to refresh
-  if (response.status === 401 && refreshToken) {
+  if (response.status === 401 && refreshToken && credentials) {
     logStep("Access token expired, attempting refresh...");
-    const newToken = await refreshGoogleToken(refreshToken);
+    const newToken = await refreshGoogleToken(
+      refreshToken, 
+      credentials.clientId, 
+      credentials.clientSecret
+    );
+    
     if (newToken) {
       token = newToken;
-      // Encrypt and store new token
       const encryptedToken = await encryptToken(token);
       await supabase
         .from("integrations")
@@ -131,7 +185,6 @@ async function fetchGoogleCalendar(accessToken: string, refreshToken: string | n
     const start = item.start?.dateTime || item.start?.date;
     const end = item.end?.dateTime || item.end?.date;
 
-    // Extract meeting link
     let meetingLink = item.hangoutLink || null;
     if (!meetingLink && item.conferenceData?.entryPoints) {
       const videoEntry = item.conferenceData.entryPoints.find((e: { entryPointType: string; uri: string }) => e.entryPointType === 'video');
@@ -183,7 +236,6 @@ async function fetchOutlookCalendar(accessToken: string): Promise<CalendarEvent[
 
     const isAllDay = item.isAllDay || false;
     
-    // Extract meeting link
     let meetingLink = item.onlineMeetingUrl || null;
     if (!meetingLink && item.onlineMeeting?.joinUrl) {
       meetingLink = item.onlineMeeting.joinUrl;
@@ -208,13 +260,13 @@ async function fetchOutlookCalendar(accessToken: string): Promise<CalendarEvent[
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify auth
+    logStep("Starting calendar fetch - OAuth-only mode");
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -223,12 +275,10 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from JWT
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
@@ -271,13 +321,12 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           connected: false, 
-          message: "No calendar connected. Connect Google or Microsoft 365 to enable Calendar Intelligence." 
+          message: "No calendar connected. Connect Google or Microsoft 365 in Integrations." 
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Use the first available integration
     const integration = integrations[0];
     const provider = integration.provider;
     const connectedAccount = integration.connected_account || user.email || "Connected Account";
@@ -292,17 +341,20 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           connected: false, 
-          error: "Calendar token expired. Please reconnect your account." 
+          error: "Calendar token expired. Please reconnect your account in Integrations." 
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Get credentials from integration_configs for token refresh
+    const credentials = await getOAuthCredentials(supabase, provider);
+
     // Fetch calendar events
     let events: CalendarEvent[] = [];
     
     if (provider === "google") {
-      events = await fetchGoogleCalendar(accessToken, refreshToken, supabase, integration.id);
+      events = await fetchGoogleCalendar(accessToken, refreshToken, supabase, integration.id, credentials);
     } else if (provider === "microsoft") {
       events = await fetchOutlookCalendar(accessToken);
     }

@@ -1,5 +1,15 @@
+/**
+ * VOPSy Actions - OAuth-Only Architecture
+ * 
+ * SECURITY MANDATE: This function ONLY accesses third-party services via user-authenticated OAuth.
+ * - NO system keys for user data access
+ * - Every user must authenticate their own accounts
+ * - Credentials come from integration_configs ONLY
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptToken, encryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,13 +21,62 @@ interface ActionRequest {
   data: Record<string, any>;
 }
 
-// Refresh Google access token
-async function refreshGoogleToken(refreshToken: string): Promise<string | null> {
-  const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
-  const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  const safeDetails = details ? { ...details } : undefined;
+  if (safeDetails) {
+    delete safeDetails.access_token;
+    delete safeDetails.refresh_token;
+  }
+  console.log(`[VOPSY-ACTIONS] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
+};
 
-  if (!clientId || !clientSecret) return null;
+/**
+ * Get OAuth credentials from integration_configs ONLY
+ */
+async function getOAuthCredentials(
+  supabase: any,
+  provider: string
+): Promise<{ clientId: string; clientSecret: string } | null> {
+  const { data: config } = await supabase
+    .from("integration_configs")
+    .select("client_id, client_secret")
+    .eq("provider", provider)
+    .maybeSingle();
 
+  if (!config?.client_id || !config?.client_secret) {
+    return null;
+  }
+
+  let clientId = config.client_id as string;
+  let clientSecret = config.client_secret as string;
+
+  if (clientId.startsWith("env:")) {
+    clientId = Deno.env.get(clientId.replace("env:", "")) || "";
+  } else if (isEncrypted(clientId)) {
+    clientId = await decryptToken(clientId);
+  }
+
+  if (clientSecret.startsWith("env:")) {
+    clientSecret = Deno.env.get(clientSecret.replace("env:", "")) || "";
+  } else if (isEncrypted(clientSecret)) {
+    clientSecret = await decryptToken(clientSecret);
+  }
+
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  return { clientId, clientSecret };
+}
+
+/**
+ * Refresh Google access token using credentials from integration_configs
+ */
+async function refreshGoogleToken(
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string
+): Promise<string | null> {
   try {
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -42,6 +101,7 @@ async function refreshGoogleToken(refreshToken: string): Promise<string | null> 
 async function createGoogleCalendarEvent(
   accessToken: string,
   refreshToken: string | null,
+  credentials: { clientId: string; clientSecret: string } | null,
   event: { title: string; start: string; end: string; description?: string; location?: string }
 ): Promise<{ success: boolean; eventId?: string; error?: string }> {
   let token = accessToken;
@@ -69,8 +129,8 @@ async function createGoogleCalendarEvent(
     body: JSON.stringify(eventData),
   });
 
-  if (response.status === 401 && refreshToken) {
-    const newToken = await refreshGoogleToken(refreshToken);
+  if (response.status === 401 && refreshToken && credentials) {
+    const newToken = await refreshGoogleToken(refreshToken, credentials.clientId, credentials.clientSecret);
     if (newToken) {
       token = newToken;
       response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
@@ -98,50 +158,53 @@ async function createGoogleCalendarEvent(
 async function updateGoogleCalendarEvent(
   accessToken: string,
   refreshToken: string | null,
+  credentials: { clientId: string; clientSecret: string } | null,
   eventId: string,
   updates: { title?: string; start?: string; end?: string; description?: string; location?: string }
 ): Promise<{ success: boolean; error?: string }> {
   let token = accessToken;
 
-  // First get the existing event
-  let getResponse = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  // Build update payload
+  const eventData: Record<string, any> = {};
+  if (updates.title) eventData.summary = updates.title;
+  if (updates.description) eventData.description = updates.description;
+  if (updates.location) eventData.location = updates.location;
+  if (updates.start) {
+    eventData.start = { dateTime: updates.start, timeZone: 'America/New_York' };
+  }
+  if (updates.end) {
+    eventData.end = { dateTime: updates.end, timeZone: 'America/New_York' };
+  }
 
-  if (getResponse.status === 401 && refreshToken) {
-    const newToken = await refreshGoogleToken(refreshToken);
+  let response = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(eventData),
+    }
+  );
+
+  if (response.status === 401 && refreshToken && credentials) {
+    const newToken = await refreshGoogleToken(refreshToken, credentials.clientId, credentials.clientSecret);
     if (newToken) {
       token = newToken;
-      getResponse = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(eventData),
+        }
+      );
     }
   }
-
-  if (!getResponse.ok) {
-    return { success: false, error: "Event not found" };
-  }
-
-  const existingEvent = await getResponse.json();
-
-  // Merge updates
-  const updatedEvent = {
-    ...existingEvent,
-    summary: updates.title || existingEvent.summary,
-    description: updates.description !== undefined ? updates.description : existingEvent.description,
-    location: updates.location !== undefined ? updates.location : existingEvent.location,
-    start: updates.start ? { dateTime: updates.start, timeZone: 'America/New_York' } : existingEvent.start,
-    end: updates.end ? { dateTime: updates.end, timeZone: 'America/New_York' } : existingEvent.end,
-  };
-
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(updatedEvent),
-  });
 
   if (!response.ok) {
     return { success: false, error: "Failed to update calendar event" };
@@ -163,13 +226,15 @@ async function createOutlookCalendarEvent(
     },
     start: {
       dateTime: event.start,
-      timeZone: 'Eastern Standard Time',
+      timeZone: "Eastern Standard Time",
     },
     end: {
       dateTime: event.end,
-      timeZone: 'Eastern Standard Time',
+      timeZone: "Eastern Standard Time",
     },
-    location: event.location ? { displayName: event.location } : undefined,
+    location: {
+      displayName: event.location || '',
+    },
   };
 
   const response = await fetch("https://graph.microsoft.com/v1.0/me/events", {
@@ -184,7 +249,7 @@ async function createOutlookCalendarEvent(
   if (!response.ok) {
     const errorText = await response.text();
     console.error("Outlook Calendar error:", errorText);
-    return { success: false, error: "Failed to create calendar event" };
+    return { success: false, error: "Failed to create Outlook calendar event" };
   }
 
   const result = await response.json();
@@ -197,12 +262,11 @@ serve(async (req) => {
   }
 
   try {
+    logStep("VOPSy action started - OAuth-only mode");
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "No authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Missing Authorization header");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -213,15 +277,20 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Unauthorized");
     }
+
+    logStep("User authenticated", { userId: user.id });
 
     const { action, data }: ActionRequest = await req.json();
 
-    // Get user profile for org_id
+    if (!action || !data) {
+      throw new Error("Missing action or data");
+    }
+
+    logStep("Action requested", { action });
+
+    // Get user's organization
     const { data: profile } = await supabase
       .from("profiles")
       .select("organization_id")
@@ -230,246 +299,196 @@ serve(async (req) => {
 
     const orgId = profile?.organization_id;
 
-    let result: any;
+    let result: any = { success: false, error: "Unknown action" };
 
     switch (action) {
       case 'create_task': {
-        const { title, description, priority, due_date, project_id, status } = data;
-        
-        const { data: task, error } = await supabase
+        const { error: taskError } = await supabase
           .from("tasks")
           .insert({
             user_id: user.id,
             organization_id: orgId,
-            title,
-            description,
-            priority: priority || 'medium',
-            status: status || 'pending',
-            due_date: due_date ? new Date(due_date).toISOString() : null,
-            project_id: project_id || null,
-          })
-          .select()
-          .single();
+            title: data.title,
+            description: data.description,
+            priority: data.priority || 'medium',
+            status: 'pending',
+            due_date: data.dueDate,
+          });
 
-        if (error) {
-          console.error("Create task error:", error);
-          return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        if (taskError) {
+          result = { success: false, error: taskError.message };
+        } else {
+          result = { success: true, message: "Task created successfully" };
         }
-
-        result = { success: true, task, message: `Task "${title}" created successfully!` };
         break;
       }
 
       case 'update_task': {
-        const { task_id, ...updates } = data;
-        
-        if (!task_id) {
-          return new Response(
-            JSON.stringify({ success: false, error: "Task ID required" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+        const updateData: Record<string, any> = {};
+        if (data.title) updateData.title = data.title;
+        if (data.description) updateData.description = data.description;
+        if (data.priority) updateData.priority = data.priority;
+        if (data.status) updateData.status = data.status;
+        if (data.dueDate) updateData.due_date = data.dueDate;
 
-        // Handle status change to completed
-        if (updates.status === 'completed') {
-          updates.completed_at = new Date().toISOString();
-        }
-
-        const { data: task, error } = await supabase
+        const { error: updateError } = await supabase
           .from("tasks")
-          .update(updates)
-          .eq("id", task_id)
-          .select()
-          .single();
+          .update(updateData)
+          .eq("id", data.taskId)
+          .eq("user_id", user.id);
 
-        if (error) {
-          console.error("Update task error:", error);
-          return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        if (updateError) {
+          result = { success: false, error: updateError.message };
+        } else {
+          result = { success: true, message: "Task updated successfully" };
         }
-
-        result = { success: true, task, message: `Task updated successfully!` };
         break;
       }
 
       case 'create_project': {
-        const { name, description, due_date, status } = data;
-        
-        const { data: project, error } = await supabase
+        const { error: projectError } = await supabase
           .from("projects")
           .insert({
             user_id: user.id,
             organization_id: orgId,
-            name,
-            description,
-            status: status || 'active',
-            due_date: due_date ? new Date(due_date).toISOString() : null,
-          })
-          .select()
-          .single();
+            name: data.name,
+            description: data.description,
+            status: 'active',
+            due_date: data.dueDate,
+          });
 
-        if (error) {
-          console.error("Create project error:", error);
-          return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        if (projectError) {
+          result = { success: false, error: projectError.message };
+        } else {
+          result = { success: true, message: "Project created successfully" };
         }
-
-        result = { success: true, project, message: `Project "${name}" created successfully!` };
         break;
       }
 
       case 'update_project': {
-        const { project_id, ...updates } = data;
-        
-        if (!project_id) {
-          return new Response(
-            JSON.stringify({ success: false, error: "Project ID required" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+        const updateData: Record<string, any> = {};
+        if (data.name) updateData.name = data.name;
+        if (data.description) updateData.description = data.description;
+        if (data.status) updateData.status = data.status;
+        if (data.dueDate) updateData.due_date = data.dueDate;
 
-        const { data: project, error } = await supabase
+        const { error: updateError } = await supabase
           .from("projects")
-          .update(updates)
-          .eq("id", project_id)
-          .select()
-          .single();
+          .update(updateData)
+          .eq("id", data.projectId)
+          .eq("user_id", user.id);
 
-        if (error) {
-          console.error("Update project error:", error);
-          return new Response(
-            JSON.stringify({ success: false, error: error.message }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        if (updateError) {
+          result = { success: false, error: updateError.message };
+        } else {
+          result = { success: true, message: "Project updated successfully" };
         }
-
-        result = { success: true, project, message: `Project updated successfully!` };
         break;
       }
 
       case 'create_calendar_event': {
-        const { title, start, end, description, location } = data;
-
-        // Get calendar integration
+        // Get user's calendar integration
         const { data: integrations } = await supabase
           .from("integrations")
           .select("*")
-          .eq("org_id", orgId)
+          .eq("user_id", user.id)
           .in("provider", ["google", "microsoft"]);
 
         if (!integrations || integrations.length === 0) {
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: "No calendar connected. Please connect Google or Microsoft 365 first." 
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          result = { success: false, error: "No calendar connected. Please connect Google or Microsoft 365." };
+          break;
         }
 
         const integration = integrations[0];
-        let calendarResult;
+        const accessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
+        const refreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
+
+        if (!accessToken) {
+          result = { success: false, error: "Calendar access expired. Please reconnect." };
+          break;
+        }
+
+        // Get credentials from integration_configs
+        const credentials = await getOAuthCredentials(supabase, integration.provider);
 
         if (integration.provider === "google") {
-          calendarResult = await createGoogleCalendarEvent(
-            integration.access_token,
-            integration.refresh_token,
-            { title, start, end, description, location }
-          );
-        } else {
-          calendarResult = await createOutlookCalendarEvent(
-            integration.access_token,
-            { title, start, end, description, location }
-          );
+          result = await createGoogleCalendarEvent(accessToken, refreshToken, credentials, {
+            title: data.title,
+            start: data.start,
+            end: data.end,
+            description: data.description,
+            location: data.location,
+          });
+        } else if (integration.provider === "microsoft") {
+          result = await createOutlookCalendarEvent(accessToken, {
+            title: data.title,
+            start: data.start,
+            end: data.end,
+            description: data.description,
+            location: data.location,
+          });
         }
-
-        if (!calendarResult.success) {
-          return new Response(
-            JSON.stringify({ success: false, error: calendarResult.error }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        result = { 
-          success: true, 
-          eventId: calendarResult.eventId, 
-          message: `Calendar event "${title}" created successfully!` 
-        };
         break;
       }
 
       case 'update_calendar_event': {
-        const { event_id, title, start, end, description, location } = data;
-
-        if (!event_id) {
-          return new Response(
-            JSON.stringify({ success: false, error: "Event ID required" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        // Get calendar integration
         const { data: integrations } = await supabase
           .from("integrations")
           .select("*")
-          .eq("org_id", orgId)
+          .eq("user_id", user.id)
           .in("provider", ["google", "microsoft"]);
 
         if (!integrations || integrations.length === 0) {
-          return new Response(
-            JSON.stringify({ success: false, error: "No calendar connected" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          result = { success: false, error: "No calendar connected." };
+          break;
         }
 
         const integration = integrations[0];
+        const accessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
+        const refreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
+
+        if (!accessToken) {
+          result = { success: false, error: "Calendar access expired. Please reconnect." };
+          break;
+        }
+
+        // Get credentials from integration_configs
+        const credentials = await getOAuthCredentials(supabase, integration.provider);
 
         if (integration.provider === "google") {
-          const updateResult = await updateGoogleCalendarEvent(
-            integration.access_token,
-            integration.refresh_token,
-            event_id,
-            { title, start, end, description, location }
+          result = await updateGoogleCalendarEvent(
+            accessToken, 
+            refreshToken, 
+            credentials,
+            data.eventId, 
+            {
+              title: data.title,
+              start: data.start,
+              end: data.end,
+              description: data.description,
+              location: data.location,
+            }
           );
-
-          if (!updateResult.success) {
-            return new Response(
-              JSON.stringify({ success: false, error: updateResult.error }),
-              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
+        } else {
+          result = { success: false, error: "Outlook calendar update not yet supported" };
         }
-        // TODO: Add Outlook update support
-
-        result = { success: true, message: `Calendar event updated successfully!` };
         break;
       }
-
-      default:
-        return new Response(
-          JSON.stringify({ success: false, error: "Unknown action" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
     }
 
-    console.log(`VOPSy action completed: ${action} for user ${user.id}`);
+    logStep("Action completed", { action, success: result.success });
 
-    return new Response(
-      JSON.stringify(result),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
-    console.error("VOPSy actions error:", error);
+    logStep("Error in vopsy-actions", { error: String(error) });
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "Action failed" }),
+      JSON.stringify({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

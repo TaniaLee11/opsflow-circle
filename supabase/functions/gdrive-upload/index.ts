@@ -1,6 +1,15 @@
+/**
+ * Google Drive Upload - OAuth-Only Architecture
+ * 
+ * SECURITY MANDATE: This function ONLY accesses Google Drive via user-authenticated OAuth.
+ * - NO system keys
+ * - Every user must authenticate their own Google account
+ * - Credentials come from integration_configs ONLY
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
+import { decryptToken, encryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,16 +33,53 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[GDRIVE-UPLOAD] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
-// Refresh Google access token
-async function refreshGoogleToken(refreshToken: string): Promise<string | null> {
-  const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
-  const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+/**
+ * Get Google OAuth credentials from integration_configs ONLY
+ */
+async function getGoogleCredentials(
+  supabase: any
+): Promise<{ clientId: string; clientSecret: string } | null> {
+  const { data: config } = await supabase
+    .from("integration_configs")
+    .select("client_id, client_secret")
+    .eq("provider", "google")
+    .maybeSingle();
 
-  if (!clientId || !clientSecret) {
-    console.error("Missing Google OAuth credentials");
+  if (!config?.client_id || !config?.client_secret) {
+    logStep("Google OAuth credentials not configured");
     return null;
   }
 
+  let clientId = config.client_id as string;
+  let clientSecret = config.client_secret as string;
+
+  if (clientId.startsWith("env:")) {
+    clientId = Deno.env.get(clientId.replace("env:", "")) || "";
+  } else if (isEncrypted(clientId)) {
+    clientId = await decryptToken(clientId);
+  }
+
+  if (clientSecret.startsWith("env:")) {
+    clientSecret = Deno.env.get(clientSecret.replace("env:", "")) || "";
+  } else if (isEncrypted(clientSecret)) {
+    clientSecret = await decryptToken(clientSecret);
+  }
+
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  return { clientId, clientSecret };
+}
+
+/**
+ * Refresh Google access token using credentials from integration_configs
+ */
+async function refreshGoogleToken(
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string
+): Promise<string | null> {
   try {
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -63,16 +109,15 @@ async function refreshGoogleToken(refreshToken: string): Promise<string | null> 
 async function uploadToGoogleDrive(
   accessToken: string,
   refreshToken: string | null,
-  // deno-lint-ignore no-explicit-any
   supabase: any,
   integrationId: string,
+  credentials: { clientId: string; clientSecret: string } | null,
   fileName: string,
   fileBlob: Blob,
   mimeType: string
 ): Promise<{ fileId?: string; webViewLink?: string; error?: string }> {
   let token = accessToken;
 
-  // Step 1: Initiate resumable upload
   const metadata = {
     name: fileName,
     mimeType: mimeType,
@@ -91,13 +136,16 @@ async function uploadToGoogleDrive(
   );
 
   // If token expired, try to refresh
-  if (initResponse.status === 401 && refreshToken) {
+  if (initResponse.status === 401 && refreshToken && credentials) {
     logStep("Access token expired, attempting refresh");
-    const newToken = await refreshGoogleToken(refreshToken);
+    const newToken = await refreshGoogleToken(
+      refreshToken, 
+      credentials.clientId, 
+      credentials.clientSecret
+    );
     
     if (newToken) {
       token = newToken;
-      // Update the stored access token
       const encryptedToken = await encryptToken(newToken);
       await supabase
         .from("integrations")
@@ -106,7 +154,6 @@ async function uploadToGoogleDrive(
       
       logStep("Token refreshed successfully");
       
-      // Retry init
       initResponse = await fetch(
         "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable",
         {
@@ -119,7 +166,7 @@ async function uploadToGoogleDrive(
         }
       );
     } else {
-      return { error: "Token refresh failed" };
+      return { error: "Token refresh failed - please reconnect Google Drive" };
     }
   }
 
@@ -136,7 +183,6 @@ async function uploadToGoogleDrive(
 
   logStep("Got resumable upload URL");
 
-  // Step 2: Upload the file content
   const uploadResponse = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
@@ -155,7 +201,6 @@ async function uploadToGoogleDrive(
   const uploadedFile = await uploadResponse.json();
   logStep("File uploaded successfully", { fileId: uploadedFile.id });
 
-  // Step 3: Get the web view link
   const fileResponse = await fetch(
     `https://www.googleapis.com/drive/v3/files/${uploadedFile.id}?fields=webViewLink`,
     {
@@ -178,7 +223,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Starting Google Drive upload");
+    logStep("Starting Google Drive upload - OAuth-only mode");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -189,7 +234,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from token
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
@@ -200,7 +244,6 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id });
 
-    // Parse request body
     const body = await req.json();
     const { documentId, storagePath, fileName, mimeType } = body;
 
@@ -224,7 +267,6 @@ serve(async (req) => {
     }
 
     if (!integration) {
-      logStep("No Google integration found");
       return new Response(
         JSON.stringify({
           success: false,
@@ -260,6 +302,9 @@ serve(async (req) => {
       );
     }
 
+    // Get Google credentials from integration_configs for token refresh
+    const credentials = await getGoogleCredentials(supabase);
+
     // Download file from Supabase storage
     logStep("Downloading file from storage", { storagePath });
     const { data: fileData, error: downloadError } = await supabase.storage
@@ -271,7 +316,6 @@ serve(async (req) => {
       throw new Error("Failed to retrieve file from vault");
     }
 
-    // Use the Blob directly from storage download
     logStep("File downloaded", { size: fileData.size });
 
     // Upload to Google Drive
@@ -280,6 +324,7 @@ serve(async (req) => {
       refreshToken,
       supabase,
       integration.id,
+      credentials,
       fileName,
       fileData,
       mimeType || "application/octet-stream"

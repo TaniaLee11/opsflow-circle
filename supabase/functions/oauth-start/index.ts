@@ -1,3 +1,12 @@
+/**
+ * OAuth Start - OAuth-Only Architecture
+ * 
+ * SECURITY MANDATE: This function initiates OAuth flows for ALL integrations.
+ * - NO fallback to environment variables for OAuth credentials
+ * - ALL credentials MUST come from integration_configs table
+ * - Every user must authenticate their own third-party accounts
+ */
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { decryptToken, isEncrypted } from "../_shared/token-encryption.ts";
@@ -65,13 +74,33 @@ const logStep = (step: string, details?: any) => {
   console.log(`[OAUTH-START] ${step}${detailsStr}`);
 };
 
+/**
+ * Resolve credential from integration_configs ONLY
+ * NEVER falls back to environment variables for user integrations
+ */
+async function resolveCredential(value: string | null | undefined): Promise<string> {
+  if (!value) {
+    return "";
+  }
+  // env: prefix is allowed - it references where the OAuth app credentials are stored
+  if (value.startsWith("env:")) {
+    const envName = value.replace("env:", "");
+    return Deno.env.get(envName) || "";
+  }
+  // Check if value is encrypted and decrypt it
+  if (isEncrypted(value)) {
+    return await decryptToken(value);
+  }
+  return value;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logStep("Function started");
+    logStep("Function started - OAuth-only mode");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -101,50 +130,33 @@ serve(async (req) => {
       throw new Error(`Unsupported provider: ${provider}. Supported: ${Object.keys(OAUTH_CONFIGS).join(", ")}`);
     }
 
-    // Get OAuth credentials from integration_configs table
+    // Get OAuth credentials from integration_configs table ONLY
+    // NO fallback to environment variables
     const { data: integrationConfig } = await supabaseClient
       .from("integration_configs")
-      .select("client_id, client_secret")
+      .select("client_id, client_secret, enabled")
       .eq("provider", provider)
       .maybeSingle();
 
-    // Helper to resolve credentials - supports env: prefix, encrypted values, or direct values
-    // NOTE: For QuickBooks, we NEVER fall back to environment variables - OAuth only
-    const resolveCredential = async (value: string | null | undefined, envKey: string, isQuickBooks: boolean = false): Promise<string> => {
-      if (!value) {
-        // QuickBooks: Never fall back to env vars - require integration_configs
-        if (isQuickBooks) {
-          return "";
-        }
-        return Deno.env.get(envKey) || "";
-      }
-      if (value.startsWith("env:")) {
-        const envName = value.replace("env:", "");
-        return Deno.env.get(envName) || "";
-      }
-      // Check if value is encrypted and decrypt it
-      if (isEncrypted(value)) {
-        return await decryptToken(value);
-      }
-      return value;
-    };
+    if (!integrationConfig) {
+      logStep("No integration config found", { provider });
+      throw new Error(`${provider} OAuth not configured. Please contact the administrator to configure ${provider} integration.`);
+    }
 
-    const isQuickBooks = provider === "quickbooks";
-    
-    // Use configured credentials - QuickBooks requires integration_configs, no env fallback
-    const clientId = await resolveCredential(
-      integrationConfig?.client_id, 
-      `${provider.toUpperCase()}_CLIENT_ID`,
-      isQuickBooks
-    );
+    if (!integrationConfig.enabled) {
+      logStep("Integration disabled", { provider });
+      throw new Error(`${provider} integration is currently disabled.`);
+    }
+
+    // Resolve credentials from integration_configs
+    const clientId = await resolveCredential(integrationConfig.client_id);
     
     if (!clientId) {
       logStep("No client_id available", { provider });
-      if (isQuickBooks) {
-        throw new Error("QuickBooks OAuth not configured. Please configure QuickBooks credentials in integration_configs.");
-      }
-      throw new Error(`OAuth credentials not configured for ${provider}`);
+      throw new Error(`${provider} OAuth credentials not configured. Please contact the administrator.`);
     }
+
+    logStep("Credentials loaded from integration_configs", { provider });
 
     // Generate state for CSRF protection
     const state = crypto.randomUUID();
