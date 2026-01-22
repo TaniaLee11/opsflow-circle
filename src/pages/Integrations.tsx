@@ -294,11 +294,13 @@ export default function Integrations() {
     }
 
     try {
+      toast.info(`Redirecting to ${integration.name} for authorization...`);
+      
       const { data, error } = await supabase.functions.invoke("oauth-start", {
         body: { provider },
       });
 
-      // Handle response
+      // Handle response - extract error from various formats
       let body: any = data;
       if (!body && error && typeof (error as any).context?.json === "function") {
         body = await (error as any).context.json().catch(() => null);
@@ -307,21 +309,31 @@ export default function Integrations() {
       const errorMessage = body?.error || (error instanceof Error ? error.message : null);
       
       if (errorMessage) {
-        // Check for credentials not configured
-        if (errorMessage.toLowerCase().includes("credentials not configured")) {
-          toast.error(`${integration.name} is not configured yet. Contact your admin to set up OAuth credentials.`);
+        // Handle specific error codes
+        if (errorMessage.startsWith("OAUTH_APP_NOT_CONFIGURED:")) {
+          // This is a builder/admin issue - OAuth app credentials not set up
+          console.error(`[Builder Issue] OAuth app not configured for ${provider}`);
+          toast.error(`${integration.name} OAuth is not available yet. The integration requires configuration.`);
+          return;
+        }
+        if (errorMessage.startsWith("OAUTH_APP_DISABLED:")) {
+          toast.error(`${integration.name} integration is temporarily disabled.`);
           return;
         }
         throw new Error(errorMessage);
       }
 
+      // SUCCESS: Redirect user to third-party provider's OAuth page
       if (data?.url) {
+        // User will be redirected to provider's site (e.g., accounts.google.com, stripe.com)
+        // After login, provider redirects back with authorization code
         window.location.href = data.url;
       } else {
-        toast.error("Failed to start authorization");
+        toast.error("Failed to generate authorization URL");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to connect");
+      console.error("OAuth start error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to start authorization");
     }
   };
 
