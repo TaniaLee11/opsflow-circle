@@ -223,10 +223,19 @@ serve(async (req) => {
     }
 
     // Parse request
-    const { email } = await req.json();
+    const { email, resend } = await req.json();
     
     if (!email || !email.includes("@")) {
       throw new Error("Valid email is required");
+    }
+
+    // If resend, delete any existing pending invite for this email
+    if (resend) {
+      await supabaseAdmin
+        .from("cohort_invites")
+        .delete()
+        .eq("email", email.toLowerCase())
+        .eq("status", "pending");
     }
 
     // Generate invite
