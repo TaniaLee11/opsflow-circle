@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
-import { useTierMetrics } from "@/hooks/useTierMetrics";
+import { usePlatformAnalytics } from "@/hooks/useAnalytics";
 import { 
   Users, 
   TrendingUp, 
@@ -12,7 +12,8 @@ import {
   Repeat,
   ExternalLink,
   Link2,
-  Loader2
+  Loader2,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,10 +29,11 @@ const TIER_ORDER: UserTierId[] = [
 
 export function TierMetrics() {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useTierMetrics();
+  const { data, isLoading, error } = usePlatformAnalytics();
 
+  // Navigate to analytics portal - NEVER to raw user data
   const handlePortalClick = (tierId: UserTierId) => {
-    navigate(`/portal/${tierId}`);
+    navigate(`/analytics/${tierId}`);
   };
 
   if (isLoading) {
@@ -51,10 +53,25 @@ export function TierMetrics() {
     );
   }
 
-  const stats = data;
+  // Map platform analytics to tier stats
+  const tierStats = data?.tierBreakdown?.reduce((acc, tier) => {
+    acc[tier.tierId] = tier;
+    return acc;
+  }, {} as Record<UserTierId, typeof data.tierBreakdown[0]>) || {};
 
   return (
     <div className="space-y-6">
+      {/* Privacy Notice */}
+      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+        <Shield className="w-4 h-4 text-primary mt-0.5" />
+        <div>
+          <span className="font-medium">Analytics View</span>
+          <span className="text-muted-foreground ml-2">
+            Showing aggregated metrics only. Individual user data is isolated and protected.
+          </span>
+        </div>
+      </div>
+
       {/* Platform Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
@@ -63,7 +80,7 @@ export function TierMetrics() {
             <span className="text-xs uppercase tracking-wide">Platform MRR</span>
           </div>
           <p className="text-2xl font-bold text-foreground">
-            ${stats?.totalMrr?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
+            ${data?.totalMrr?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
@@ -71,14 +88,14 @@ export function TierMetrics() {
             <Users className="w-4 h-4" />
             <span className="text-xs uppercase tracking-wide">Total Users</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{stats?.totalUsers?.toLocaleString() || 0}</p>
+          <p className="text-2xl font-bold text-foreground">{data?.totalUsers?.toLocaleString() || 0}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
             <MessageSquare className="w-4 h-4" />
             <span className="text-xs uppercase tracking-wide">Conversations</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{stats?.totalConversations?.toLocaleString() || 0}</p>
+          <p className="text-2xl font-bold text-foreground">{data?.totalConversations?.toLocaleString() || 0}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
@@ -92,8 +109,8 @@ export function TierMetrics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">User Type Portals</h3>
-          <p className="text-sm text-muted-foreground">Real-time KPIs by product tier</p>
+          <h3 className="text-lg font-semibold text-foreground">Tier Analytics</h3>
+          <p className="text-sm text-muted-foreground">Aggregated KPIs by product tier (click for drill-down)</p>
         </div>
       </div>
 
@@ -101,7 +118,7 @@ export function TierMetrics() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
         {TIER_ORDER.map((tierId, index) => {
           const tier = USER_TIERS[tierId];
-          const tierData = stats?.tierStats[tierId];
+          const tierData = tierStats[tierId];
 
           return (
             <motion.div
