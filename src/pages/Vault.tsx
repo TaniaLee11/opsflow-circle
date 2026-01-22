@@ -46,6 +46,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useClientView } from "@/contexts/ClientViewContext";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { usePresentationIntelligence, VaultDocument } from "@/hooks/usePresentationIntelligence";
+import { GoogleDriveSection } from "@/components/vault/GoogleDriveSection";
 
 const getFileIcon = (type: string) => {
   switch (type) {
@@ -264,52 +265,58 @@ function VaultContent() {
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <Card className="bg-card/50">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{vaultDocuments.length}</p>
-                  <p className="text-xs text-muted-foreground">Total Files</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/50">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center">
-                  <Share2 className="w-5 h-5 text-info" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{vaultDocuments.filter(d => d.shared).length}</p>
-                  <p className="text-xs text-muted-foreground">Shared</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/50">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                  <Star className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{vaultDocuments.filter(d => d.starred).length}</p>
-                  <p className="text-xs text-muted-foreground">Starred</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/50">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">100%</p>
-                  <p className="text-xs text-muted-foreground">Encrypted</p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Quick Stats + Google Drive Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {/* Stats Grid */}
+            <div className="lg:col-span-2 grid grid-cols-2 gap-3 sm:gap-4">
+              <Card className="bg-card/50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{vaultDocuments.length}</p>
+                    <p className="text-xs text-muted-foreground">Total Files</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center">
+                    <Share2 className="w-5 h-5 text-info" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{vaultDocuments.filter(d => d.shared).length}</p>
+                    <p className="text-xs text-muted-foreground">Shared</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                    <Star className="w-5 h-5 text-warning" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{vaultDocuments.filter(d => d.starred).length}</p>
+                    <p className="text-xs text-muted-foreground">Starred</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">100%</p>
+                    <p className="text-xs text-muted-foreground">Encrypted</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Google Drive Recent Files */}
+            <GoogleDriveSection />
           </div>
 
           {/* Tabs */}
