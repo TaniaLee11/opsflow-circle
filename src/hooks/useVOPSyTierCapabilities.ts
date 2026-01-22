@@ -99,10 +99,23 @@ export interface CapabilityCheckResult {
 /**
  * Hook to manage VOPSy tier-based capabilities.
  * 
- * VOPSy always exists as the intelligence layer, but what it can DO depends on tier.
+ * ARCHITECTURE: System Owner + Autonomous Environment Model
+ * 
+ * CRITICAL RULE: Every user operates in a fully autonomous environment.
+ * Even System Owners can ONLY execute within their own environment.
+ * For other users, System Owners have analytics oversight only.
+ * 
+ * VOPSy always exists as the intelligence layer, but what it can DO depends on tier:
  * - AI Free: Orientation, thinking, document interaction. No integrations, no execution.
  * - AI Assistant: Read-only intelligence. Can analyze and recommend, cannot execute.
  * - AI Operations / AI_COHORT: Full execution authority. Can read, write, and execute.
+ * - AI Tax: Everything Operations + specialized tax analysis (own environment only).
+ * - AI Compliance: Everything Operations + compliance monitoring (own environment only).
+ * - AI Advisory: Everything Operations + strategic planning (own environment only).
+ * 
+ * SYSTEM OWNER CLARIFICATION:
+ * - In their OWN environment: AI Operations level (full read/write/execute)
+ * - For OTHER users: Analytics oversight only (counts, trends, no raw data)
  * 
  * CRITICAL: AI_COHORT is treated IDENTICALLY to AI_OPERATIONS.
  * The only difference is time limitation (90 days), not capability.

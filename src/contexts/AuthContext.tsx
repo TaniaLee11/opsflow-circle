@@ -1,3 +1,28 @@
+/**
+ * Authentication Context - System Owner + Autonomous Environment Model
+ * 
+ * ARCHITECTURE RULE (NON-NEGOTIABLE):
+ * Every user operates inside a fully autonomous environment.
+ * There is zero data bleed, zero shared execution, and zero implicit inheritance.
+ * 
+ * This applies to ALL user types:
+ * - System Owner (isOwner=true)
+ * - Enterprise Owners
+ * - Sub-users
+ * - Cohort Users (isCohort=true)
+ * - All AI tier users (Free, Assistant, Operations, Tax, Compliance, Advisory)
+ * 
+ * SYSTEM OWNER SCOPES:
+ * A. OWN ENVIRONMENT: Full AI Operations access to their OWN data only
+ * B. OVERSIGHT: Analytics-only access to other users (aggregated counts, never raw data)
+ * 
+ * IMPORTANT CLARIFICATIONS:
+ * - isOwner=true does NOT mean global data access
+ * - isOwner=true means: full control in own environment + analytics oversight
+ * - Platform owner data is isolated just like any other user's data
+ * - No "fallback to platform owner" logic exists or should ever be added
+ */
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
