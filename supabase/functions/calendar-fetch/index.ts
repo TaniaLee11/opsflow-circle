@@ -93,8 +93,10 @@ async function getOAuthCredentials(
 async function refreshGoogleToken(
   refreshToken: string,
   clientId: string,
-  clientSecret: string
-): Promise<string | null> {
+  clientSecret: string,
+  supabase: any,
+  integrationId: string
+): Promise<{ accessToken: string | null; newRefreshToken: string | null; error?: string }> {
   try {
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -107,16 +109,37 @@ async function refreshGoogleToken(
       }),
     });
 
+    const data = await response.json();
+    
     if (!response.ok) {
-      logStep("Failed to refresh Google token", { status: response.status });
-      return null;
+      logStep("Failed to refresh Google token", { 
+        status: response.status, 
+        error: data.error,
+        errorDescription: data.error_description 
+      });
+      
+      // Mark integration as needing re-authentication
+      if (data.error === "invalid_grant") {
+        await supabase
+          .from("integrations")
+          .update({ health: "reauth_required" })
+          .eq("id", integrationId);
+        logStep("Marked integration as reauth_required");
+      }
+      
+      return { accessToken: null, newRefreshToken: null, error: data.error_description || data.error };
     }
 
-    const data = await response.json();
-    return data.access_token;
+    logStep("Google token refreshed successfully");
+    
+    // Google may return a new refresh token
+    return { 
+      accessToken: data.access_token, 
+      newRefreshToken: data.refresh_token || null 
+    };
   } catch (error) {
     logStep("Error refreshing Google token", { error: String(error) });
-    return null;
+    return { accessToken: null, newRefreshToken: null, error: String(error) };
   }
 }
 
@@ -150,24 +173,42 @@ async function fetchGoogleCalendar(
   // If token expired, try to refresh
   if (response.status === 401 && refreshToken && credentials) {
     logStep("Access token expired, attempting refresh...");
-    const newToken = await refreshGoogleToken(
+    const refreshResult = await refreshGoogleToken(
       refreshToken, 
       credentials.clientId, 
-      credentials.clientSecret
+      credentials.clientSecret,
+      supabase,
+      integrationId
     );
     
-    if (newToken) {
-      token = newToken;
+    if (refreshResult.accessToken) {
+      token = refreshResult.accessToken;
       const encryptedToken = await encryptToken(token);
+      
+      // Update access token, and refresh token if a new one was issued
+      const updateData: Record<string, string> = { 
+        access_token: encryptedToken, 
+        last_synced_at: new Date().toISOString(),
+        health: "healthy"
+      };
+      
+      if (refreshResult.newRefreshToken) {
+        updateData.refresh_token = await encryptToken(refreshResult.newRefreshToken);
+        logStep("New refresh token stored");
+      }
+      
       await supabase
         .from("integrations")
-        .update({ access_token: encryptedToken, last_synced_at: new Date().toISOString() })
+        .update(updateData)
         .eq("id", integrationId);
       logStep("Token refreshed and encrypted");
       
       response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+    } else {
+      // Token refresh failed - throw error to surface to user
+      throw new Error(`Google Calendar requires re-authentication: ${refreshResult.error || "Token refresh failed"}`);
     }
   }
 
