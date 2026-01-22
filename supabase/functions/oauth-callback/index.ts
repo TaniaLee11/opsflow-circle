@@ -137,8 +137,15 @@ serve(async (req) => {
       .maybeSingle();
 
     // Helper to resolve credentials - supports env: prefix, encrypted values, or direct values
-    const resolveCredential = async (value: string | null | undefined, envKey: string): Promise<string> => {
-      if (!value) return Deno.env.get(envKey) || "";
+    // NOTE: For QuickBooks, we NEVER fall back to environment variables - OAuth only
+    const resolveCredential = async (value: string | null | undefined, envKey: string, isQuickBooks: boolean = false): Promise<string> => {
+      if (!value) {
+        // QuickBooks: Never fall back to env vars - require integration_configs
+        if (isQuickBooks) {
+          return "";
+        }
+        return Deno.env.get(envKey) || "";
+      }
       if (value.startsWith("env:")) {
         const envName = value.replace("env:", "");
         return Deno.env.get(envName) || "";
@@ -150,12 +157,25 @@ serve(async (req) => {
       return value;
     };
 
-    // Use configured credentials or fall back to environment variables
-    const clientId = await resolveCredential(integrationConfig?.client_id, `${provider.toUpperCase()}_CLIENT_ID`);
-    const clientSecret = await resolveCredential(integrationConfig?.client_secret, `${provider.toUpperCase()}_CLIENT_SECRET`);
+    const isQuickBooks = provider === "quickbooks";
+    
+    // Use configured credentials - QuickBooks requires integration_configs, no env fallback
+    const clientId = await resolveCredential(
+      integrationConfig?.client_id, 
+      `${provider.toUpperCase()}_CLIENT_ID`,
+      isQuickBooks
+    );
+    const clientSecret = await resolveCredential(
+      integrationConfig?.client_secret, 
+      `${provider.toUpperCase()}_CLIENT_SECRET`,
+      isQuickBooks
+    );
 
     if (!clientId || !clientSecret) {
       logStep("No credentials available", { provider });
+      if (isQuickBooks) {
+        throw new Error("QuickBooks OAuth not configured. Please configure QuickBooks credentials in integration_configs.");
+      }
       throw new Error(`OAuth credentials not configured for ${provider}`);
     }
     logStep("Credentials loaded", { fromConfig: !!integrationConfig?.client_id });
