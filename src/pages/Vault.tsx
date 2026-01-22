@@ -16,17 +16,14 @@ import {
   Trash2,
   MoreVertical,
   Plus,
-  Filter,
   Clock,
   Star,
   Users,
   Lock,
-  FileCheck,
   Sparkles,
   Eye,
   Presentation,
-  Loader2,
-  X
+  Loader2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -235,26 +232,20 @@ function VaultContent() {
             </div>
 
             {!isReadOnly && (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Button variant="outline" className="gap-2 text-xs sm:text-sm">
-                  <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  Filter
-                </Button>
-                <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="gap-2 bg-primary hover:bg-primary/90 text-xs sm:text-sm">
-                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      Upload
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Upload Files</DialogTitle>
-                    </DialogHeader>
-                    <FileUploadZone onUploadComplete={handleUploadComplete} />
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 bg-primary hover:bg-primary/90 text-xs sm:text-sm">
+                    <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    Upload
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Upload Files</DialogTitle>
+                  </DialogHeader>
+                  <FileUploadZone onUploadComplete={handleUploadComplete} />
+                </DialogContent>
+              </Dialog>
             )}
           </div>
 
@@ -608,7 +599,7 @@ function VaultContent() {
               <Card className="border-primary/20 bg-primary/5">
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <FileCheck className="w-5 h-5 text-primary" />
+                    <FileText className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <h3 className="font-medium">First-Year Business Templates</h3>
