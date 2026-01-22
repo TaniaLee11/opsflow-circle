@@ -2,9 +2,18 @@
  * Financial Fetch - OAuth-Only Architecture
  * 
  * SECURITY MANDATE: This function ONLY accesses third-party financial data via user-authenticated OAuth.
- * - NO system keys for user data access
- * - Every user must authenticate their own QuickBooks/Stripe/Xero account
- * - Platform billing uses STRIPE_SECRET_KEY ONLY for subscription management, NOT for user financial data
+ * 
+ * NON-NEGOTIABLE RULES:
+ * 1. NO system keys (STRIPE_SECRET_KEY, QUICKBOOKS_CLIENT_SECRET) for reading/analyzing user data
+ * 2. Every user must complete OAuth to connect their own financial accounts
+ * 3. integration_configs = OAuth app registration ONLY (for token exchange)
+ * 4. integrations = User connections ONLY (access_token, refresh_token per user)
+ * 5. If no user OAuth tokens exist → return OAUTH_REQUIRED, never fall back to secrets
+ * 
+ * STRIPE SEPARATION:
+ * - Platform billing (check-subscription, stripe-webhook) uses STRIPE_SECRET_KEY → OK
+ * - User financial data (this function) uses Stripe Connect OAuth tokens → REQUIRED
+ * - These MUST NOT overlap
  */
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -589,10 +598,14 @@ serve(async (req) => {
     }
 
     if (allData.length === 0) {
+      // SECURITY: Return OAUTH_REQUIRED - no fallback to system keys
+      logStep("No OAuth connections found - OAUTH_REQUIRED");
       return new Response(
         JSON.stringify({
           connected: false,
-          message: "No financial accounts connected. Connect QuickBooks, Stripe, or Xero to see your financial data.",
+          error: "OAUTH_REQUIRED",
+          message: "No financial accounts connected. Connect QuickBooks, Stripe, or Xero via OAuth to see your financial data.",
+          action: "Connect a financial account using the Integrations page.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
