@@ -221,6 +221,20 @@ export default function Integrations() {
     },
   });
 
+  // Fetch which OAuth providers are actually configured (have app credentials)
+  const { data: configuredProviders } = useQuery({
+    queryKey: ["integration-configs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("integration_configs")
+        .select("provider, enabled")
+        .eq("enabled", true);
+      
+      if (error) throw error;
+      return (data || []).map(c => c.provider);
+    },
+  });
+
   // Map provider names to integration IDs
   const providerToIdMap: Record<string, string> = {
     google: "google-workspace",
@@ -292,6 +306,12 @@ export default function Integrations() {
     const provider = integration.oauthProvider || providerMap[integration.id];
     if (!provider) {
       toast.info(`${integration.name} integration coming soon!`);
+      return;
+    }
+
+    // Check if OAuth app is configured before attempting connection
+    if (!configuredProviders?.includes(provider)) {
+      toast.info(`${integration.name} is not available yet.`);
       return;
     }
 
@@ -513,6 +533,7 @@ export default function Integrations() {
                       onConnect={handleConnect}
                       onDisconnect={handleDisconnect}
                       isConnecting={connectingProvider === (integration.oauthProvider || integration.id.replace('-workspace', '').replace('-365', ''))}
+                      configuredProviders={configuredProviders || []}
                     />
                   ))}
                 </div>
@@ -541,6 +562,7 @@ export default function Integrations() {
                       onConnect={handleConnect}
                       onDisconnect={handleDisconnect}
                       isConnecting={connectingProvider === (integration.oauthProvider || integration.id.replace('-workspace', '').replace('-365', ''))}
+                      configuredProviders={configuredProviders || []}
                     />
                   ))}
                 </div>
@@ -557,15 +579,35 @@ function IntegrationCard({
   integration, 
   onConnect, 
   onDisconnect,
-  isConnecting = false
+  isConnecting = false,
+  configuredProviders = []
 }: { 
   integration: Integration;
   onConnect: (i: Integration) => void;
   onDisconnect: (i: Integration) => void;
   isConnecting?: boolean;
+  configuredProviders?: string[];
 }) {
   const status = statusConfig[integration.status];
   const StatusIcon = status.icon;
+  
+  // Check if this OAuth integration is available (configured)
+  const providerMap: Record<string, string> = {
+    "google-workspace": "google",
+    "microsoft-365": "microsoft",
+    "quickbooks": "quickbooks",
+    "slack": "slack",
+    "hubspot": "hubspot",
+    "dropbox": "dropbox",
+    "xero": "xero",
+  };
+  const provider = integration.oauthProvider || providerMap[integration.id];
+  
+  // Integration is available if:
+  // - It doesn't require OAuth (no oauthProvider)
+  // - It's already connected
+  // - It's configured in integration_configs
+  const isAvailable = !provider || integration.status === "connected" || configuredProviders.includes(provider);
   
   return (
     <motion.div
@@ -574,7 +616,7 @@ function IntegrationCard({
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className={`bg-card border-border hover:border-primary/30 transition-colors h-full ${isConnecting ? 'ring-2 ring-primary/50' : ''}`}>
+      <Card className={`bg-card border-border hover:border-primary/30 transition-colors h-full ${isConnecting ? 'ring-2 ring-primary/50' : ''} ${!isAvailable ? 'opacity-70' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -599,6 +641,11 @@ function IntegrationCard({
                   {integration.popular && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                       Popular
+                    </Badge>
+                  )}
+                  {!isAvailable && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      Coming Soon
                     </Badge>
                   )}
                 </CardTitle>
@@ -652,7 +699,7 @@ function IntegrationCard({
                   <Settings className="w-4 h-4" />
                 </Button>
               </>
-            ) : (
+            ) : isAvailable ? (
               <Button
                 size="sm"
                 className="flex-1"
@@ -670,6 +717,15 @@ function IntegrationCard({
                     Connect
                   </>
                 )}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="flex-1"
+                variant="outline"
+                disabled
+              >
+                Coming Soon
               </Button>
             )}
 
