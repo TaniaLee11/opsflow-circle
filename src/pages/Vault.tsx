@@ -25,7 +25,8 @@ import {
   Sparkles,
   Eye,
   Presentation,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -41,12 +42,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClientView } from "@/contexts/ClientViewContext";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { usePresentationIntelligence, VaultDocument } from "@/hooks/usePresentationIntelligence";
 import { GoogleDriveSection } from "@/components/vault/GoogleDriveSection";
+import { FileUploadZone } from "@/components/vault/FileUploadZone";
 
 const getFileIcon = (type: string) => {
   switch (type) {
@@ -117,6 +126,7 @@ function VaultContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState("my-files");
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const { isOwner } = useAuth();
   const { viewedClient, isViewingClient } = useClientView();
   
@@ -131,6 +141,12 @@ function VaultContent() {
   } = usePresentationIntelligence();
   
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  
+  // Handle upload complete - refresh documents and close dialog
+  const handleUploadComplete = () => {
+    fetchDocuments();
+    setIsUploadOpen(false);
+  };
   
   // Fetch documents on mount
   useEffect(() => {
@@ -224,10 +240,20 @@ function VaultContent() {
                   <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Filter
                 </Button>
-                <Button className="gap-2 bg-primary hover:bg-primary/90 text-xs sm:text-sm">
-                  <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  Upload
-                </Button>
+                <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-2 bg-primary hover:bg-primary/90 text-xs sm:text-sm">
+                      <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Upload
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Upload Files</DialogTitle>
+                    </DialogHeader>
+                    <FileUploadZone onUploadComplete={handleUploadComplete} />
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </div>
@@ -352,11 +378,13 @@ function VaultContent() {
                       <FolderOpen className="w-8 h-8 text-muted-foreground" />
                     </div>
                     <h3 className="text-lg font-medium mb-2">No documents yet</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Upload your first document to get started</p>
-                    <Button className="gap-2">
-                      <Upload className="w-4 h-4" />
-                      Upload Document
-                    </Button>
+                    <p className="text-sm text-muted-foreground mb-6 text-center max-w-sm">
+                      Upload your first document to get started. Drag & drop files or click to browse.
+                    </p>
+                    <FileUploadZone 
+                      onUploadComplete={() => fetchDocuments()} 
+                      className="w-full max-w-md"
+                    />
                   </CardContent>
                 </Card>
               ) : viewMode === "grid" ? (
