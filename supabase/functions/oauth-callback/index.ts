@@ -189,7 +189,7 @@ serve(async (req) => {
 
     // Build redirect URI (must match the redirect_uri used during oauth-start)
     // IMPORTANT: Prefer SITE_URL for stability across preview/published environments.
-    const origin = "https://opsflow-circle.lovable.app";
+    const origin = "https://virtualops.lovable.app";
     const redirectUri = `${origin}/integrations/callback`;
 
     // Build token request
