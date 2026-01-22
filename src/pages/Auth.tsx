@@ -38,38 +38,24 @@ export default function Auth() {
         // Sign out current user silently
         await supabase.auth.signOut();
         
-        // Validate invite code
-        const { data: invite, error } = await supabase
-          .from("cohort_invites")
-          .select("email, invite_code, status, expires_at")
-          .eq("invite_code", inviteCode)
-          .maybeSingle();
+        // Validate invite code via edge function (bypasses RLS)
+        const { data, error } = await supabase.functions.invoke("validate-invite", {
+          body: { inviteCode }
+        });
         
-        if (error || !invite) {
-          setError("Invalid invite code. Please check your invite link.");
-          setInviteChecking(false);
-          return;
-        }
-        
-        if (invite.status === "accepted") {
-          setError("This invite has already been used. Please sign in with your account.");
-          setInviteChecking(false);
-          return;
-        }
-        
-        if (new Date(invite.expires_at) < new Date()) {
-          setError("This invite has expired. Please request a new invite.");
+        if (error || !data?.valid) {
+          setError(data?.error || "Invalid invite code. Please check your invite link.");
           setInviteChecking(false);
           return;
         }
         
         // Valid invite - pre-fill email and switch to signup
         setInviteData({
-          email: invite.email,
-          inviteCode: invite.invite_code,
+          email: data.email,
+          inviteCode: data.inviteCode,
           valid: true,
         });
-        setEmail(invite.email);
+        setEmail(data.email);
         setMode("signup");
         setInviteChecking(false);
       };

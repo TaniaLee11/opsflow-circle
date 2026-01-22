@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.oauth-callback]
 verify_jwt = false
+
+[functions.validate-invite]
+verify_jwt = false
+
+[functions.send-cohort-invite]
+verify_jwt = false
