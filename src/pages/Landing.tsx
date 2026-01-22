@@ -282,7 +282,7 @@ export default function Landing() {
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       AI is powerful, but tax prep, compliance, and strategic advisory are 100% human-led. 
-                      Work directly with Tanya Potter and our team of professionals—and get the Hub as a bonus.
+                      Work directly with Tania Potter and our team of professionals—and get the Hub as a bonus.
                     </p>
                   </div>
                 </div>
