@@ -23,7 +23,8 @@ import {
   Sparkles,
   Eye,
   Presentation,
-  Loader2
+  Loader2,
+  Cloud
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -53,7 +54,8 @@ import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { usePresentationIntelligence, VaultDocument } from "@/hooks/usePresentationIntelligence";
 import { GoogleDriveSection } from "@/components/vault/GoogleDriveSection";
 import { FileUploadZone } from "@/components/vault/FileUploadZone";
-
+import { useGoogleDriveUpload } from "@/hooks/useGoogleDriveUpload";
+import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 const getFileIcon = (type: string) => {
   switch (type) {
     case "pdf":
@@ -139,7 +141,14 @@ function VaultContent() {
   
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   
-  // Handle upload complete - refresh documents and close dialog
+  // Google Drive upload
+  const { isUploading: isGDriveUploading, uploadingDocId, uploadToGDrive } = useGoogleDriveUpload();
+  const { isConnected: isGDriveConnected, fetchRecentFiles } = useGoogleDrive();
+  
+  // Check G-Drive connection on mount
+  useEffect(() => {
+    fetchRecentFiles(1); // Light check to see if connected
+  }, [fetchRecentFiles]);
   const handleUploadComplete = () => {
     fetchDocuments();
     setIsUploadOpen(false);
@@ -199,6 +208,25 @@ function VaultContent() {
   // Handle star toggle
   const handleToggleStar = async (doc: any) => {
     await toggleStarred(doc.id, !doc.starred);
+  };
+
+  // Handle save to Google Drive
+  const handleSaveToGDrive = async (doc: any) => {
+    if (!doc.storagePath) return;
+    
+    // Get mime type from file type
+    const getMimeType = (type: string): string => {
+      switch (type) {
+        case 'pdf': return 'application/pdf';
+        case 'document': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        case 'spreadsheet': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        case 'presentation': return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        case 'image': return 'image/png';
+        default: return 'application/octet-stream';
+      }
+    };
+
+    await uploadToGDrive(doc.id, doc.storagePath, doc.name, getMimeType(doc.type));
   };
 
   return (
@@ -447,6 +475,19 @@ function VaultContent() {
                                     <Star className="w-4 h-4 mr-2" />
                                     {doc.starred ? 'Unstar' : 'Star'}
                                   </DropdownMenuItem>
+                                  {isGDriveConnected && (
+                                    <DropdownMenuItem 
+                                      onClick={(e) => { e.stopPropagation(); handleSaveToGDrive(doc); }}
+                                      disabled={uploadingDocId === doc.id}
+                                    >
+                                      {uploadingDocId === doc.id ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      ) : (
+                                        <Cloud className="w-4 h-4 mr-2" />
+                                      )}
+                                      {uploadingDocId === doc.id ? 'Saving...' : 'Save to Google Drive'}
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
                                     className="text-destructive" 
@@ -530,6 +571,19 @@ function VaultContent() {
                                     <Share2 className="w-4 h-4 mr-2" />
                                     Share
                                   </DropdownMenuItem>
+                                  {isGDriveConnected && (
+                                    <DropdownMenuItem 
+                                      onClick={() => handleSaveToGDrive(doc)}
+                                      disabled={uploadingDocId === doc.id}
+                                    >
+                                      {uploadingDocId === doc.id ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      ) : (
+                                        <Cloud className="w-4 h-4 mr-2" />
+                                      )}
+                                      {uploadingDocId === doc.id ? 'Saving...' : 'Save to Google Drive'}
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
                                     className="text-destructive"
