@@ -13,7 +13,10 @@ import {
   Circle,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  Trash2,
+  Edit,
+  FolderOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -22,9 +25,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface Project {
   id: string;
@@ -42,9 +63,12 @@ function WorkflowsContent() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
-  const [newProject, setNewProject] = useState({ name: "", description: "" });
+  const [newProject, setNewProject] = useState({ name: "", description: "", due_date: "" });
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [tasks, setTasks] = useState<{ id: string; title: string; due_date: string | null; status: string }[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -109,6 +133,7 @@ function WorkflowsContent() {
         .insert({
           name: newProject.name,
           description: newProject.description || null,
+          due_date: newProject.due_date || null,
           user_id: user.id,
           status: "active",
         })
@@ -118,10 +143,45 @@ function WorkflowsContent() {
       if (error) throw error;
 
       setProjects([{ ...data, task_count: 0, completed_task_count: 0 }, ...projects]);
-      setNewProject({ name: "", description: "" });
+      setNewProject({ name: "", description: "", due_date: "" });
       setNewProjectOpen(false);
+      toast.success("Project created!");
     } catch (error) {
       console.error("Error creating project:", error);
+      toast.error("Failed to create project");
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // First delete all tasks associated with this project
+      const { error: tasksError } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("project_id", projectToDelete.id);
+
+      if (tasksError) throw tasksError;
+
+      // Then delete the project
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectToDelete.id);
+
+      if (error) throw error;
+
+      setProjects(projects.filter(p => p.id !== projectToDelete.id));
+      toast.success("Project deleted");
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast.error("Failed to delete project");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
     }
   };
 
@@ -150,7 +210,22 @@ function WorkflowsContent() {
 
   const getEventsForDay = (day: number) => {
     const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return tasks.filter(t => t.due_date && t.due_date.startsWith(dateStr));
+    
+    // Get tasks for this day
+    const dayTasks = tasks.filter(t => t.due_date && t.due_date.startsWith(dateStr));
+    
+    // Get projects with due dates for this day
+    const dayProjects = projects
+      .filter(p => p.due_date && p.due_date.startsWith(dateStr))
+      .map(p => ({
+        id: p.id,
+        title: `📁 ${p.name}`,
+        due_date: p.due_date,
+        status: p.status,
+        isProject: true,
+      }));
+    
+    return [...dayProjects, ...dayTasks.map(t => ({ ...t, isProject: false }))];
   };
 
   const renderCalendar = () => {
@@ -166,7 +241,7 @@ function WorkflowsContent() {
     // Days of the month
     const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayTasks = getEventsForDay(day);
+      const dayEvents = getEventsForDay(day);
       const isToday = day === today.getDate() && 
         currentMonth.getMonth() === today.getMonth() && 
         currentMonth.getFullYear() === today.getFullYear();
@@ -186,21 +261,22 @@ function WorkflowsContent() {
             {day}
           </span>
           <div className="mt-1 space-y-1">
-            {dayTasks.slice(0, 2).map(task => (
+            {dayEvents.slice(0, 2).map((event, idx) => (
               <div
-                key={task.id}
+                key={`${event.id}-${idx}`}
                 className={cn(
                   "text-xs px-1.5 py-0.5 rounded truncate",
-                  task.status === "completed" && "bg-success/20 text-success",
-                  task.status === "pending" && "bg-warning/20 text-warning",
-                  task.status === "in-progress" && "bg-info/20 text-info"
+                  (event as any).isProject && "bg-primary/20 text-primary font-medium",
+                  !((event as any).isProject) && event.status === "completed" && "bg-success/20 text-success",
+                  !((event as any).isProject) && event.status === "pending" && "bg-warning/20 text-warning",
+                  !((event as any).isProject) && event.status === "in-progress" && "bg-info/20 text-info"
                 )}
               >
-                {task.title}
+                {event.title}
               </div>
             ))}
-            {dayTasks.length > 2 && (
-              <span className="text-xs text-muted-foreground">+{dayTasks.length - 2} more</span>
+            {dayEvents.length > 2 && (
+              <span className="text-xs text-muted-foreground">+{dayEvents.length - 2} more</span>
             )}
           </div>
         </div>
@@ -276,6 +352,18 @@ function WorkflowsContent() {
                         rows={3}
                       />
                     </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Due Date</label>
+                      <Input
+                        type="date"
+                        value={newProject.due_date}
+                        onChange={(e) => setNewProject({ ...newProject, due_date: e.target.value })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Project deadline will appear on your calendar
+                      </p>
+                    </div>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setNewProjectOpen(false)}>
                         Cancel
@@ -329,9 +417,34 @@ function WorkflowsContent() {
                             {project.description || "No description"}
                           </p>
                         </div>
-                        <button className="p-1 rounded-lg hover:bg-secondary transition-colors">
-                          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-1 rounded-lg hover:bg-secondary transition-colors">
+                              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <FolderOpen className="w-4 h-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Project
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => {
+                                setProjectToDelete(project);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Project
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
 
                       <Badge className={cn("mb-4", getStatusColor(project.status))}>
@@ -406,7 +519,7 @@ function WorkflowsContent() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentMonth(new Date(2026, 0, 1))}
+                      onClick={() => setCurrentMonth(new Date())}
                     >
                       Today
                     </Button>
@@ -435,7 +548,11 @@ function WorkflowsContent() {
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border">
+                <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-primary/50" />
+                    <span className="text-xs text-muted-foreground">Project Deadline</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-success/50" />
                     <span className="text-xs text-muted-foreground">Completed</span>
@@ -454,6 +571,37 @@ function WorkflowsContent() {
           </Tabs>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{projectToDelete?.name}"? 
+              This will also delete all tasks associated with this project. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Project"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <VOPSyAgent />
     </div>
