@@ -1,16 +1,30 @@
 /**
- * Analytics Hooks - Absolute Environment Isolation
+ * Analytics Hooks - System Owner + Autonomous Environment Model
  * 
- * These hooks provide ANALYTICS ONLY access:
+ * ARCHITECTURE RULE (NON-NEGOTIABLE):
+ * Every user operates inside a fully autonomous environment.
+ * There is zero data bleed, zero shared execution, and zero implicit inheritance.
+ * 
+ * SYSTEM OWNER SCOPES:
+ * A. OWN ENVIRONMENT: Full AI Operations access to their OWN data
+ * B. OVERSIGHT: Analytics-only access to other users (aggregated counts)
+ * 
+ * These hooks provide ANALYTICS ONLY access for oversight:
  * - Aggregated counts and metrics
  * - Trends over time
  * - Status indicators
+ * - Masked user identifiers (User #0001, never emails/names)
  * 
- * NEVER expose:
+ * STRICTLY FORBIDDEN (even for System Owners):
  * - Raw user records
- * - User-generated content
- * - Individual user data
- * - Private activity details
+ * - User-generated content (documents, messages, files)
+ * - Financial transactions, balances, merchants
+ * - Individual user activity details
+ * - Integration credentials or tokens
+ * - AI chat history or workflow definitions
+ * 
+ * If analytics can be used to infer or reconstruct a user's private data,
+ * the implementation is incorrect.
  */
 
 import { useQuery } from "@tanstack/react-query";
