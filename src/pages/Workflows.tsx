@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +79,12 @@ function WorkflowsContent() {
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [calendarRefreshing, setCalendarRefreshing] = useState(false);
+  
+  // Edit project state
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [editProject, setEditProject] = useState<Project | null>(null);
+  const [editDueDateOpen, setEditDueDateOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -202,6 +209,46 @@ function WorkflowsContent() {
       setDeleteDialogOpen(false);
       setProjectToDelete(null);
     }
+  };
+
+  const handleUpdateProject = async () => {
+    if (!editProject || !editProject.name.trim()) return;
+    
+    setIsUpdating(true);
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .update({
+          name: editProject.name,
+          description: editProject.description || null,
+          due_date: editProject.due_date || null,
+          status: editProject.status,
+        })
+        .eq("id", editProject.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProjects(projects.map(p => 
+        p.id === editProject.id 
+          ? { ...data, task_count: p.task_count, completed_task_count: p.completed_task_count }
+          : p
+      ));
+      toast.success("Project updated!");
+      setEditProjectOpen(false);
+      setEditProject(null);
+    } catch (error) {
+      console.error("Error updating project:", error);
+      toast.error("Failed to update project");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const openEditDialog = (project: Project) => {
+    setEditProject({ ...project });
+    setEditProjectOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -461,7 +508,7 @@ function WorkflowsContent() {
                 Projects
               </TabsTrigger>
               <TabsTrigger value="calendar" className="gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Calendar
               </TabsTrigger>
             </TabsList>
@@ -501,7 +548,7 @@ function WorkflowsContent() {
                               <FolderOpen className="w-4 h-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(project)}>
                               <Edit className="w-4 h-4 mr-2" />
                               Edit Project
                             </DropdownMenuItem>
@@ -728,6 +775,104 @@ function WorkflowsContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editProjectOpen} onOpenChange={setEditProjectOpen}>
+        <DialogContent className="max-w-[90vw] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-primary" />
+              Edit Project
+            </DialogTitle>
+          </DialogHeader>
+          {editProject && (
+            <div className="space-y-4 pt-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Project Name</label>
+                <Input
+                  value={editProject.name}
+                  onChange={(e) => setEditProject({ ...editProject, name: e.target.value })}
+                  placeholder="Enter project name..."
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Description</label>
+                <Textarea
+                  value={editProject.description || ""}
+                  onChange={(e) => setEditProject({ ...editProject, description: e.target.value })}
+                  placeholder="Describe your project..."
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Status</label>
+                <Select 
+                  value={editProject.status} 
+                  onValueChange={(value) => setEditProject({ ...editProject, status: value })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="on-hold">On Hold</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Due Date</label>
+                <Popover open={editDueDateOpen} onOpenChange={setEditDueDateOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full mt-1 justify-start text-left font-normal",
+                        !editProject.due_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editProject.due_date ? format(new Date(editProject.due_date), "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editProject.due_date ? new Date(editProject.due_date) : undefined}
+                      onSelect={(date) => {
+                        setEditProject({ 
+                          ...editProject, 
+                          due_date: date ? format(date, "yyyy-MM-dd") : null 
+                        });
+                        setEditDueDateOpen(false);
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditProjectOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateProject} disabled={isUpdating}>
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <VOPSyAgent />
     </div>
