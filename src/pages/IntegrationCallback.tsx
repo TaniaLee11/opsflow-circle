@@ -13,6 +13,9 @@ export default function IntegrationCallback() {
   const [status, setStatus] = useState<'processing' | 'success' | 'error' | 'auth_required'>('processing');
   const [message, setMessage] = useState("Processing your connection...");
 
+  // Check if this page was opened as a popup
+  const isPopup = window.opener !== null;
+
   useEffect(() => {
     const handleCallback = async () => {
       const code = searchParams.get("code");
@@ -23,16 +26,25 @@ export default function IntegrationCallback() {
       if (error) {
         setStatus('error');
         setMessage(`Connection failed: ${error}`);
-        toast.error("Integration connection failed");
-        setTimeout(() => navigate("/integrations"), 3000);
+        if (isPopup) {
+          // Close popup after delay
+          setTimeout(() => window.close(), 3000);
+        } else {
+          toast.error("Integration connection failed");
+          setTimeout(() => navigate("/integrations"), 3000);
+        }
         return;
       }
 
       if (!code || !state) {
         setStatus('error');
         setMessage("Invalid callback - missing parameters");
-        toast.error("Invalid callback");
-        setTimeout(() => navigate("/integrations"), 3000);
+        if (isPopup) {
+          setTimeout(() => window.close(), 3000);
+        } else {
+          toast.error("Invalid callback");
+          setTimeout(() => navigate("/integrations"), 3000);
+        }
         return;
       }
 
@@ -42,17 +54,17 @@ export default function IntegrationCallback() {
       if (!provider || !stateId) {
         setStatus('error');
         setMessage("Invalid state parameter format");
-        setTimeout(() => navigate("/integrations"), 3000);
+        if (isPopup) {
+          setTimeout(() => window.close(), 3000);
+        } else {
+          setTimeout(() => navigate("/integrations"), 3000);
+        }
         return;
       }
 
       try {
         setMessage(`Connecting to ${provider}...`);
 
-        // The oauth-callback edge function will look up the user_id from the oauth_states table
-        // using the state parameter. This is the secure way - we don't rely on browser session.
-        // The state was stored with user_id when oauth-start was called (while user was authenticated).
-        
         const { data, error: fnError } = await supabase.functions.invoke("oauth-callback", {
           body: { code, state: stateId, provider },
         });
@@ -66,7 +78,6 @@ export default function IntegrationCallback() {
         const errorMessage = body?.error || (fnError instanceof Error ? fnError.message : null);
 
         if (errorMessage) {
-          // Check for state/user-related errors
           if (
             errorMessage.toLowerCase().includes("state expired") ||
             errorMessage.toLowerCase().includes("user") ||
@@ -75,32 +86,43 @@ export default function IntegrationCallback() {
           ) {
             setStatus("auth_required");
             setMessage("Your session expired. Please log in and try connecting again.");
-            toast.error("Session expired - please log in and reconnect");
-            return; // Don't auto-redirect, let user click button
+            return;
           }
           throw new Error(errorMessage);
         }
 
         setStatus("success");
         setMessage(`Successfully connected to ${provider}!`);
-        toast.success(`Connected to ${provider}`);
 
-        // Invalidate integrations query to update UI immediately
-        queryClient.invalidateQueries({ queryKey: ["integrations"] });
-
-        setTimeout(() => navigate("/integrations"), 2000);
+        // If opened as popup, close after success
+        if (isPopup) {
+          // The opener (main app) will detect connection via polling
+          setTimeout(() => {
+            window.close();
+          }, 1500);
+        } else {
+          // Fallback: if not popup, redirect normally
+          queryClient.invalidateQueries({ queryKey: ["integrations"] });
+          toast.success(`Connected to ${provider}`);
+          setTimeout(() => navigate("/integrations"), 2000);
+        }
       } catch (err) {
         console.error("OAuth callback error:", err);
         const errMsg = err instanceof Error ? err.message : "Failed to complete connection";
         setStatus("error");
         setMessage(errMsg);
-        toast.error("Failed to connect integration");
-        setTimeout(() => navigate("/integrations"), 3000);
+        
+        if (isPopup) {
+          setTimeout(() => window.close(), 3000);
+        } else {
+          toast.error("Failed to connect integration");
+          setTimeout(() => navigate("/integrations"), 3000);
+        }
       }
     };
 
     handleCallback();
-  }, [searchParams, navigate, queryClient]);
+  }, [searchParams, navigate, queryClient, isPopup]);
 
   const handleLoginRedirect = () => {
     navigate("/auth", { state: { returnTo: "/integrations" } });
@@ -137,6 +159,10 @@ export default function IntegrationCallback() {
             <LogIn className="w-4 h-4" />
             Log in to finish connecting
           </Button>
+        ) : isPopup ? (
+          <p className="text-sm text-muted-foreground">
+            {status === 'success' ? "This window will close automatically..." : "Closing..."}
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground">
             You'll be redirected automatically...
