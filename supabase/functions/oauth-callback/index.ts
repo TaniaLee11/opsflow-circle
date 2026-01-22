@@ -48,6 +48,10 @@ const TOKEN_CONFIGS: Record<string, {
     tokenUrl: "https://identity.xero.com/connect/token",
     usesBasicAuth: true,
   },
+  zoom: {
+    tokenUrl: "https://zoom.us/oauth/token",
+    usesBasicAuth: true,
+  },
 };
 
 const logStep = (step: string, details?: Record<string, unknown>) => {

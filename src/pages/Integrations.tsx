@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -78,6 +78,7 @@ const integrations: Integration[] = [
     icon: "https://zoom.us/favicon.ico",
     category: "communication",
     status: "disconnected",
+    oauthProvider: "zoom",
     features: ["Meeting scheduling", "Recording sync", "Attendance tracking", "Calendar sync"],
   },
   
@@ -277,6 +278,25 @@ export default function Integrations() {
 
   const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
 
+  // Listen for postMessage from OAuth popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data?.type === 'oauth-success' && event.data?.provider) {
+        const provider = event.data.provider;
+        setConnectingProvider(null);
+        toast.dismiss(`oauth-waiting-${provider}`);
+        toast.success(`${provider} connected successfully!`);
+        queryClient.invalidateQueries({ queryKey: ["integrations"] });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [queryClient]);
+
   const handleConnect = async (integration: Integration) => {
     if (integration.status === "connected") {
       toast.info(`${integration.name} is already connected`);
@@ -300,6 +320,7 @@ export default function Integrations() {
       "stripe": "stripe",
       "dropbox": "dropbox",
       "xero": "xero",
+      "zoom": "zoom",
     };
     
     const provider = integration.oauthProvider || providerMap[integration.id];
@@ -406,9 +427,12 @@ export default function Integrations() {
       "slack": "slack",
       "hubspot": "hubspot",
       "stripe": "stripe",
+      "dropbox": "dropbox",
+      "xero": "xero",
+      "zoom": "zoom",
     };
     
-    const provider = idToProviderMap[integration.id];
+    const provider = integration.oauthProvider || idToProviderMap[integration.id];
     if (!provider) {
       toast.error("Unknown integration");
       return;
