@@ -24,9 +24,19 @@ export default function Auth() {
   const [inviteChecking, setInviteChecking] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, signup, isAuthenticated, user, isLoading: authLoading, isOwner } = useAuth();
+  const { 
+    login, 
+    signup, 
+    isAuthenticated, 
+    user, 
+    isLoading: authLoading, 
+    isOwner,
+    isCohort,
+    hasAccess,
+    isCheckingSubscription
+  } = useAuth();
 
-  // Persist cohort invite context to survive reloads (defensive against session recycling)
+  // Persist cohort invite context to survive reloads during signup flow only
   useEffect(() => {
     if (inviteData?.valid) {
       try {
@@ -85,46 +95,73 @@ export default function Auth() {
     }
   }, [searchParams]);
 
-  // Redirect if already authenticated (skip only while invite is being validated)
+  // Redirect authenticated users based on their status
+  // CRITICAL: AI_COHORT users bypass tier selection entirely - detected from backend
   useEffect(() => {
-    if (inviteChecking) {
+    if (inviteChecking || authLoading || isCheckingSubscription) {
       return;
     }
     
-    if (!authLoading && isAuthenticated && user) {
-      // Owner goes directly to dashboard
-      if (isOwner) {
-        navigate("/dashboard");
-        return;
-      }
-      // Check if user needs onboarding (no tier selected)
-      if (!user.tierSelected) {
-        // Pass cohort info to onboarding if this was an invite signup
-        if (inviteData?.valid) {
-          navigate(`/onboarding?cohort=true&code=${inviteData.inviteCode}`);
-        } else {
-          // Defensive: cohort invite state may survive reloads; use it to skip tier selection.
-          let cohortInvite = false;
-          let storedCode: string | null = null;
-          try {
-            cohortInvite = localStorage.getItem("vopsy_cohort_invite") === "true";
-            storedCode = localStorage.getItem("vopsy_cohort_invite_code");
-          } catch {
-            cohortInvite = false;
-            storedCode = null;
-          }
-
-          if (cohortInvite) {
-            navigate(storedCode ? `/onboarding?cohort=true&code=${storedCode}` : "/onboarding?cohort=true");
-          } else {
-            navigate("/onboarding");
-          }
-        }
-      } else {
-        navigate("/dashboard");
-      }
+    if (!isAuthenticated || !user) {
+      return;
     }
-  }, [isAuthenticated, user, authLoading, isOwner, navigate, searchParams, inviteChecking, inviteData]);
+
+    // Owner goes directly to dashboard
+    if (isOwner) {
+      navigate("/dashboard");
+      return;
+    }
+
+    // COHORT USERS: System-assigned tier - bypass ALL tier selection
+    // This is detected from backend cohort_memberships, not localStorage
+    if (isCohort) {
+      // Clear any lingering invite markers
+      try {
+        localStorage.removeItem("vopsy_cohort_invite");
+        localStorage.removeItem("vopsy_cohort_invite_code");
+        localStorage.removeItem("vopsy_cohort_invite_email");
+      } catch {
+        // ignore
+      }
+      navigate("/dashboard");
+      return;
+    }
+
+    // Users with access go to dashboard
+    if (hasAccess) {
+      navigate("/dashboard");
+      return;
+    }
+
+    // New user needs onboarding
+    if (!user.tierSelected) {
+      // Pass cohort info to onboarding if this was an invite signup
+      // This is only for the initial signup flow before cohort_membership is created
+      if (inviteData?.valid) {
+        navigate(`/onboarding?cohort=true&code=${inviteData.inviteCode}`);
+      } else {
+        // Check localStorage for in-progress invite signup
+        let cohortInvite = false;
+        let storedCode: string | null = null;
+        try {
+          cohortInvite = localStorage.getItem("vopsy_cohort_invite") === "true";
+          storedCode = localStorage.getItem("vopsy_cohort_invite_code");
+        } catch {
+          cohortInvite = false;
+          storedCode = null;
+        }
+
+        if (cohortInvite) {
+          navigate(storedCode ? `/onboarding?cohort=true&code=${storedCode}` : "/onboarding?cohort=true");
+        } else {
+          navigate("/onboarding");
+        }
+      }
+    } else {
+      // Tier selected but no access - go to tier selection for payment
+      navigate("/select-tier");
+    }
+  }, [isAuthenticated, user, authLoading, isOwner, isCohort, hasAccess, isCheckingSubscription, navigate, inviteChecking, inviteData]);
 
   // Check for mode from URL params (only if not invite flow)
   useEffect(() => {

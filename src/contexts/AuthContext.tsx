@@ -46,6 +46,9 @@ interface AuthContextType {
   accessType: AccessType;
   currentTier: string | null;
   isCheckingSubscription: boolean;
+  // Cohort access - system-assigned, bypasses tier selection
+  isCohort: boolean;
+  cohortExpiresAt: string | null;
   // Actions
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
@@ -206,6 +209,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasAccess = isOwner || (subscriptionStatus?.has_access ?? false);
   const accessType: AccessType = isOwner ? "owner" : (subscriptionStatus?.access_type ?? "none");
   const currentTier = isOwner ? "owner" : (subscriptionStatus?.tier ?? null);
+  
+  // Cohort detection - system-assigned tier from backend
+  // AI_COHORT completely bypasses tier selection - detected from cohort_memberships table
+  const isCohort = accessType === "cohort";
+  const cohortExpiresAt = isCohort ? (subscriptionStatus?.subscription_end ?? null) : null;
 
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -262,6 +270,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessType,
       currentTier,
       isCheckingSubscription,
+      isCohort,
+      cohortExpiresAt,
       login,
       signup,
       logout,
