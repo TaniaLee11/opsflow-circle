@@ -106,6 +106,150 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          count: number | null
+          created_at: string
+          event_category: string
+          event_date: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          organization_id: string | null
+          user_id: string
+        }
+        Insert: {
+          count?: number | null
+          created_at?: string
+          event_category: string
+          event_date?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          user_id: string
+        }
+        Update: {
+          count?: number | null
+          created_at?: string
+          event_category?: string
+          event_date?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      analytics_rollups_org: {
+        Row: {
+          created_at: string
+          event_category: string
+          event_count: number | null
+          event_type: string
+          id: string
+          organization_id: string
+          rollup_date: string
+          unique_users: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_category: string
+          event_count?: number | null
+          event_type: string
+          id?: string
+          organization_id: string
+          rollup_date: string
+          unique_users?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_category?: string
+          event_count?: number | null
+          event_type?: string
+          id?: string
+          organization_id?: string
+          rollup_date?: string
+          unique_users?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      analytics_rollups_platform: {
+        Row: {
+          created_at: string
+          event_category: string
+          event_count: number | null
+          event_type: string
+          id: string
+          rollup_date: string
+          unique_orgs: number | null
+          unique_users: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_category: string
+          event_count?: number | null
+          event_type: string
+          id?: string
+          rollup_date: string
+          unique_orgs?: number | null
+          unique_users?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_category?: string
+          event_count?: number | null
+          event_type?: string
+          id?: string
+          rollup_date?: string
+          unique_orgs?: number | null
+          unique_users?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      analytics_rollups_user: {
+        Row: {
+          created_at: string
+          event_category: string
+          event_count: number | null
+          event_type: string
+          id: string
+          organization_id: string | null
+          rollup_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_category: string
+          event_count?: number | null
+          event_type: string
+          id?: string
+          organization_id?: string | null
+          rollup_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_category?: string
+          event_count?: number | null
+          event_type?: string
+          id?: string
+          organization_id?: string | null
+          rollup_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       auth_failures: {
         Row: {
           created_at: string

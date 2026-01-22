@@ -37,6 +37,7 @@ import TaxSeason2026 from "./pages/TaxSeason2026";
 import TaxServices from "./pages/TaxServices";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import AnalyticsPortal from "./pages/AnalyticsPortal";
 
 const queryClient = new QueryClient();
 
@@ -78,7 +79,8 @@ const App = () => (
                   <Route path="/select-tier" element={<TierSelection />} />
                   <Route path="/select-product" element={<ProductSelection />} />
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/portal/:tierId" element={<UserPortal />} />
+                  <Route path="/portal/:tierId" element={<AnalyticsPortal />} />
+                  <Route path="/analytics/:tierId" element={<AnalyticsPortal />} />
                   <Route path="/vopsy" element={<VOPSy />} />
                   <Route path="/vault" element={<Vault />} />
                   <Route path="/studio" element={<Studio />} />
