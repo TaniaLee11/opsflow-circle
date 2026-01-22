@@ -119,10 +119,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check subscription status
   const refreshSubscription = async () => {
-    if (!session) return;
-
     setIsCheckingSubscription(true);
     try {
+      // Get current session directly from Supabase client to avoid stale state
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession) {
+        console.log("[Auth] No active session, skipping subscription check");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("check-subscription");
 
       if (error) {
