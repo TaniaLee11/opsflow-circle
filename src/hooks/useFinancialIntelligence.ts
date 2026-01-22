@@ -48,6 +48,8 @@ export interface FinancialStatus {
   providers?: string[];
   error?: string;
   message?: string;
+  action?: string;
+  oauthRequired?: boolean;
 }
 
 export function useFinancialIntelligence() {
@@ -72,8 +74,14 @@ export function useFinancialIntelligence() {
         throw new Error(fnError.message || 'Failed to fetch financial data');
       }
 
-      if (!fetchData.connected) {
-        setStatus({ connected: false, message: fetchData.message, error: fetchData.error });
+      // Handle OAUTH_REQUIRED - this is expected when no OAuth connections exist
+      if (fetchData.error === 'OAUTH_REQUIRED' || !fetchData.connected) {
+        setStatus({ 
+          connected: false, 
+          message: fetchData.message,
+          action: fetchData.action,
+          oauthRequired: true,
+        });
         setLastFetchedAt(new Date());
         return null;
       }

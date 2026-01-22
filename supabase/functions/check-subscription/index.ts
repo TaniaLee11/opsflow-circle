@@ -1,3 +1,14 @@
+/**
+ * Check Subscription - Platform Billing ONLY
+ * 
+ * PURPOSE: Manages YOUR SaaS subscription tiers (Free, AI Assistant, AI Operations, etc.)
+ * 
+ * SECURITY NOTE:
+ * - Uses STRIPE_SECRET_KEY for PLATFORM BILLING (your Stripe account)
+ * - This is CORRECT and ALLOWED for managing user subscriptions to your platform
+ * - This does NOT access user financial data or connected accounts
+ * - User financial data is handled by financial-fetch via OAuth tokens
+ */
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";

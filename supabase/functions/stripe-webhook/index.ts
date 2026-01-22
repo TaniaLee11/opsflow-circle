@@ -1,3 +1,14 @@
+/**
+ * Stripe Webhook - Platform Billing ONLY
+ * 
+ * PURPOSE: Handles Stripe webhook events for YOUR SaaS subscription management
+ * 
+ * SECURITY NOTE:
+ * - Uses STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET for PLATFORM BILLING
+ * - This is CORRECT and ALLOWED for processing subscription events
+ * - This does NOT access user financial data or connected Stripe accounts
+ * - User financial data via Stripe Connect is handled by financial-fetch via OAuth
+ */
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
