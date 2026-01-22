@@ -61,27 +61,49 @@ const TIER_CAPABILITIES: Record<VOPSyTier, TierCapabilities> = {
   },
 };
 
-// Map UserTierId to VOPSyTier
-// AI_COHORT is treated IDENTICALLY to AI_OPERATIONS for capabilities
+/**
+ * FULL VOPSy EXECUTION — NON-NEGOTIABLE SYSTEM RULE
+ * 
+ * EXECUTION-ENABLED TIERS (can read, write, execute):
+ * - AI Operations
+ * - AI Compliance (specialized + full execution)
+ * - AI Advisory (specialized + full execution)
+ * - AI_COHORT (system-assigned, time-limited, mirrors AI Operations)
+ * - AI Enterprise (AI Operations at scale)
+ * - System Owner — ONLY inside their own autonomous environment
+ * 
+ * ADVISORY-ONLY WITH READ ACCESS:
+ * - AI Assistant (can read integrations, analyze, recommend — NO execution)
+ * - AI Tax (can read integrations, analyze tax data — NO execution)
+ * 
+ * NO EXECUTION — EVER:
+ * - AI Free (guidance only)
+ */
 function mapTierToVOPSyTier(tierId: UserTierId | string | null): VOPSyTier {
   if (!tierId) return 'free';
   
   switch (tierId) {
+    // === AI Free (Guidance only) ===
     case 'free':
       return 'free';
+    
+    // === Advisory-only with READ access (NO execution) ===
     case 'ai_assistant':
+    case 'ai_tax': // AI Tax can READ integrations but NOT execute
       return 'assistant';
+    
+    // === Full Execution Authority ===
     case 'ai_operations':
     case 'ai_enterprise':
-    case 'ai_advisory':
-    case 'ai_tax':
-    case 'ai_compliance':
+    case 'ai_advisory':    // Full execution + strategic planning
+    case 'ai_compliance':  // Full execution + compliance monitoring
     // AI_COHORT gets FULL operations capabilities (system-assigned tier)
     case 'cohort':
     case 'AI_COHORT':
       return 'operations';
+    
     default:
-      // Handle cohort and owner as operations-level
+      // Handle owner as operations-level (in their own environment)
       if (tierId === 'owner') {
         return 'operations';
       }
@@ -99,33 +121,38 @@ export interface CapabilityCheckResult {
 /**
  * Hook to manage VOPSy tier-based capabilities.
  * 
- * ARCHITECTURE: System Owner + Autonomous Environment Model
+ * FULL VOPSy EXECUTION — NON-NEGOTIABLE SYSTEM RULE
  * 
- * CRITICAL RULE: Every user operates in a fully autonomous environment.
- * Even System Owners can ONLY execute within their own environment.
- * For other users, System Owners have analytics oversight only.
+ * WHO MAY USE FULL VOPSy (EXECUTION ENABLED):
+ * - AI Operations
+ * - AI Compliance (full execution + compliance monitoring)
+ * - AI Advisory (full execution + strategic planning)
+ * - AI_COHORT (system-assigned, time-limited, mirrors AI Operations)
+ * - AI Enterprise (AI Operations at scale)
+ * - System Owner — ONLY inside their own autonomous environment
  * 
- * VOPSy always exists as the intelligence layer, but what it can DO depends on tier:
- * - AI Free: Orientation, thinking, document interaction. No integrations, no execution.
- * - AI Assistant: Read-only intelligence. Can analyze and recommend, cannot execute.
- * - AI Operations / AI_COHORT: Full execution authority. Can read, write, and execute.
- * - AI Tax: Everything Operations + specialized tax analysis (own environment only).
- * - AI Compliance: Everything Operations + compliance monitoring (own environment only).
- * - AI Advisory: Everything Operations + strategic planning (own environment only).
+ * ADVISORY-ONLY WITH READ ACCESS:
+ * - AI Assistant: Can read integrations, analyze, recommend — NO execution
+ * - AI Tax: Can read integrations, analyze tax data — NO execution
  * 
- * SYSTEM OWNER CLARIFICATION:
- * - In their OWN environment: AI Operations level (full read/write/execute)
- * - For OTHER users: Analytics oversight only (counts, trends, no raw data)
+ * NO EXECUTION — EVER:
+ * - AI Free: Guidance only (chat, explain, documents)
  * 
- * CRITICAL: AI_COHORT is treated IDENTICALLY to AI_OPERATIONS.
- * The only difference is time limitation (90 days), not capability.
+ * SYSTEM OWNER CLARIFICATION (CRITICAL):
+ * - In their OWN environment: Full execution authority
+ * - For OTHER users: Analytics oversight only (NO execution, NO raw data)
+ * 
+ * ENFORCEMENT BEHAVIOR:
+ * - If user without execution requests an action: explain, don't execute
+ * - Offer guidance or describe next steps
+ * - Never execute silently or auto-upgrade
  */
 export function useVOPSyTierCapabilities() {
   const { currentTier } = useUserTier();
   const { isOwner, accessType } = useAuth();
 
   const vopsyTier = useMemo<VOPSyTier>(() => {
-    // Owner always has full access
+    // Owner always has full access (in their own environment)
     if (isOwner) return 'operations';
     
     // Cohort users get FULL operations capabilities (system-assigned)
