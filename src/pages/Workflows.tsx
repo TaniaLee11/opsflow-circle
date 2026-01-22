@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
+import { ProjectTasksPanel } from "@/components/workflows/ProjectTasksPanel";
 import { motion } from "framer-motion";
 import { 
   FolderPlus, 
@@ -85,6 +86,48 @@ function WorkflowsContent() {
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [editDueDateOpen, setEditDueDateOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Task panel state
+  const [tasksPanelOpen, setTasksPanelOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  // Refetch function to update task counts
+  const refetchProjects = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const { data: projectsData, error: projectsError } = await supabase
+        .from("projects")
+        .select("id, name, description, status, due_date, created_at")
+        .order("created_at", { ascending: false });
+
+      if (projectsError) throw projectsError;
+
+      const projectsWithCounts = await Promise.all(
+        (projectsData || []).map(async (project) => {
+          const { count: totalCount } = await supabase
+            .from("tasks")
+            .select("*", { count: "exact", head: true })
+            .eq("project_id", project.id);
+
+          const { count: completedCount } = await supabase
+            .from("tasks")
+            .select("*", { count: "exact", head: true })
+            .eq("project_id", project.id)
+            .eq("status", "completed");
+
+          return {
+            ...project,
+            task_count: totalCount || 0,
+            completed_task_count: completedCount || 0,
+          };
+        })
+      );
+
+      setProjects(projectsWithCounts);
+    } catch (error) {
+      console.error("Error refetching projects:", error);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     async function fetchData() {
@@ -526,7 +569,11 @@ function WorkflowsContent() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="glass gradient-border rounded-xl p-6 hover:shadow-lg transition-all group"
+                      className="glass gradient-border rounded-xl p-6 hover:shadow-lg transition-all group cursor-pointer"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setTasksPanelOpen(true);
+                      }}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1 min-w-0">
@@ -539,14 +586,20 @@ function WorkflowsContent() {
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="p-1 rounded-lg hover:bg-secondary transition-colors">
+                            <button 
+                              className="p-1 rounded-lg hover:bg-secondary transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedProject(project);
+                              setTasksPanelOpen(true);
+                            }}>
                               <FolderOpen className="w-4 h-4 mr-2" />
-                              View Details
+                              View Tasks
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(project)}>
                               <Edit className="w-4 h-4 mr-2" />
@@ -875,6 +928,20 @@ function WorkflowsContent() {
       </Dialog>
 
       <VOPSyAgent />
+
+      {/* Project Tasks Panel */}
+      {selectedProject && (
+        <ProjectTasksPanel
+          projectId={selectedProject.id}
+          projectName={selectedProject.name}
+          isOpen={tasksPanelOpen}
+          onClose={() => {
+            setTasksPanelOpen(false);
+            setSelectedProject(null);
+          }}
+          onTasksChanged={refetchProjects}
+        />
+      )}
     </div>
   );
 }
