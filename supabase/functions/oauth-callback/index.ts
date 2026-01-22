@@ -188,10 +188,8 @@ serve(async (req) => {
     logStep("Credentials loaded from integration_configs", { provider });
 
     // Build redirect URI (must match the redirect_uri used during oauth-start)
-    const origin =
-      req.headers.get("origin") ||
-      Deno.env.get("SITE_URL") ||
-      "https://dnntsdncmptuxctbcjsp.lovableproject.com";
+    // IMPORTANT: Prefer SITE_URL for stability across preview/published environments.
+    const origin = "https://opsflow-circle.lovable.app";
     const redirectUri = `${origin}/integrations/callback`;
 
     // Build token request

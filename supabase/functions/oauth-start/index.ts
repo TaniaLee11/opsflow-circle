@@ -191,7 +191,12 @@ serve(async (req) => {
     }
 
     // Build redirect URI
-    const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "https://dnntsdncmptuxctbcjsp.lovableproject.com";
+    // IMPORTANT: Use a stable redirect origin that can be whitelisted in provider consoles.
+    // Prefer SITE_URL over request Origin (preview URLs are not stable and cannot be reliably whitelisted).
+    // NOTE: Lovable preview URLs are ephemeral. We use the published URL for redirects so
+    // Google can reliably whitelist it.
+    // If you change your published domain, update this fallback accordingly.
+    const origin = "https://opsflow-circle.lovable.app";
     const redirectUri = `${origin}/integrations/callback`;
 
     // Build OAuth URL
