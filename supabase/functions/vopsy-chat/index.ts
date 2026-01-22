@@ -286,7 +286,10 @@ const TIER_RATE_LIMITS: Record<string, number> = {
 const ALLOWED_TIERS = ['owner', 'ai_enterprise', 'ai_operations', 'ai_assistant', 'cohort', 'free'];
 
 // Max failed auth attempts per IP per hour
-const MAX_AUTH_FAILURES_PER_HOUR = 100;
+const MAX_AUTH_FAILURES_PER_HOUR = 30;
+
+// Max failed auth attempts per IP per minute (burst protection)
+const MAX_AUTH_FAILURES_PER_MINUTE = 10;
 
 serve(async (req) => {
 
@@ -307,7 +310,23 @@ serve(async (req) => {
   );
 
   try {
-    // Check for failed auth rate limit before processing
+    // Burst protection: Check for failed auth rate limit per minute first
+    const minuteAgoForAuth = new Date(Date.now() - 60000).toISOString();
+    const { count: recentAttempts } = await serviceClient
+      .from('auth_failures')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', clientIP)
+      .gte('created_at', minuteAgoForAuth);
+
+    if ((recentAttempts || 0) >= MAX_AUTH_FAILURES_PER_MINUTE) {
+      console.log(`[vopsy-chat] IP ${clientIP} burst blocked: ${recentAttempts} failed attempts in last minute`);
+      return new Response(
+        JSON.stringify({ error: 'Too many attempts. Please wait a moment before trying again.', success: false }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Hourly rate limit check
     const hourAgoForAuth = new Date(Date.now() - 3600000).toISOString();
     const { count: failedAttempts } = await serviceClient
       .from('auth_failures')
