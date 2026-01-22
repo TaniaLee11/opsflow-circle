@@ -1,6 +1,15 @@
+/**
+ * Send Email - OAuth-Only Architecture
+ * 
+ * SECURITY MANDATE: This function ONLY sends email via user-authenticated OAuth.
+ * - NO system keys
+ * - Every user must authenticate their own Google/Microsoft account
+ * - Credentials come from integration_configs ONLY
+ */
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
+import { decryptToken, encryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +30,6 @@ interface SendResult {
 }
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
-  // Never log token values or email content
   const safeDetails = details ? { ...details } : undefined;
   if (safeDetails) {
     delete safeDetails.access_token;
@@ -31,7 +39,49 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[SEND-EMAIL] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
-// Refresh Google access token
+/**
+ * Get OAuth credentials from integration_configs ONLY
+ */
+async function getOAuthCredentials(
+  supabase: any,
+  provider: string
+): Promise<{ clientId: string; clientSecret: string } | null> {
+  const { data: config } = await supabase
+    .from("integration_configs")
+    .select("client_id, client_secret")
+    .eq("provider", provider)
+    .maybeSingle();
+
+  if (!config?.client_id || !config?.client_secret) {
+    logStep(`${provider} OAuth credentials not configured`);
+    return null;
+  }
+
+  let clientId = config.client_id as string;
+  let clientSecret = config.client_secret as string;
+
+  if (clientId.startsWith("env:")) {
+    clientId = Deno.env.get(clientId.replace("env:", "")) || "";
+  } else if (isEncrypted(clientId)) {
+    clientId = await decryptToken(clientId);
+  }
+
+  if (clientSecret.startsWith("env:")) {
+    clientSecret = Deno.env.get(clientSecret.replace("env:", "")) || "";
+  } else if (isEncrypted(clientSecret)) {
+    clientSecret = await decryptToken(clientSecret);
+  }
+
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  return { clientId, clientSecret };
+}
+
+/**
+ * Refresh Google access token using credentials from integration_configs
+ */
 async function refreshGoogleToken(
   refreshToken: string,
   clientId: string,
@@ -57,7 +107,9 @@ async function refreshGoogleToken(
   return tokens.access_token;
 }
 
-// Refresh Microsoft access token
+/**
+ * Refresh Microsoft access token using credentials from integration_configs
+ */
 async function refreshMicrosoftToken(
   refreshToken: string,
   clientId: string,
@@ -98,78 +150,59 @@ async function sendGmailReply(
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
 
-  let threadId = "";
-  let references = "";
-  let inReplyTo = "";
-
-  if (originalResponse.ok) {
-    const originalData = await originalResponse.json();
-    threadId = originalData.threadId || "";
-    
-    const headers = originalData.payload?.headers || [];
-    const messageId = headers.find((h: { name: string; value: string }) => h.name === "Message-ID")?.value || "";
-    const existingRefs = headers.find((h: { name: string; value: string }) => h.name === "References")?.value || "";
-    
-    if (messageId) {
-      inReplyTo = messageId;
-      references = existingRefs ? `${existingRefs} ${messageId}` : messageId;
-    }
+  if (!originalResponse.ok) {
+    return { success: false, error: "Failed to get original message" };
   }
 
-  // Build the raw email message (RFC 2822 format)
-  const emailLines = [
+  const originalData = await originalResponse.json();
+  const threadId = originalData.threadId;
+
+  // Build RFC 2822 message
+  const headers = originalData.payload?.headers || [];
+  const originalMessageIdHeader = headers.find((h: any) => h.name === 'Message-ID')?.value || '';
+  const references = headers.find((h: any) => h.name === 'References')?.value || '';
+
+  const message = [
     `To: ${to}`,
     `Subject: ${subject}`,
-    `Content-Type: text/plain; charset="UTF-8"`,
-    `MIME-Version: 1.0`,
-  ];
+    `In-Reply-To: ${originalMessageIdHeader}`,
+    `References: ${references} ${originalMessageIdHeader}`.trim(),
+    'Content-Type: text/html; charset=utf-8',
+    '',
+    body,
+  ].join('\r\n');
 
-  if (inReplyTo) {
-    emailLines.push(`In-Reply-To: ${inReplyTo}`);
-  }
-  if (references) {
-    emailLines.push(`References: ${references}`);
-  }
-
-  emailLines.push("", body);
-
-  const rawEmail = emailLines.join("\r\n");
-  
-  // Base64url encode the email
-  const encodedEmail = btoa(unescape(encodeURIComponent(rawEmail)))
+  const encodedMessage = btoa(unescape(encodeURIComponent(message)))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
 
-  // Send the email
-  const sendUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
-
-  const requestBody: { raw: string; threadId?: string } = { raw: encodedEmail };
-  if (threadId) {
-    requestBody.threadId = threadId;
-  }
-
-  const sendResponse = await fetch(sendUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
+  const sendResponse = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        raw: encodedMessage,
+        threadId,
+      }),
+    }
+  );
 
   if (!sendResponse.ok) {
-    logStep("Gmail send failed", { status: sendResponse.status });
-    return { success: false, error: `Gmail API error: ${sendResponse.status}` };
+    const error = await sendResponse.text();
+    logStep("Gmail send failed", { error });
+    return { success: false, error: "Failed to send email" };
   }
 
   const result = await sendResponse.json();
-  logStep("Gmail email sent", { messageId: result.id });
-  
   return { success: true, messageId: result.id };
 }
 
-// Send email via Microsoft Graph API
+// Send email via Outlook API
 async function sendOutlookReply(
   accessToken: string,
   originalMessageId: string,
@@ -177,57 +210,49 @@ async function sendOutlookReply(
   subject: string,
   body: string
 ): Promise<SendResult> {
-  // For Outlook, we can use the reply endpoint directly
-  // First, try to reply to the original message
+  // Try to reply to the original message
   const replyResponse = await fetch(
     `https://graph.microsoft.com/v1.0/me/messages/${originalMessageId}/reply`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         message: {
           body: {
-            contentType: "Text",
+            contentType: 'HTML',
             content: body,
           },
         },
-        comment: "", // No additional comment needed
       }),
     }
   );
 
-  // If reply endpoint works (returns 202 Accepted)
-  if (replyResponse.ok || replyResponse.status === 202) {
-    logStep("Outlook reply sent successfully");
-    return { success: true, messageId: originalMessageId };
+  if (replyResponse.ok) {
+    return { success: true };
   }
 
-  // If reply fails (e.g., original message not found), send as new email
-  logStep("Reply endpoint failed, sending as new email", { status: replyResponse.status });
-  
+  // Fallback: send as new message
   const sendResponse = await fetch(
-    "https://graph.microsoft.com/v1.0/me/sendMail",
+    'https://graph.microsoft.com/v1.0/me/sendMail',
     {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         message: {
-          subject: subject,
+          subject,
           body: {
-            contentType: "Text",
+            contentType: 'HTML',
             content: body,
           },
           toRecipients: [
             {
-              emailAddress: {
-                address: to,
-              },
+              emailAddress: { address: to },
             },
           ],
         },
@@ -235,12 +260,12 @@ async function sendOutlookReply(
     }
   );
 
-  if (!sendResponse.ok && sendResponse.status !== 202) {
-    logStep("Outlook send failed", { status: sendResponse.status });
-    return { success: false, error: `Outlook API error: ${sendResponse.status}` };
+  if (!sendResponse.ok) {
+    const error = await sendResponse.text();
+    logStep("Outlook send failed", { error });
+    return { success: false, error: "Failed to send email" };
   }
 
-  logStep("Outlook email sent as new message");
   return { success: true };
 }
 
@@ -250,7 +275,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
+    logStep("Function started - OAuth-only mode");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -260,7 +285,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "Authentication required" }),
+        JSON.stringify({ success: false, error: "Authentication required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -271,7 +296,7 @@ serve(async (req) => {
     
     if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: "Invalid authentication" }),
+        JSON.stringify({ success: false, error: "Invalid authentication" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -318,31 +343,36 @@ serve(async (req) => {
     const decryptedAccessToken = integration.access_token ? await decryptToken(integration.access_token) : null;
     const decryptedRefreshToken = integration.refresh_token ? await decryptToken(integration.refresh_token) : null;
 
-    // Get OAuth credentials for token refresh
-    const { data: integrationConfig } = await serviceClient
-      .from("integration_configs")
-      .select("client_id, client_secret")
-      .eq("provider", integration.provider)
-      .maybeSingle();
+    // Get OAuth credentials from integration_configs ONLY
+    const credentials = await getOAuthCredentials(serviceClient, integration.provider);
 
-    const resolveCredential = (value: string | null | undefined, envKey: string): string => {
-      if (!value) return Deno.env.get(envKey) || "";
-      if (value.startsWith("env:")) return Deno.env.get(value.replace("env:", "")) || "";
-      return value;
-    };
-
-    const clientId = resolveCredential(integrationConfig?.client_id, `${integration.provider.toUpperCase()}_CLIENT_ID`);
-    const clientSecret = resolveCredential(integrationConfig?.client_secret, `${integration.provider.toUpperCase()}_CLIENT_SECRET`);
+    if (!credentials) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `${integration.provider} OAuth not configured. Please contact the administrator.`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     let accessToken = decryptedAccessToken;
 
     // Refresh token if possible
-    if (decryptedRefreshToken && clientId && clientSecret) {
+    if (decryptedRefreshToken) {
       try {
         if (integration.provider === "google") {
-          accessToken = await refreshGoogleToken(decryptedRefreshToken, clientId, clientSecret);
+          accessToken = await refreshGoogleToken(
+            decryptedRefreshToken, 
+            credentials.clientId, 
+            credentials.clientSecret
+          );
         } else if (integration.provider === "microsoft") {
-          accessToken = await refreshMicrosoftToken(decryptedRefreshToken, clientId, clientSecret);
+          accessToken = await refreshMicrosoftToken(
+            decryptedRefreshToken, 
+            credentials.clientId, 
+            credentials.clientSecret
+          );
         }
         
         // Encrypt and update stored access token

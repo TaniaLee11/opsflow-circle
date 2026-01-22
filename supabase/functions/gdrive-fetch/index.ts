@@ -1,6 +1,15 @@
+/**
+ * Google Drive Fetch - OAuth-Only Architecture
+ * 
+ * SECURITY MANDATE: This function ONLY accesses Google Drive via user-authenticated OAuth.
+ * - NO system keys
+ * - Every user must authenticate their own Google account
+ * - Credentials come from integration_configs ONLY
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { decryptToken, encryptToken } from "../_shared/token-encryption.ts";
+import { decryptToken, encryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,16 +45,54 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[GDRIVE-FETCH] ${step}`, safeDetails ? JSON.stringify(safeDetails) : '');
 };
 
-// Refresh Google access token
-async function refreshGoogleToken(refreshToken: string): Promise<string | null> {
-  const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
-  const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+/**
+ * Get Google OAuth credentials from integration_configs ONLY
+ */
+async function getGoogleCredentials(
+  supabase: any
+): Promise<{ clientId: string; clientSecret: string } | null> {
+  const { data: config } = await supabase
+    .from("integration_configs")
+    .select("client_id, client_secret")
+    .eq("provider", "google")
+    .maybeSingle();
 
-  if (!clientId || !clientSecret) {
-    console.error("Missing Google OAuth credentials");
+  if (!config?.client_id || !config?.client_secret) {
+    logStep("Google OAuth credentials not configured");
     return null;
   }
 
+  let clientId = config.client_id as string;
+  let clientSecret = config.client_secret as string;
+
+  // Resolve credentials
+  if (clientId.startsWith("env:")) {
+    clientId = Deno.env.get(clientId.replace("env:", "")) || "";
+  } else if (isEncrypted(clientId)) {
+    clientId = await decryptToken(clientId);
+  }
+
+  if (clientSecret.startsWith("env:")) {
+    clientSecret = Deno.env.get(clientSecret.replace("env:", "")) || "";
+  } else if (isEncrypted(clientSecret)) {
+    clientSecret = await decryptToken(clientSecret);
+  }
+
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  return { clientId, clientSecret };
+}
+
+/**
+ * Refresh Google access token using credentials from integration_configs
+ */
+async function refreshGoogleToken(
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string
+): Promise<string | null> {
   try {
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -72,17 +119,16 @@ async function refreshGoogleToken(refreshToken: string): Promise<string | null> 
 }
 
 // Fetch recent Google Drive files
-// deno-lint-ignore no-explicit-any
 async function fetchGoogleDriveFiles(
   accessToken: string, 
   refreshToken: string | null, 
   supabase: any, 
   integrationId: string,
+  credentials: { clientId: string; clientSecret: string } | null,
   limit: number = 10
 ): Promise<DriveFile[]> {
   let token = accessToken;
 
-  // Query for recent files (modified in last 30 days, not trashed)
   const query = "trashed=false";
   const fields = "files(id,name,mimeType,webViewLink,iconLink,thumbnailLink,modifiedTime,size,owners)";
   const orderBy = "modifiedTime desc";
@@ -98,9 +144,13 @@ async function fetchGoogleDriveFiles(
   });
 
   // If token expired, try to refresh
-  if (response.status === 401 && refreshToken) {
+  if (response.status === 401 && refreshToken && credentials) {
     logStep("Access token expired, attempting refresh");
-    const newToken = await refreshGoogleToken(refreshToken);
+    const newToken = await refreshGoogleToken(
+      refreshToken, 
+      credentials.clientId, 
+      credentials.clientSecret
+    );
     
     if (newToken) {
       token = newToken;
@@ -150,7 +200,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Starting Google Drive fetch");
+    logStep("Starting Google Drive fetch - OAuth-only mode");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -177,7 +227,7 @@ serve(async (req) => {
     try {
       const body = await req.json();
       if (body.limit && typeof body.limit === 'number') {
-        limit = Math.min(body.limit, 50); // Cap at 50
+        limit = Math.min(body.limit, 50);
       }
     } catch {
       // No body or invalid JSON, use defaults
@@ -204,22 +254,15 @@ serve(async (req) => {
           provider: "google",
           connectedAccount: "",
           files: [],
-          error: "Google Drive not connected",
+          error: "Google Drive not connected. Please connect Google Drive in Integrations.",
         } as DriveResponse),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    logStep("Found integration", { 
-      id: integration.id, 
-      connectedAccount: integration.connected_account,
-      health: integration.health 
-    });
-
     // Check if Drive scope is included
     const scopes = integration.scopes || "";
     if (!scopes.includes("drive")) {
-      logStep("Drive scope not granted");
       return new Response(
         JSON.stringify({
           connected: false,
@@ -237,7 +280,6 @@ serve(async (req) => {
     const refreshToken = await decryptToken(integration.refresh_token || "");
 
     if (!accessToken) {
-      logStep("No access token available");
       return new Response(
         JSON.stringify({
           connected: false,
@@ -250,12 +292,16 @@ serve(async (req) => {
       );
     }
 
+    // Get Google credentials from integration_configs for token refresh
+    const credentials = await getGoogleCredentials(supabase);
+
     // Fetch Drive files
     const files = await fetchGoogleDriveFiles(
       accessToken, 
       refreshToken, 
       supabase, 
       integration.id,
+      credentials,
       limit
     );
 
