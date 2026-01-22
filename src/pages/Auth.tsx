@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, ArrowRight, Mail, Lock, User, Zap, AlertCircle, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Shield, ArrowRight, Mail, Lock, User, Zap, AlertCircle, Loader2, Users } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 type AuthMode = "signin" | "signup";
+
+interface InviteData {
+  email: string;
+  inviteCode: string;
+  valid: boolean;
+}
 
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("signin");
@@ -13,11 +20,73 @@ export default function Auth() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [inviteData, setInviteData] = useState<InviteData | null>(null);
+  const [inviteChecking, setInviteChecking] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, signup, isAuthenticated, user, isLoading: authLoading, isOwner } = useAuth();
 
-  // Redirect if already authenticated
+  // Check for invite code and force logout if present
   useEffect(() => {
+    const inviteCode = searchParams.get("invite");
+    
+    if (inviteCode) {
+      setInviteChecking(true);
+      
+      // Force logout any existing session when invite link is clicked
+      const handleInviteFlow = async () => {
+        // Sign out current user silently
+        await supabase.auth.signOut();
+        
+        // Validate invite code
+        const { data: invite, error } = await supabase
+          .from("cohort_invites")
+          .select("email, invite_code, status, expires_at")
+          .eq("invite_code", inviteCode)
+          .maybeSingle();
+        
+        if (error || !invite) {
+          setError("Invalid invite code. Please check your invite link.");
+          setInviteChecking(false);
+          return;
+        }
+        
+        if (invite.status === "accepted") {
+          setError("This invite has already been used. Please sign in with your account.");
+          setInviteChecking(false);
+          return;
+        }
+        
+        if (new Date(invite.expires_at) < new Date()) {
+          setError("This invite has expired. Please request a new invite.");
+          setInviteChecking(false);
+          return;
+        }
+        
+        // Valid invite - pre-fill email and switch to signup
+        setInviteData({
+          email: invite.email,
+          inviteCode: invite.invite_code,
+          valid: true,
+        });
+        setEmail(invite.email);
+        setMode("signup");
+        setInviteChecking(false);
+      };
+      
+      handleInviteFlow();
+    }
+  }, [searchParams]);
+
+  // Redirect if already authenticated (but NOT during invite flow)
+  useEffect(() => {
+    const inviteCode = searchParams.get("invite");
+    
+    // Skip auto-redirect if we're handling an invite
+    if (inviteCode || inviteChecking) {
+      return;
+    }
+    
     if (!authLoading && isAuthenticated && user) {
       // Owner goes directly to dashboard
       if (isOwner) {
@@ -31,16 +100,17 @@ export default function Auth() {
         navigate("/dashboard");
       }
     }
-  }, [isAuthenticated, user, authLoading, isOwner, navigate]);
+  }, [isAuthenticated, user, authLoading, isOwner, navigate, searchParams, inviteChecking]);
 
-  // Check for mode from URL params
+  // Check for mode from URL params (only if not invite flow)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const modeParam = params.get("mode");
-    if (modeParam === "signup") {
+    const modeParam = searchParams.get("mode");
+    const inviteCode = searchParams.get("invite");
+    
+    if (!inviteCode && modeParam === "signup") {
       setMode("signup");
     }
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +127,17 @@ export default function Auth() {
           return;
         }
         await signup(email, password, name);
+        
+        // If this was an invite signup, mark invite as accepted
+        if (inviteData?.valid && inviteData.inviteCode) {
+          await supabase
+            .from("cohort_invites")
+            .update({ 
+              status: "accepted",
+              accepted_at: new Date().toISOString()
+            })
+            .eq("invite_code", inviteData.inviteCode);
+        }
       }
       // Navigation will be handled by the useEffect
     } catch (err: any) {
@@ -65,13 +146,16 @@ export default function Auth() {
     }
   };
 
-  // Google is now handled as an integration, not auth - see /integrations page
-
-  // Show loading while checking auth state
-  if (authLoading) {
+  // Show loading while checking auth state or invite
+  if (authLoading || inviteChecking) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          {inviteChecking && (
+            <p className="text-sm text-muted-foreground">Validating invite...</p>
+          )}
+        </div>
       </div>
     );
   }
@@ -108,7 +192,11 @@ export default function Auth() {
             transition={{ delay: 0.2, type: "spring" }}
             className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-primary/10 border border-primary/20 mb-4 sm:mb-6 glow-primary"
           >
-            <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            {inviteData?.valid ? (
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            ) : (
+              <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            )}
           </motion.div>
           
           <motion.h1
@@ -117,7 +205,7 @@ export default function Auth() {
             transition={{ delay: 0.3 }}
             className="text-2xl sm:text-3xl font-bold text-foreground mb-2"
           >
-            Virtual OPS Hub
+            {inviteData?.valid ? "Join the AI Cohort" : "Virtual OPS Hub"}
           </motion.h1>
 
           <motion.p
@@ -126,34 +214,56 @@ export default function Auth() {
             transition={{ delay: 0.35 }}
             className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4"
           >
-            Powered by <span className="text-primary font-medium">VOPSy</span> — Your AI Operations Intelligence
+            {inviteData?.valid ? (
+              <>You've been invited to the <span className="text-primary font-medium">90-day AI Operations</span> program</>
+            ) : (
+              <>Powered by <span className="text-primary font-medium">VOPSy</span> — Your AI Operations Intelligence</>
+            )}
           </motion.p>
           
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="flex items-center justify-center gap-4"
-          >
-            <button
-              onClick={() => { setMode("signin"); setError(""); }}
-              className={`text-sm font-medium transition-colors ${
-                mode === "signin" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
+          {!inviteData?.valid && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="flex items-center justify-center gap-4"
             >
-              Sign In
-            </button>
-            <span className="text-muted-foreground/50">|</span>
-            <button
-              onClick={() => { setMode("signup"); setError(""); }}
-              className={`text-sm font-medium transition-colors ${
-                mode === "signup" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Sign Up
-            </button>
-          </motion.div>
+              <button
+                onClick={() => { setMode("signin"); setError(""); }}
+                className={`text-sm font-medium transition-colors ${
+                  mode === "signin" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sign In
+              </button>
+              <span className="text-muted-foreground/50">|</span>
+              <button
+                onClick={() => { setMode("signup"); setError(""); }}
+                className={`text-sm font-medium transition-colors ${
+                  mode === "signup" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sign Up
+              </button>
+            </motion.div>
+          )}
         </div>
+
+        {/* Invite Badge */}
+        {inviteData?.valid && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 text-center"
+          >
+            <p className="text-sm text-primary font-medium">
+              🎉 Create your account to get started
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your email: <span className="font-mono">{inviteData.email}</span>
+            </p>
+          </motion.div>
+        )}
 
         {/* Auth Card */}
         <motion.div
@@ -212,9 +322,17 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
                   required
-                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground outline-none transition-all"
+                  readOnly={inviteData?.valid}
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground outline-none transition-all ${
+                    inviteData?.valid ? "opacity-75 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
+              {inviteData?.valid && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Email is locked to your invite
+                </p>
+              )}
             </div>
 
             <div>
@@ -250,14 +368,14 @@ export default function Auth() {
               ) : (
                 <>
                   <Shield className="w-5 h-5" />
-                  <span>{mode === "signin" ? "Sign In" : "Create Account"}</span>
+                  <span>{inviteData?.valid ? "Join Cohort" : mode === "signin" ? "Sign In" : "Create Account"}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </motion.button>
           </form>
 
-          {mode === "signin" && (
+          {mode === "signin" && !inviteData?.valid && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -276,7 +394,10 @@ export default function Auth() {
           transition={{ delay: 0.7 }}
           className="text-center mt-8 text-sm text-muted-foreground"
         >
-          Platform access restricted to active operational partners.
+          {inviteData?.valid 
+            ? "Your 90-day access starts when you create your account."
+            : "Platform access restricted to active operational partners."
+          }
         </motion.p>
       </motion.div>
     </div>
