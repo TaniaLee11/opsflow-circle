@@ -5,7 +5,7 @@ import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { motion } from "framer-motion";
 import { 
   FolderPlus, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   Plus, 
   MoreHorizontal,
   Clock,
@@ -16,7 +16,10 @@ import {
   Loader2,
   Trash2,
   Edit,
-  FolderOpen
+  FolderOpen,
+  ExternalLink,
+  Video,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,6 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCalendarIntelligence, CalendarEvent } from "@/hooks/useCalendarIntelligence";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -60,15 +66,18 @@ interface Project {
 
 function WorkflowsContent() {
   const { user } = useAuth();
+  const { data: calendarData, isLoading: calendarLoading, fetchCalendarData, status: calendarStatus } = useCalendarIntelligence();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [newProject, setNewProject] = useState({ name: "", description: "", due_date: "" });
+  const [dueDateOpen, setDueDateOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [tasks, setTasks] = useState<{ id: string; title: string; due_date: string | null; status: string }[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [calendarRefreshing, setCalendarRefreshing] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -114,6 +123,9 @@ function WorkflowsContent() {
           .not("due_date", "is", null);
 
         setTasks(tasksData || []);
+        
+        // Fetch external calendar events
+        fetchCalendarData();
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -122,7 +134,14 @@ function WorkflowsContent() {
     }
 
     fetchData();
-  }, [user?.id]);
+  }, [user?.id, fetchCalendarData]);
+
+  const handleRefreshCalendar = async () => {
+    setCalendarRefreshing(true);
+    await fetchCalendarData();
+    setCalendarRefreshing(false);
+    toast.success("Calendar synced");
+  };
 
   const handleCreateProject = async () => {
     if (!newProject.name.trim() || !user?.id) return;
@@ -223,9 +242,40 @@ function WorkflowsContent() {
         due_date: p.due_date,
         status: p.status,
         isProject: true,
+        isExternal: false,
       }));
     
-    return [...dayProjects, ...dayTasks.map(t => ({ ...t, isProject: false }))];
+    // Get external calendar events (Google Calendar / Calendly)
+    const externalEvents: Array<{
+      id: string;
+      title: string;
+      due_date: string | null;
+      status: string;
+      isProject: boolean;
+      isExternal: boolean;
+      meetingLink?: string;
+    }> = [];
+    
+    if (calendarData?.events) {
+      calendarData.events.forEach((event: CalendarEvent) => {
+        const eventDate = new Date(event.start);
+        const eventDateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, "0")}-${String(eventDate.getDate()).padStart(2, "0")}`;
+        
+        if (eventDateStr === dateStr) {
+          externalEvents.push({
+            id: event.id,
+            title: `📅 ${event.title}`,
+            due_date: event.start,
+            status: event.status,
+            isProject: false,
+            isExternal: true,
+            meetingLink: event.meetingLink,
+          });
+        }
+      });
+    }
+    
+    return [...dayProjects, ...externalEvents, ...dayTasks.map(t => ({ ...t, isProject: false, isExternal: false }))];
   };
 
   const renderCalendar = () => {
@@ -267,9 +317,10 @@ function WorkflowsContent() {
                 className={cn(
                   "text-xs px-1.5 py-0.5 rounded truncate",
                   (event as any).isProject && "bg-primary/20 text-primary font-medium",
-                  !((event as any).isProject) && event.status === "completed" && "bg-success/20 text-success",
-                  !((event as any).isProject) && event.status === "pending" && "bg-warning/20 text-warning",
-                  !((event as any).isProject) && event.status === "in-progress" && "bg-info/20 text-info"
+                  (event as any).isExternal && "bg-accent/30 text-accent-foreground",
+                  !((event as any).isProject) && !((event as any).isExternal) && event.status === "completed" && "bg-success/20 text-success",
+                  !((event as any).isProject) && !((event as any).isExternal) && event.status === "pending" && "bg-warning/20 text-warning",
+                  !((event as any).isProject) && !((event as any).isExternal) && event.status === "in-progress" && "bg-info/20 text-info"
                 )}
               >
                 {event.title}
@@ -354,12 +405,34 @@ function WorkflowsContent() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground">Due Date</label>
-                      <Input
-                        type="date"
-                        value={newProject.due_date}
-                        onChange={(e) => setNewProject({ ...newProject, due_date: e.target.value })}
-                        className="mt-1"
-                      />
+                      <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full mt-1 justify-start text-left font-normal",
+                              !newProject.due_date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {newProject.due_date ? format(new Date(newProject.due_date), "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={newProject.due_date ? new Date(newProject.due_date) : undefined}
+                            onSelect={(date) => {
+                              setNewProject({ 
+                                ...newProject, 
+                                due_date: date ? format(date, "yyyy-MM-dd") : "" 
+                              });
+                              setDueDateOpen(false);
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <p className="text-xs text-muted-foreground mt-1">
                         Project deadline will appear on your calendar
                       </p>
@@ -500,14 +573,63 @@ function WorkflowsContent() {
 
             {/* Calendar Tab */}
             <TabsContent value="calendar" className="space-y-6">
+              {/* External Calendar Links */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                className="flex flex-wrap items-center gap-3"
+              >
+                <a
+                  href="https://calendar.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 hover:bg-secondary text-sm text-foreground transition-colors"
+                >
+                  <CalendarIcon className="w-4 h-4 text-primary" />
+                  Google Calendar
+                  <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                </a>
+                <a
+                  href="https://calendly.com/app/scheduled_events/user/me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 hover:bg-secondary text-sm text-foreground transition-colors"
+                >
+                  <Video className="w-4 h-4 text-accent" />
+                  Calendly
+                  <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                </a>
+                
+                {calendarStatus?.connected && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRefreshCalendar}
+                    disabled={calendarRefreshing || calendarLoading}
+                    className="ml-auto gap-2"
+                  >
+                    <RefreshCw className={cn("w-4 h-4", (calendarRefreshing || calendarLoading) && "animate-spin")} />
+                    Sync
+                  </Button>
+                )}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
                 className="glass gradient-border rounded-xl p-6"
               >
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-foreground">{formatMonth(currentMonth)}</h3>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">{formatMonth(currentMonth)}</h3>
+                    {calendarStatus?.connected && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Synced with {calendarStatus.connectedAccount}
+                      </p>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -552,6 +674,10 @@ function WorkflowsContent() {
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-primary/50" />
                     <span className="text-xs text-muted-foreground">Project Deadline</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-accent/30" />
+                    <span className="text-xs text-muted-foreground">Calendar Event</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-success/50" />
