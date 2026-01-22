@@ -30,6 +30,15 @@ interface CohortInvite {
   accepted_at: string | null;
 }
 
+const COMMON_EMAIL_DOMAIN_TYPOS: Record<string, string> = {
+  "gmial.com": "gmail.com",
+  "gmal.com": "gmail.com",
+  "gnail.com": "gmail.com",
+  "gmai.com": "gmail.com",
+  "hotmial.com": "hotmail.com",
+  "outlok.com": "outlook.com",
+};
+
 export function CohortInvitePanel() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -59,9 +68,18 @@ export function CohortInvitePanel() {
 
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !email.includes("@")) {
+
+    const rawEmail = email.trim().toLowerCase();
+    const [localPart, domainPart] = rawEmail.split("@");
+
+    if (!rawEmail || !rawEmail.includes("@") || !localPart || !domainPart) {
       toast.error("Please enter a valid email address");
+      return;
+    }
+
+    const correctedDomain = COMMON_EMAIL_DOMAIN_TYPOS[domainPart];
+    if (correctedDomain) {
+      toast.error(`That email domain looks like a typo. Did you mean ${localPart}@${correctedDomain}?`);
       return;
     }
 
@@ -69,14 +87,23 @@ export function CohortInvitePanel() {
     
     try {
       const { data, error } = await supabase.functions.invoke("send-cohort-invite", {
-        body: { email }
+        body: { email: rawEmail }
       });
 
       if (error) throw error;
 
       if (data.success) {
         setEmail("");
-        toast.success(`Invite sent to ${email}`);
+        toast.success(`Invite sent to ${rawEmail}`);
+
+        // Make it easy to share immediately even if the email lands in spam.
+        const inviteLink = data?.invite?.inviteLink as string | undefined;
+        if (inviteLink) {
+          navigator.clipboard.writeText(inviteLink).then(
+            () => toast.message("Invite link copied to clipboard"),
+            () => void 0
+          );
+        }
         queryClient.invalidateQueries({ queryKey: ["cohort-invites"] });
       }
     } catch (error: any) {
@@ -194,7 +221,7 @@ export function CohortInvitePanel() {
               disabled={isLoading}
             />
           </div>
-          <Button type="submit" disabled={isLoading || !email}>
+          <Button type="submit" disabled={isLoading || !email.trim()}>
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
