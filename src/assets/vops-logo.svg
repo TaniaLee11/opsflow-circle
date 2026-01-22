@@ -7,8 +7,8 @@
     </linearGradient>
   </defs>
   
-  <!-- V shape with checkmark style - Orange -->
-  <path d="M5 8 L22 52 L45 8" 
+  <!-- Checkmark shape - Orange -->
+  <path d="M5 32 L18 48 L45 12" 
         stroke="url(#orangeGradient)" 
         stroke-width="8" 
         stroke-linecap="round" 
