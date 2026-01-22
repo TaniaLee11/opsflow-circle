@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   UserTierId, 
@@ -89,24 +89,16 @@ const tierIcons: Record<UserTierId, typeof Gift> = {
   ai_compliance: Shield
 };
 
-// Map UI tier IDs to database-valid subscription_tier values
-// Database constraint: AI_FREE, AI_ASSISTANT, AI_OPERATIONS, AI_COHORT, AI_OPERATIONS_FULL
-const mapTierToDbSubscriptionTier = (tierId: UserTierId): string => {
-  const mapping: Record<UserTierId, string> = {
-    free: "AI_FREE",
-    ai_assistant: "AI_ASSISTANT",
-    ai_operations: "AI_OPERATIONS",
-    ai_enterprise: "AI_OPERATIONS_FULL",
-    ai_advisory: "AI_OPERATIONS", // Advisory maps to operations-level access
-    ai_tax: "AI_OPERATIONS",      // Tax maps to operations-level access
-    ai_compliance: "AI_OPERATIONS" // Compliance maps to operations-level access
-  };
-  return mapping[tierId] || "AI_FREE";
-};
+// Tier mapping is now done server-side in the Edge Function
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, isLoading: authLoading, isOwner } = useAuth();
+  
+  // Check if this is a cohort user from URL params
+  const isCohortUser = searchParams.get("cohort") === "true";
+  const cohortInviteCode = searchParams.get("code") || undefined;
   
   const [step, setStep] = useState<OnboardingStep>("identity");
   const [isLoading, setIsLoading] = useState(false);
@@ -114,7 +106,8 @@ export default function Onboarding() {
   // Onboarding data
   const [operatingIdentity, setOperatingIdentity] = useState<UserIdentityType | null>(null);
   const [organizationType, setOrganizationType] = useState<"for_profit" | "non_profit" | null>(null);
-  const [selectedTier, setSelectedTier] = useState<UserTierId | null>(null);
+  // For cohort users, auto-select ai_operations tier
+  const [selectedTier, setSelectedTier] = useState<UserTierId | null>(isCohortUser ? "ai_operations" : null);
   const [profile, setProfile] = useState({
     organizationName: "",
     contactName: "",
@@ -139,9 +132,13 @@ export default function Onboarding() {
     }
   }, [authLoading, isAuthenticated, isOwner, navigate, user]);
 
-  const steps: OnboardingStep[] = ["identity", "organization", "tier", "profile", "complete"];
+  // For cohort users, skip tier selection step
+  const steps: OnboardingStep[] = isCohortUser 
+    ? ["identity", "organization", "profile", "complete"]
+    : ["identity", "organization", "tier", "profile", "complete"];
   const currentStepIndex = steps.indexOf(step);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
+
 
   const handleNext = () => {
     const nextIndex = currentStepIndex + 1;
@@ -162,92 +159,51 @@ export default function Onboarding() {
 
     setIsLoading(true);
     try {
-      // Update profile with selected tier and data
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          selected_tier: selectedTier,
-          tier_selected: true,
-          subscription_confirmed: selectedTier === "free",
-          subscription_tier: selectedTier === "free" ? selectedTier : null
-        })
-        .eq("user_id", user.id);
-
-      if (profileError) throw profileError;
-
-      // Create or update organization
-      const { data: existingOrg } = await supabase
-        .from("organizations")
-        .select("id")
-        .eq("name", user.organization || "")
-        .single();
-
-      if (!existingOrg && profile.organizationName) {
-        const { data: newOrg, error: orgError } = await supabase
-          .from("organizations")
-          .insert({
-            name: profile.organizationName,
-            subscription_tier: mapTierToDbSubscriptionTier(selectedTier)
-          })
-          .select()
-          .single();
-
-        if (orgError) throw orgError;
-
-        // Link profile to organization
-        if (newOrg) {
-          await supabase
-            .from("profiles")
-            .update({ organization_id: newOrg.id })
-            .eq("user_id", user.id);
-        }
+      // Get the current session for auth token
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error("No active session");
       }
 
-      // Create account for client profile
-      const { data: account, error: accountError } = await supabase
-        .from("accounts")
-        .insert({
-          name: profile.organizationName || profile.contactName,
-          company_name: profile.organizationName,
+      // Call the Edge Function to handle all server-side inserts
+      // This bypasses RLS issues by using service role on the server
+      const { data, error } = await supabase.functions.invoke("onboard-create-org-account", {
+        body: {
+          organizationName: profile.organizationName,
+          contactName: profile.contactName,
+          email: profile.email,
           phone: profile.phone,
+          location: profile.location,
           industry: profile.industry,
-          type: selectedTier, // account_type enum matches UI tier IDs
-          subscription_tier: selectedTier,
-          address: { location: profile.location },
-          settings: { 
-            operatingIdentity,
-            organizationType 
-          }
-        })
-        .select()
-        .single();
+          selectedTier,
+          operatingIdentity,
+          organizationType,
+          isCohortUser, // Pass cohort status from URL params
+          cohortInviteCode, // Pass invite code for tracking
+        },
+      });
 
-      if (accountError) throw accountError;
-
-      // Create membership linking user to account
-      if (account) {
-        await supabase
-          .from("account_memberships")
-          .insert({
-            user_id: user.id,
-            account_id: account.id,
-            role: "primary",
-            status: "active"
-          });
-
-        // Update profile with primary account
-        await supabase
-          .from("profiles")
-          .update({ primary_account_id: account.id })
-          .eq("user_id", user.id);
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to complete onboarding");
       }
 
-      toast.success("Welcome aboard! Your workspace is ready.");
+      if (!data?.success) {
+        console.error("Onboarding failed:", data);
+        throw new Error(data?.error || "Failed to create organization and account");
+      }
+
+      console.log("Onboarding completed:", data);
       
-      // Navigate based on tier
-      if (selectedTier === "free") {
+      // Cohort users always go to dashboard (they have full AI Operations access)
+      if (isCohortUser) {
+        toast.success("Welcome to the AI Cohort! Your 90-day access has started.");
+        navigate("/dashboard");
+      } else if (selectedTier === "free") {
+        toast.success("Welcome aboard! Your workspace is ready.");
         navigate("/dashboard");
       } else {
+        toast.success("Welcome aboard! Let's set up your subscription.");
         navigate("/select-product");
       }
     } catch (error: any) {

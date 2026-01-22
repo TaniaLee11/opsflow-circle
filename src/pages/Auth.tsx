@@ -82,7 +82,12 @@ export default function Auth() {
       }
       // Check if user needs onboarding (no tier selected)
       if (!user.tierSelected) {
-        navigate("/onboarding");
+        // Pass cohort info to onboarding if this was an invite signup
+        if (inviteData?.valid) {
+          navigate(`/onboarding?cohort=true&code=${inviteData.inviteCode}`);
+        } else {
+          navigate("/onboarding");
+        }
       } else {
         navigate("/dashboard");
       }
