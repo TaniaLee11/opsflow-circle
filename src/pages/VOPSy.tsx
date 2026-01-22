@@ -28,6 +28,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useVOPSyChat, ChatMessage } from "@/hooks/useVOPSyChat";
+import { useVOPSyInitialization } from "@/hooks/useVOPSyInitialization";
+import { VOPSyFirstLogin } from "@/components/vopsy/VOPSyFirstLogin";
+import { VOPSyUpgradeNudge } from "@/components/vopsy/VOPSyUpgradeNudge";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { useInboxIntelligence } from "@/hooks/useInboxIntelligence";
 import { useFinancialIntelligence } from "@/hooks/useFinancialIntelligence";
@@ -170,7 +173,30 @@ function formatBoldText(text: string, keyPrefix: string): React.ReactNode[] {
 }
 
 export default function VOPSy() {
-  const { messages, isLoading, sendMessage, clearHistory, addAssistantMessage } = useVOPSyChat();
+  const { 
+    messages, 
+    isLoading, 
+    sendMessage, 
+    clearHistory, 
+    addAssistantMessage,
+    setFirstLogin,
+    isFirstLoginMode,
+    vopsyTier,
+    canRead,
+    canWrite,
+    canExecute,
+  } = useVOPSyChat();
+  
+  // First-login initialization
+  const {
+    isLoading: isInitLoading,
+    showFirstLogin,
+    showActionMode,
+    selectedOption,
+    selectOption,
+    completeFirstLogin,
+  } = useVOPSyInitialization();
+  
   const [input, setInput] = useState("");
   const [isInboxLoading, setIsInboxLoading] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -180,6 +206,20 @@ export default function VOPSy() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Sync first-login mode with chat hook
+  useEffect(() => {
+    if (showFirstLogin) {
+      setFirstLogin(true);
+    }
+  }, [showFirstLogin, setFirstLogin]);
+  
+  // Handle first-login completion
+  const handleFirstLoginComplete = useCallback(async () => {
+    await completeFirstLogin();
+    setFirstLogin(false);
+    // The welcome message will be set by the hook automatically
+  }, [completeFirstLogin, setFirstLogin]);
 
   // Inbox intelligence hook
   const { 
@@ -1084,21 +1124,25 @@ ${result.document.downloadUrl ? `**[Download Now](${result.document.downloadUrl}
                 <div>
                   <h1 className="text-lg sm:text-2xl font-bold text-foreground flex items-center gap-2">
                     VOPSy
-                    <Badge variant="secondary" className="text-[10px] sm:text-xs">AI Assistant</Badge>
+                <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                      {vopsyTier === 'operations' ? 'Full Access' : vopsyTier === 'assistant' ? 'Read Only' : 'Guidance Mode'}
+                    </Badge>
                   </h1>
                   <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Your Virtual Operations Intelligence</p>
                 </div>
               </div>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearHistory}
-                className="gap-1 sm:gap-2 text-xs sm:text-sm"
-              >
-                <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">New Chat</span>
-              </Button>
+              {!showFirstLogin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearHistory}
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
+                >
+                  <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">New Chat</span>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1107,68 +1151,109 @@ ${result.document.downloadUrl ? `**[Download Now](${result.document.downloadUrl}
             <ScrollArea className="flex-1" ref={scrollRef}>
               <div className="p-4 sm:p-6">
                 <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
-                  <AnimatePresence mode="popLayout">
-                    {messages.map((message) => (
-                      <motion.div
-                        key={message.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        layout
-                        className={cn(
-                          "flex gap-2 sm:gap-3",
-                          message.role === "user" ? "justify-end" : "justify-start"
-                        )}
-                      >
-                        {message.role === "vopsy" && (
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 mt-1">
-                            <VOPSyMascot size="sm" animate={false} className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
-                          </div>
-                        )}
-                        
-                        <div
+                  {/* First Login Interaction */}
+                  {showFirstLogin && !isInitLoading && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex gap-2 sm:gap-3 justify-start"
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 mt-1">
+                        <VOPSyMascot size="sm" animate={false} className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
+                      </div>
+                      <div className="max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 sm:px-5 py-3 sm:py-4 bg-muted">
+                        <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                          <span className="text-[10px] sm:text-xs font-semibold text-primary">VOPSy</span>
+                        </div>
+                        <VOPSyFirstLogin
+                          showActionMode={showActionMode}
+                          selectedOption={selectedOption}
+                          onSelectOption={selectOption}
+                          onComplete={handleFirstLoginComplete}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  {/* Regular Messages */}
+                  {!showFirstLogin && (
+                    <AnimatePresence mode="popLayout">
+                      {messages.map((message) => (
+                        <motion.div
+                          key={message.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          layout
                           className={cn(
-                            "max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 sm:px-5 py-3 sm:py-4",
-                            message.role === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
+                            "flex gap-2 sm:gap-3",
+                            message.role === "user" ? "justify-end" : "justify-start"
                           )}
                         >
-                          {message.role === "vopsy" && !message.isStreaming && (
-                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                              <span className="text-[10px] sm:text-xs font-semibold text-primary">VOPSy</span>
+                          {message.role === "vopsy" && (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 mt-1">
+                              <VOPSyMascot size="sm" animate={false} className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
                             </div>
                           )}
                           
-                          {message.isStreaming ? (
-                            <div className="flex items-center gap-2">
-                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-primary" />
-                              <span className="text-xs sm:text-sm text-muted-foreground">VOPSy is thinking...</span>
-                            </div>
-                          ) : (
-                            <div className="text-xs sm:text-sm leading-relaxed">
-                              {formatMessage(message.content)}
-                            </div>
-                          )}
-                          
-                          {!message.isStreaming && (
-                            <p className={cn(
-                              "text-[9px] sm:text-[10px] mt-2 sm:mt-3",
-                              message.role === "user" ? "text-primary-foreground/60" : "text-muted-foreground"
-                            )}>
-                              {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </p>
-                          )}
-                        </div>
-                        
-                        {message.role === "user" && (
-                          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-secondary flex items-center justify-center shrink-0 mt-1">
-                            <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
+                          <div
+                            className={cn(
+                              "max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 sm:px-5 py-3 sm:py-4",
+                              message.role === "user"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
+                            )}
+                          >
+                            {message.role === "vopsy" && !message.isStreaming && (
+                              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                <span className="text-[10px] sm:text-xs font-semibold text-primary">VOPSy</span>
+                              </div>
+                            )}
+                            
+                            {message.isStreaming ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-primary" />
+                                <span className="text-xs sm:text-sm text-muted-foreground">VOPSy is thinking...</span>
+                              </div>
+                            ) : (
+                              <div className="text-xs sm:text-sm leading-relaxed">
+                                {formatMessage(message.content)}
+                              </div>
+                            )}
+                            
+                            {/* Upgrade nudge for tier-blocked actions */}
+                            {message.showUpgradeNudge && message.suggestedTier && (
+                              <div className="mt-3 pt-3 border-t border-border/50">
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  I can guide you through this, but execution requires elevated access.
+                                </p>
+                                <VOPSyUpgradeNudge
+                                  currentTier={vopsyTier}
+                                  suggestedTier={message.suggestedTier}
+                                  context="chat"
+                                />
+                              </div>
+                            )}
+                            
+                            {!message.isStreaming && (
+                              <p className={cn(
+                                "text-[9px] sm:text-[10px] mt-2 sm:mt-3",
+                                message.role === "user" ? "text-primary-foreground/60" : "text-muted-foreground"
+                              )}>
+                                {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            )}
                           </div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                          
+                          {message.role === "user" && (
+                            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-secondary flex items-center justify-center shrink-0 mt-1">
+                              <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  )}
                 </div>
               </div>
             </ScrollArea>

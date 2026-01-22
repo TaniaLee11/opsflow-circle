@@ -894,6 +894,7 @@ export type Database = {
           tier_selected: boolean | null
           updated_at: string
           user_id: string
+          vopsy_initialized: boolean | null
         }
         Insert: {
           avatar_url?: string | null
@@ -912,6 +913,7 @@ export type Database = {
           tier_selected?: boolean | null
           updated_at?: string
           user_id: string
+          vopsy_initialized?: boolean | null
         }
         Update: {
           avatar_url?: string | null
@@ -930,6 +932,7 @@ export type Database = {
           tier_selected?: boolean | null
           updated_at?: string
           user_id?: string
+          vopsy_initialized?: boolean | null
         }
         Relationships: [
           {
