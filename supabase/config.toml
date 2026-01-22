@@ -44,3 +44,33 @@ verify_jwt = false
 
 [functions.accept-invite]
 verify_jwt = false
+
+[functions.financial-fetch]
+verify_jwt = false
+
+[functions.inbox-fetch]
+verify_jwt = false
+
+[functions.inbox-analyze]
+verify_jwt = false
+
+[functions.calendar-fetch]
+verify_jwt = false
+
+[functions.vopsy-chat]
+verify_jwt = false
+
+[functions.vopsy-actions]
+verify_jwt = false
+
+[functions.studio-generate]
+verify_jwt = false
+
+[functions.draft-email-reply]
+verify_jwt = false
+
+[functions.provision-owner]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
