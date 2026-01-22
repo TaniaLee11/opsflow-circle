@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.send-cohort-invite]
 verify_jwt = false
+
+[functions.onboard-create-org-account]
+verify_jwt = false
