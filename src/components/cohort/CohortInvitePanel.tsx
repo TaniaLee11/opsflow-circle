@@ -42,9 +42,13 @@ export function CohortInvitePanel() {
   const { data: invites = [], isLoading: invitesLoading } = useQuery({
     queryKey: ["cohort-invites"],
     queryFn: async () => {
+      const nowIso = new Date().toISOString();
       const { data, error } = await supabase
         .from("cohort_invites")
         .select("*")
+        // Only show invites that are still actionable
+        .eq("status", "pending")
+        .gt("expires_at", nowIso)
         .order("created_at", { ascending: false })
         .limit(20);
       
@@ -216,11 +220,11 @@ export function CohortInvitePanel() {
           </div>
         </div>
 
-        {/* All Invites */}
+        {/* Pending Invites */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              All Invites
+              Pending Invites
             </p>
             {invitesLoading && (
               <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
@@ -228,9 +232,7 @@ export function CohortInvitePanel() {
           </div>
           
           {invites.length === 0 && !invitesLoading ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No invites sent yet
-            </p>
+            <p className="text-sm text-muted-foreground py-4 text-center">No pending invites</p>
           ) : (
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               <AnimatePresence>
@@ -253,10 +255,7 @@ export function CohortInvitePanel() {
                             {invite.invite_code}
                           </code>
                           <span className="text-[10px] text-muted-foreground">
-                            {invite.status === "accepted" 
-                              ? `Accepted ${new Date(invite.accepted_at!).toLocaleDateString()}`
-                              : `Expires ${new Date(invite.expires_at).toLocaleDateString()}`
-                            }
+                            {`Expires ${new Date(invite.expires_at).toLocaleDateString()}`}
                           </span>
                         </div>
                       </div>
@@ -277,8 +276,8 @@ export function CohortInvitePanel() {
                           )}
                         </Button>
                         
-                        {/* Resend (only for pending/expired, not accepted) */}
-                        {invite.status !== "accepted" && (
+                        {/* Resend */}
+                        {(
                           <Button
                             variant="ghost"
                             size="sm"
@@ -295,8 +294,8 @@ export function CohortInvitePanel() {
                           </Button>
                         )}
                         
-                        {/* Delete (only for pending/expired, not accepted) */}
-                        {invite.status !== "accepted" && (
+                        {/* Delete */}
+                        {(
                           <Button
                             variant="ghost"
                             size="sm"
