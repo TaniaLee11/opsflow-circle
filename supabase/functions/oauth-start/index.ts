@@ -138,22 +138,28 @@ serve(async (req) => {
       .eq("provider", provider)
       .maybeSingle();
 
+    // IMPORTANT: integration_configs stores OAuth APP credentials (client_id, client_secret)
+    // These are used ONLY to build the OAuth URL and exchange codes for tokens
+    // This is NOT a "connection" - the user must complete OAuth to connect
+    
     if (!integrationConfig) {
-      logStep("No integration config found", { provider });
-      throw new Error(`${provider} OAuth not configured. Please contact the administrator to configure ${provider} integration.`);
+      logStep("No OAuth app config found", { provider });
+      // This is a BUILDER/ADMIN issue, not a user error
+      // Return a specific error code so frontend can handle appropriately
+      throw new Error(`OAUTH_APP_NOT_CONFIGURED:${provider}`);
     }
 
     if (!integrationConfig.enabled) {
-      logStep("Integration disabled", { provider });
-      throw new Error(`${provider} integration is currently disabled.`);
+      logStep("OAuth app disabled", { provider });
+      throw new Error(`OAUTH_APP_DISABLED:${provider}`);
     }
 
-    // Resolve credentials from integration_configs
+    // Resolve OAuth app credentials (for building auth URL only)
     const clientId = await resolveCredential(integrationConfig.client_id);
     
     if (!clientId) {
-      logStep("No client_id available", { provider });
-      throw new Error(`${provider} OAuth credentials not configured. Please contact the administrator.`);
+      logStep("OAuth app missing client_id", { provider });
+      throw new Error(`OAUTH_APP_NOT_CONFIGURED:${provider}`);
     }
 
     logStep("Credentials loaded from integration_configs", { provider });
