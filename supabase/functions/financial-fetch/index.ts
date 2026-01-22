@@ -168,14 +168,26 @@ async function fetchQuickBooksData(accessToken: string, realmId: string): Promis
 
   try {
     // Fetch invoices
+    const invoiceQuery = encodeURIComponent("SELECT * FROM Invoice ORDERBY DueDate DESC MAXRESULTS 20");
     const invoiceResponse = await fetch(
-      `${baseUrl}/query?query=SELECT * FROM Invoice ORDERBY DueDate DESC MAXRESULTS 20`,
+      `${baseUrl}/query?query=${invoiceQuery}`,
       { headers }
     );
+
+    logStep("QuickBooks invoice query", { 
+      status: invoiceResponse.status, 
+      ok: invoiceResponse.ok,
+      realmId 
+    });
 
     if (invoiceResponse.ok) {
       const invoiceData = await invoiceResponse.json();
       const qbInvoices = invoiceData.QueryResponse?.Invoice || [];
+      
+      logStep("QuickBooks invoices received", { 
+        count: qbInvoices.length,
+        hasQueryResponse: !!invoiceData.QueryResponse
+      });
       
       for (const inv of qbInvoices) {
         const dueDate = new Date(inv.DueDate);
@@ -193,6 +205,12 @@ async function fetchQuickBooksData(accessToken: string, realmId: string): Promis
           createdDate: inv.TxnDate,
         });
       }
+    } else {
+      const errorText = await invoiceResponse.text();
+      logStep("QuickBooks invoice query failed", { 
+        status: invoiceResponse.status, 
+        error: errorText.substring(0, 500)
+      });
     }
 
     // Fetch company info for account name
