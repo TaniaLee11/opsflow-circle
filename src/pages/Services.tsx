@@ -192,19 +192,27 @@ const serviceCategories = [
 ];
 
 // Unified 7 tiers - Platform-led (AI Free, Assistant, Operations) vs Human-led (Advisory, Tax, Compliance, Enterprise)
+// EXECUTION MODEL:
+// - AI Free: Guidance only (no integrations, no execution)
+// - AI Assistant: Read access, advisory only (no execution)
+// - AI Operations: Full execution authority (read, write, execute)
+// - AI Advisory, AI Compliance, AI Enterprise: Mirror AI Operations + human expertise
+// - AI Tax: Human-led service with read access (no execution)
 const tiers = [
   {
     id: "free",
     name: "AI Free",
     icon: Sparkles,
     price: "Free",
-    description: "Get started with AI-powered tools built on years of accounting expertise",
+    description: "AI-powered guidance and education built on years of accounting expertise",
     features: [
-      "Limited VOPSy AI access",
+      "VOPSy AI chat & guidance",
+      "Document discussion & upload",
       "Educational resources",
-      "Community support",
-      "Basic financial tools"
+      "Financial literacy tools",
+      "Community support"
     ],
+    accessNote: "Guidance only — no integrations",
     cta: "Start Free",
     type: "platform", // Routes to Hub signup
     highlight: false
@@ -215,14 +223,15 @@ const tiers = [
     icon: Bot,
     price: "$39.99",
     period: "/month",
-    description: "Full AI assistant access with document help and financial guidance",
+    description: "Read-only access to connected tools with intelligent analysis and recommendations",
     features: [
-      "Full VOPSy AI access",
-      "Document assistance",
-      "Basic financial guidance",
-      "Email support",
-      "Workflow automation"
+      "Everything in AI Free",
+      "Connect bank, email & calendars",
+      "Read & analyze your data",
+      "Smart recommendations",
+      "Financial insights"
     ],
+    accessNote: "Read access — advisory only",
     cta: "Get Started",
     type: "platform",
     highlight: false
@@ -233,14 +242,15 @@ const tiers = [
     icon: Zap,
     price: "$99.99",
     period: "/month",
-    description: "Complete operations platform for active businesses",
+    description: "Full execution authority — VOPSy works on your behalf",
     features: [
       "Everything in AI Assistant",
-      "Monthly bookkeeping support",
-      "Compliance tracking",
-      "Priority support",
-      "Financial dashboards"
+      "VOPSy executes tasks for you",
+      "Automated workflows",
+      "Write & modify data",
+      "Reconciliation & organization"
     ],
+    accessNote: "Full execution — read, write & automate",
     cta: "Most Popular",
     type: "platform",
     highlight: true,
@@ -253,14 +263,15 @@ const tiers = [
     price: "$150",
     period: "/hour",
     priceNote: "$125/hour for nonprofits",
-    description: "Strategic financial guidance from Tanya Potter, plus full platform access",
+    description: "Strategic guidance from Tanya Potter with full platform execution",
     features: [
       "One-on-one advisory sessions",
       "Strategic financial planning",
       "Growth readiness assessments",
       "Fractional CFO services",
-      "Full Hub access included"
+      "Full AI Operations access"
     ],
+    accessNote: "Human-led + full execution",
     cta: "Schedule Consultation",
     type: "human",
     highlight: false
@@ -271,14 +282,15 @@ const tiers = [
     icon: Receipt,
     price: "From $125",
     priceNote: "Personal $125 • Personal w/Business $175 • Business $250",
-    description: "Professional tax preparation with expert review, plus platform access",
+    description: "Professional tax preparation with expert human review",
     features: [
       "Personal & business returns",
       "Expert tax preparation",
       "IRS notice support",
       "Year-round tax planning",
-      "Full Hub access included"
+      "Platform read access"
     ],
+    accessNote: "Human-led — expert tax preparation",
     cta: "Schedule Tax Review",
     type: "human",
     highlight: false
@@ -290,14 +302,15 @@ const tiers = [
     price: "$350",
     period: "/quarter",
     priceNote: "Plus cost of returns",
-    description: "Ongoing compliance management with dedicated support, plus platform access",
+    description: "Ongoing compliance management with dedicated support and full execution",
     features: [
       "Quarterly compliance review",
       "Filing deadline management",
       "Sales tax tracking",
       "1099 contractor management",
-      "Full Hub access included"
+      "Full AI Operations access"
     ],
+    accessNote: "Human-led + full execution",
     cta: "Schedule Compliance Call",
     type: "human",
     highlight: false
@@ -308,14 +321,15 @@ const tiers = [
     icon: Crown,
     price: "$499–$999",
     period: "/month",
-    description: "Custom solutions for growing organizations with complex needs",
+    description: "Custom solutions with dedicated account manager and full execution authority",
     features: [
       "Dedicated account manager",
       "Custom integrations",
       "White-glove onboarding",
       "Multi-user access",
-      "Priority human support"
+      "Full AI Operations access"
     ],
+    accessNote: "Human-led + full execution + custom",
     cta: "Contact Us",
     type: "human",
     highlight: false
@@ -424,10 +438,14 @@ export default function Services() {
                   <Bot className="w-6 h-6 text-primary" />
                   <h3 className="font-semibold text-foreground">AI-Powered Platform</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  <strong>AI Free, AI Assistant & AI Operations</strong> — Self-service tools built on years of accounting expertise. 
-                  Get intelligent guidance through the Virtual Operations Hub without direct human interaction.
+                <p className="text-sm text-muted-foreground mb-3">
+                  <strong>AI Free, AI Assistant & AI Operations</strong> — Self-service tools built on years of accounting expertise.
                 </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• <strong>AI Free:</strong> Guidance & education only</li>
+                  <li>• <strong>AI Assistant:</strong> Read access + recommendations</li>
+                  <li>• <strong>AI Operations:</strong> Full execution authority</li>
+                </ul>
               </motion.div>
 
               <motion.div
@@ -440,10 +458,13 @@ export default function Services() {
                   <HeartHandshake className="w-6 h-6 text-accent" />
                   <h3 className="font-semibold text-foreground">Human-Led Services</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  <strong>AI Advisory, AI Tax, AI Compliance & AI Enterprise</strong> — Work directly with Tanya Potter and her team. 
-                  You get expert human guidance plus the Hub as an added bonus.
+                <p className="text-sm text-muted-foreground mb-3">
+                  <strong>AI Advisory, AI Tax, AI Compliance & AI Enterprise</strong> — Work directly with Tanya Potter and her team.
                 </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• <strong>AI Tax:</strong> Human-led tax preparation</li>
+                  <li>• <strong>Advisory, Compliance, Enterprise:</strong> Full execution + expert guidance</li>
+                </ul>
               </motion.div>
             </div>
 
@@ -488,6 +509,17 @@ export default function Services() {
                       <p className="text-xs text-muted-foreground mt-1">{tier.priceNote}</p>
                     )}
                     <p className="text-xs text-muted-foreground mt-2">{tier.description}</p>
+                    {tier.accessNote && (
+                      <p className={`text-[10px] mt-2 px-2 py-1 rounded-full inline-block ${
+                        tier.id === 'ai_operations' || tier.id === 'ai_advisory' || tier.id === 'ai_compliance' || tier.id === 'ai_enterprise'
+                          ? 'bg-success/20 text-success'
+                          : tier.id === 'ai_assistant' || tier.id === 'ai_tax'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {tier.accessNote}
+                      </p>
+                    )}
                   </div>
 
                   <ul className="space-y-2 mb-6 flex-grow">
