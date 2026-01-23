@@ -25,7 +25,7 @@ const FAQ_SUGGESTIONS = [
 const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
-  content: "Hi! I'm VOPSy, your Virtual Operations assistant. 👋\n\nI can help you learn about our services, navigate the website, or answer questions about how Virtual OPS can support your business. What can I help you with today?",
+  content: "Hi! I'm VOPSy, your Virtual OPS support guide. 👋\n\nI can help you learn about our services, navigate the website, or answer questions about how Virtual OPS can support your business. What can I help you with today?",
   timestamp: new Date(),
 };
 
