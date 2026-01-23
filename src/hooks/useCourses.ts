@@ -18,6 +18,7 @@ export interface Course {
   published_at: string | null;
   lessons?: CourseLesson[];
   enrollment?: CourseEnrollment | null;
+  enrollment_count?: number;
 }
 
 export interface CourseLesson {
@@ -82,16 +83,18 @@ export function useCourses() {
             *,
             quizzes:course_quizzes(*),
             attachments:course_attachments(*)
-          )
+          ),
+          enrollments:course_enrollments(count)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       
-      // Transform lessons to sort by order_index
+      // Transform lessons to sort by order_index and add enrollment count
       return (data || []).map(course => ({
         ...course,
-        lessons: (course.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index)
+        lessons: (course.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index),
+        enrollment_count: (course.enrollments as any)?.[0]?.count || 0,
       })) as Course[];
     },
     enabled: !!user,

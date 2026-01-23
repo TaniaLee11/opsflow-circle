@@ -57,51 +57,12 @@ function AcademyContent() {
     return matchesSearch && canView;
   });
 
-  // Group courses by tier for owner view
-  const getTierGroup = (course: Course): 'free' | 'assistant' | 'operations' => {
-    const tiers = course.tier_access || [];
-    // Check for AI Operations tier courses (ai_operations, ai_enterprise, ai_advisory, ai_compliance)
-    if (tiers.some(t => ['ai_operations', 'ai_enterprise', 'ai_advisory', 'ai_compliance'].includes(t))) {
-      return 'operations';
-    }
-    // Check for AI Assistant tier courses
-    if (tiers.some(t => t === 'ai_assistant')) {
-      return 'assistant';
-    }
-    // Default to free
-    return 'free';
-  };
-
-  const freeCourses = filteredCourses.filter(c => getTierGroup(c) === 'free');
-  const assistantCourses = filteredCourses.filter(c => getTierGroup(c) === 'assistant');
-  const operationsCourses = filteredCourses.filter(c => getTierGroup(c) === 'operations');
-
-  const tierSections = [
-    { 
-      key: 'free', 
-      label: 'AI Free', 
-      description: 'Foundational courses available to all users',
-      courses: freeCourses,
-      color: 'text-muted-foreground',
-      bgColor: 'bg-muted/50'
-    },
-    { 
-      key: 'assistant', 
-      label: 'AI Assistant', 
-      description: 'Advisory and read-only tier courses',
-      courses: assistantCourses,
-      color: 'text-info',
-      bgColor: 'bg-info/10'
-    },
-    { 
-      key: 'operations', 
-      label: 'AI Operations', 
-      description: 'Full execution and automation tier courses',
-      courses: operationsCourses,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10'
-    },
-  ];
+  // Sort courses by enrollment count (most used first)
+  const sortedCourses = [...filteredCourses].sort((a, b) => {
+    const aEnrollments = a.enrollment_count || 0;
+    const bEnrollments = b.enrollment_count || 0;
+    return bEnrollments - aEnrollments;
+  });
 
   const getProgress = (course: Course) => {
     const completed = course.enrollment?.progress?.completed_lessons?.length || 0;
@@ -319,112 +280,100 @@ function AcademyContent() {
                     />
                   </div>
 
-                  {/* Courses by Tier Section (Owner View) */}
+                  {/* Owner View - Sorted by Most Used */}
                   {isOwner ? (
-                    <div className="space-y-8">
-                      {tierSections.map((section) => (
-                        <div key={section.key} className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <div className={cn("px-3 py-1.5 rounded-lg", section.bgColor)}>
-                              <span className={cn("font-semibold text-sm", section.color)}>{section.label}</span>
-                            </div>
-                            <span className="text-sm text-muted-foreground">{section.description}</span>
-                            <Badge variant="secondary" className="ml-auto">{section.courses.length} courses</Badge>
-                          </div>
-                          
-                          {section.courses.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {section.courses.map((course, index) => {
-                                const progress = getProgress(course);
-                                const hasCertificate = certificates.some(c => c.course_id === course.id);
-                                return (
-                                  <motion.div
-                                    key={course.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.05 * index }}
-                                    className="group glass rounded-xl overflow-hidden hover:glow-primary-sm transition-all cursor-pointer border border-border"
-                                    onClick={() => setViewingCourse(course)}
-                                  >
-                                    {progress > 0 && (
-                                      <div className="h-1 bg-muted">
-                                        <div 
-                                          className={cn(
-                                            "h-full transition-all",
-                                            progress === 100 ? "bg-success" : "bg-primary"
-                                          )}
-                                          style={{ width: `${progress}%` }}
-                                        />
-                                      </div>
-                                    )}
-                                    
-                                    <div className="p-5">
-                                      <div className="flex items-start justify-between mb-3">
-                                        <div className="relative">
-                                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                                            <GraduationCap className="w-6 h-6 text-primary" />
-                                          </div>
-                                          {hasCertificate && (
-                                            <Award className="absolute -top-1 -right-1 w-5 h-5 text-warning fill-warning/20" />
-                                          )}
-                                        </div>
-                                        {course.status === 'draft' && (
-                                          <Badge variant="outline" className="text-xs">Draft</Badge>
-                                        )}
-                                      </div>
-                                      
-                                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
-                                        {course.title}
-                                      </h3>
-                                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                                        {course.description}
-                                      </p>
-                                      
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                          <span className="flex items-center gap-1">
-                                            <BookOpen className="w-3.5 h-3.5" />
-                                            {course.lessons?.length || 0} lessons
-                                          </span>
-                                        </div>
-                                        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {sortedCourses.map((course, index) => {
+                        const progress = getProgress(course);
+                        const hasCertificate = certificates.some(c => c.course_id === course.id);
+                        return (
+                          <motion.div
+                            key={course.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.05 * Math.min(index, 10) }}
+                            className="group glass rounded-xl overflow-hidden hover:glow-primary-sm transition-all cursor-pointer border border-border"
+                            onClick={() => setViewingCourse(course)}
+                          >
+                            {progress > 0 && (
+                              <div className="h-1 bg-muted">
+                                <div 
+                                  className={cn(
+                                    "h-full transition-all",
+                                    progress === 100 ? "bg-success" : "bg-primary"
+                                  )}
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                            )}
+                            
+                            <div className="p-5">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="relative">
+                                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <GraduationCap className="w-6 h-6 text-primary" />
+                                  </div>
+                                  {hasCertificate && (
+                                    <Award className="absolute -top-1 -right-1 w-5 h-5 text-warning fill-warning/20" />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {(course.enrollment_count || 0) > 0 && (
+                                    <Badge variant="secondary" className="text-xs gap-1">
+                                      <Target className="w-3 h-3" />
+                                      {course.enrollment_count}
+                                    </Badge>
+                                  )}
+                                  {course.status === 'draft' && (
+                                    <Badge variant="outline" className="text-xs">Draft</Badge>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
+                                {course.title}
+                              </h3>
+                              <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                                {course.description}
+                              </p>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                    {course.lessons?.length || 0} lessons
+                                  </span>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                              </div>
 
-                                      <div className="mt-3 flex gap-2">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenBuilder(course);
-                                          }}
-                                          className="flex-1 py-2 rounded-lg bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors text-xs font-medium flex items-center justify-center gap-1"
-                                        >
-                                          <Edit className="w-3 h-3" />
-                                          Edit
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (window.confirm(`Delete "${course.title}"? This cannot be undone.`)) {
-                                              deleteCourse(course.id);
-                                            }
-                                          }}
-                                          className="py-2 px-3 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors text-xs font-medium flex items-center justify-center gap-1"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                );
-                              })}
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenBuilder(course);
+                                  }}
+                                  className="flex-1 py-2 rounded-lg bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors text-xs font-medium flex items-center justify-center gap-1"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Delete "${course.title}"? This cannot be undone.`)) {
+                                      deleteCourse(course.id);
+                                    }
+                                  }}
+                                  className="py-2 px-3 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors text-xs font-medium flex items-center justify-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
                             </div>
-                          ) : (
-                            <div className="text-center py-6 text-muted-foreground border border-dashed border-border rounded-lg">
-                              <p className="text-sm">No {section.label} courses yet</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   ) : (
                     /* Sub-user View - Simple Grid */
