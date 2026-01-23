@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import vopsLogo from "@/assets/vops-logo.svg";
 
 interface NavLink {
@@ -68,7 +69,10 @@ export function PublicNav() {
           ))}
         </div>
 
-        {/* Desktop CTA - Removed, sign in/get started available on Hub page */}
+        {/* Theme Toggle - Desktop */}
+        <div className="hidden lg:flex items-center">
+          <ThemeToggle />
+        </div>
 
         {/* Mobile Menu Button */}
         <button
@@ -119,7 +123,13 @@ export function PublicNav() {
                   </button>
                 )
               ))}
-              {/* Sign in/get started available on Hub page */}
+              {/* Theme Toggle - Mobile */}
+              <div className="pt-2 border-t border-border/50 mt-2">
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <ThemeToggle variant="switch" />
+                </div>
+              </div>
             </div>
           </motion.div>
         )}

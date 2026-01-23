@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface NavItem {
   icon: React.ElementType;
@@ -228,6 +229,7 @@ export function Sidebar() {
           )}
           {(!collapsed || isMobileView) && (
             <div className="flex gap-1">
+              <ThemeToggle className="text-muted-foreground" />
               <button className="p-1.5 sm:p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
                 <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
               </button>
