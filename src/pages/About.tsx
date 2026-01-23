@@ -69,8 +69,8 @@ const expertise = [
 
 // Other ventures - mentioned briefly as context
 const otherVentures = [
-  { name: "Overcome Inc", description: "Mission-driven organization focused on empowerment and community programming" },
-  { name: "TL Productions", description: "Creative studio launching in 2026" }
+  { name: "Overcome Inc", description: "Mission-driven organization focused on empowerment and community programming", url: null },
+  { name: "TL Productions", description: "Creative studio launching in 2026", url: "https://tlprod.lovable.app" }
 ];
 
 export default function About() {
@@ -265,9 +265,22 @@ export default function About() {
                 <p className="text-xs text-muted-foreground mb-3">Also leading:</p>
                 <div className="flex flex-wrap justify-center gap-4">
                   {otherVentures.map((venture) => (
-                    <span key={venture.name} className="text-sm text-muted-foreground">
-                      {venture.name}
-                    </span>
+                    venture.url ? (
+                      <a 
+                        key={venture.name}
+                        href={venture.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1"
+                      >
+                        {venture.name}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <span key={venture.name} className="text-sm text-muted-foreground">
+                        {venture.name}
+                      </span>
+                    )
                   ))}
                 </div>
               </div>
