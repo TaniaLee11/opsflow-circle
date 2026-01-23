@@ -131,11 +131,6 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 sm:mb-8">
-              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-              <span className="text-xs sm:text-sm text-primary font-medium">Trusted by 500+ Businesses & Nonprofits</span>
-            </div>
-
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 sm:mb-6 leading-tight">
               Accounting & Financial Services
               <span className="text-gradient block mt-1 sm:mt-2">That Actually Move You Forward.</span>
@@ -146,16 +141,36 @@ export default function Landing() {
               delivered by real professionals, backed by smart systems.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
-              <Button size="lg" onClick={() => navigate("/hub")} className="glow-primary text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
-                Get Started
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4 mb-10 sm:mb-12">
+              <Button size="lg" onClick={handleScheduleCall} className="glow-primary text-base sm:text-lg px-8 sm:px-10 h-12 sm:h-14 w-full sm:w-auto">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Schedule a Free Consultation
+              </Button>
+              <Button size="lg" variant="ghost" onClick={() => navigate("/hub")} className="text-muted-foreground hover:text-foreground text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
+                Explore the Platform
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
-              <Button size="lg" variant="outline" onClick={handleScheduleCall} className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-14 w-full sm:w-auto">
-                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                Schedule a Call
-              </Button>
             </div>
+
+            {/* Social Proof Stats Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 max-w-3xl mx-auto"
+            >
+              {[
+                { value: "500+", label: "Businesses Served" },
+                { value: "Since 2016", label: "In Business" },
+                { value: "100%", label: "Human-Led Tax Prep" },
+                { value: "24/7", label: "AI Support Access" }
+              ].map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-primary">{stat.value}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
+            </motion.div>
           </motion.div>
 
           {/* Dashboard Preview */}
