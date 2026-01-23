@@ -1,4 +1,5 @@
 import { HelmetProvider } from "react-helmet-async";
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -57,56 +58,58 @@ function ChatWidgetWrapper() {
 
 const App = () => (
   <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <UserTierProvider>
-          <ClientViewProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <ClientViewBanner />
-                <ChatWidgetWrapper />
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/hub" element={<Hub />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/services" element={<Services />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
-                  <Route path="/tax-services" element={<TaxServices />} />
-                  <Route path="/free-courses" element={<FreeCourses />} />
-                  <Route path="/free-courses/:courseId" element={<FreeCourse />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/health-check" element={<BusinessHealthCheck />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/select-tier" element={<TierSelection />} />
-                  <Route path="/select-product" element={<ProductSelection />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/portal/:tierId" element={<AnalyticsPortal />} />
-                  <Route path="/analytics/:tierId" element={<AnalyticsPortal />} />
-                  <Route path="/vopsy" element={<VOPSy />} />
-                  <Route path="/vault" element={<Vault />} />
-                  <Route path="/studio" element={<Studio />} />
-                  <Route path="/ai-studio" element={<AIStudio />} />
-                  <Route path="/academy" element={<Academy />} />
-                  <Route path="/financial" element={<FinancialHub />} />
-                  <Route path="/integrations" element={<Integrations />} />
-                  <Route path="/integrations/callback" element={<IntegrationCallback />} />
-                  <Route path="/workflows" element={<Workflows />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/payment-success" element={<PaymentSuccess />} />
-                  <Route path="/payment-canceled" element={<PaymentCanceled />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-          </ClientViewProvider>
-        </UserTierProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="vops-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <UserTierProvider>
+            <ClientViewProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <ClientViewBanner />
+                  <ChatWidgetWrapper />
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/hub" element={<Hub />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/services" element={<Services />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
+                    <Route path="/tax-services" element={<TaxServices />} />
+                    <Route path="/free-courses" element={<FreeCourses />} />
+                    <Route path="/free-courses/:courseId" element={<FreeCourse />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/health-check" element={<BusinessHealthCheck />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/select-tier" element={<TierSelection />} />
+                    <Route path="/select-product" element={<ProductSelection />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/portal/:tierId" element={<AnalyticsPortal />} />
+                    <Route path="/analytics/:tierId" element={<AnalyticsPortal />} />
+                    <Route path="/vopsy" element={<VOPSy />} />
+                    <Route path="/vault" element={<Vault />} />
+                    <Route path="/studio" element={<Studio />} />
+                    <Route path="/ai-studio" element={<AIStudio />} />
+                    <Route path="/academy" element={<Academy />} />
+                    <Route path="/financial" element={<FinancialHub />} />
+                    <Route path="/integrations" element={<Integrations />} />
+                    <Route path="/integrations/callback" element={<IntegrationCallback />} />
+                    <Route path="/workflows" element={<Workflows />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/payment-success" element={<PaymentSuccess />} />
+                    <Route path="/payment-canceled" element={<PaymentCanceled />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </ClientViewProvider>
+          </UserTierProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   </HelmetProvider>
 );
 

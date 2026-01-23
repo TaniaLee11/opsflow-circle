@@ -4,27 +4,43 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* Virtual Ops Hub Design System - Dark Theme with Orange Accents */
+/* Virtual Ops Hub Design System
+   ============================
+   Dark Mode: Primary (default) - Confident, Premium, Calm, Executive
+   Light Mode: Secondary - Clean, Minimal, Controlled, Disciplined
+*/
 
 @layer base {
   :root {
-    /* Dark Theme - Original dark with orange accents */
+    /* Dark Theme - Primary & Approved
+       Solid charcoal/near-black, no gradients, no glow effects
+       Cards float via spacing and subtle elevation only
+    */
     --background: 222 47% 4%;
     --foreground: 210 40% 98%;
+
     --card: 222 47% 6%;
     --card-foreground: 210 40% 98%;
+
     --popover: 222 47% 6%;
     --popover-foreground: 210 40% 98%;
+
+    /* Brand orange - used sparingly and intentionally */
     --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
+
     --secondary: 217 33% 12%;
     --secondary-foreground: 210 40% 98%;
+
     --muted: 217 33% 15%;
     --muted-foreground: 215 20% 55%;
+
     --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
+
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
+
     --border: 217 33% 15%;
     --input: 217 33% 15%;
     --ring: 24 95% 53%;
@@ -35,19 +51,20 @@
     --surface: 222 47% 8%;
     --surface-foreground: 210 40% 98%;
     --surface-hover: 222 47% 10%;
-    
+
     --glow-primary: 24 95% 53%;
     --glow-muted: 217 33% 20%;
-    
+
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
-    
+
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
-    
+
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
+    /* Sidebar - Dark */
     --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 215 20% 65%;
     --sidebar-primary: 24 95% 53%;
@@ -58,45 +75,71 @@
     --sidebar-ring: 24 95% 53%;
   }
 
-  .dark {
-    --background: 222 47% 4%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 6%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 6%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 24 95% 53%;
+  /* Light Theme - Secondary & Controlled
+     =====================================
+     ONE single background color only: cool-neutral gray
+     NO gradients, NO color bursts, NO fades, NO textures
+     Cards are white with subtle borders/shadows
+     Brand orange accent only (CTAs, links, dividers)
+     Should feel like: executive report, financial dashboard
+  */
+  .light {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Brand orange - consistent with dark mode */
+    --primary: 24 95% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 12%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 24 95% 53%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 24 95% 50%;
     --accent-foreground: 0 0% 100%;
+
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 15%;
-    --input: 217 33% 15%;
-    --ring: 24 95% 53%;
-    --surface: 222 47% 8%;
-    --surface-foreground: 210 40% 98%;
-    --surface-hover: 222 47% 10%;
-    --glow-primary: 24 95% 53%;
-    --glow-muted: 217 33% 20%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 24 95% 50%;
+
+    /* Custom tokens - Light */
+    --surface: 220 14% 96%;
+    --surface-foreground: 222 47% 11%;
+    --surface-hover: 220 14% 93%;
+
+    /* No glow effects in light mode */
+    --glow-primary: 24 95% 50%;
+    --glow-muted: 220 14% 90%;
+
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
+
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
-    --sidebar-background: 222 47% 5%;
-    --sidebar-foreground: 215 20% 65%;
-    --sidebar-primary: 24 95% 53%;
+
+    /* Sidebar - Light */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 30% 35%;
+    --sidebar-primary: 24 95% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 12%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 24 95% 50%;
   }
 }
 
@@ -120,18 +163,33 @@
 }
 
 @layer utilities {
+  /* Glass effect - subtle in light mode */
   .glass {
-    @apply bg-card/50 backdrop-blur-xl border border-border/50;
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
   }
 
+  .light .glass {
+    @apply bg-card/95 backdrop-blur-lg border border-border;
+  }
+
+  /* Glow effects - dark mode only */
   .glow-primary {
     box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.3);
+  }
+
+  .light .glow-primary {
+    box-shadow: 0 4px 20px -4px hsl(220 14% 10% / 0.1);
   }
 
   .glow-primary-sm {
     box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.25);
   }
 
+  .light .glow-primary-sm {
+    box-shadow: 0 2px 10px -2px hsl(220 14% 10% / 0.08);
+  }
+
+  /* Gradient border - subtle elevation in light mode */
   .gradient-border {
     position: relative;
     background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
@@ -139,10 +197,18 @@
     border: 1px solid transparent;
   }
 
+  .light .gradient-border {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 hsl(220 14% 10% / 0.05);
+  }
+
+  /* Text gradient - brand accent */
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-orange-400;
   }
 
+  /* Animations */
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
@@ -152,6 +218,7 @@
     50% { transform: translateY(-10px); }
   }
 
+  /* Pulse glow - dark mode only, subtle shadow in light */
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
   }
@@ -159,5 +226,24 @@
   @keyframes pulse-glow {
     0%, 100% { box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3); }
     50% { box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.5); }
+  }
+
+  .light .animate-pulse-glow {
+    animation: pulse-shadow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-shadow {
+    0%, 100% { box-shadow: 0 4px 15px -3px hsl(220 14% 10% / 0.08); }
+    50% { box-shadow: 0 6px 20px -3px hsl(220 14% 10% / 0.12); }
+  }
+
+  /* Card elevation - clean shadows in light mode */
+  .card-elevated {
+    @apply bg-card border border-border;
+  }
+
+  .light .card-elevated {
+    box-shadow: 0 1px 3px 0 hsl(220 14% 10% / 0.05), 
+                0 1px 2px -1px hsl(220 14% 10% / 0.05);
   }
 }
