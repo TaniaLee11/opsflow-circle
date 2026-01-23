@@ -367,8 +367,9 @@ export default function Services() {
   return (
     <>
       <Helmet>
-        <title>Services | Virtual OPS Assist - Bookkeeping, Compliance & Operations</title>
-        <meta name="description" content="Expert bookkeeping, tax preparation, compliance support, CFO advisory, and operations management for entrepreneurs, nonprofits, and growing businesses. Get organized, stay compliant, and grow with confidence." />
+        <title>Services | Virtual OPS - Small Business Accounting & CFO Services</title>
+        <meta name="description" content="Small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, and CFO services. Based in Rochester, NY — serving clients nationwide. Virtual bookkeeping and outsourced CFO solutions." />
+        <meta name="keywords" content="small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, CFO services for small business, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services" />
         <link rel="canonical" href="https://virtualopsassist.com/services" />
       </Helmet>
 
@@ -388,6 +389,10 @@ export default function Services() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
+                <span className="text-xs sm:text-sm text-primary font-medium">Based in Rochester, NY — Serving Clients Nationwide</span>
+              </div>
+
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
                 Accounting & Financial Services 
                 <span className="text-gradient block">That Actually Move You Forward</span>
