@@ -142,7 +142,7 @@ export default function About() {
                       <span>Greater Rochester, NY (Global / Remote)</span>
                     </div>
                     <a 
-                      href="https://www.linkedin.com/in/taniapotter" 
+                      href="https://www.linkedin.com/in/vops/" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
