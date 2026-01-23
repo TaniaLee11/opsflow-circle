@@ -56,17 +56,26 @@ export default function FreeCourse() {
     return quizzesForLesson.every((q) => quizResults[q.id]);
   }, [quizzesForLesson, quizResults]);
 
-  const getEmbedUrl = (url: string | null) => {
-    if (!url) return null;
+  const getVideoInfo = (url: string | null): { type: 'embed' | 'direct' | null; src: string | null } => {
+    if (!url) return { type: null, src: null };
+    
+    // YouTube
     const ytMatch = url.match(
       /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/
     );
-    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    if (ytMatch) return { type: 'embed', src: `https://www.youtube.com/embed/${ytMatch[1]}` };
 
+    // Vimeo
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    if (vimeoMatch) return { type: 'embed', src: `https://player.vimeo.com/video/${vimeoMatch[1]}` };
 
-    return url;
+    // Direct video file (mp4, webm, etc.)
+    if (url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) || url.startsWith('blob:') || url.startsWith('/')) {
+      return { type: 'direct', src: url };
+    }
+
+    // Default to embed for unknown URLs
+    return { type: 'embed', src: url };
   };
 
   const handlePrev = () => {
@@ -264,17 +273,34 @@ export default function FreeCourse() {
                     <div className="p-6 text-muted-foreground">No lessons available.</div>
                   ) : (
                     <div className="p-6 space-y-6">
-                      {currentLesson.lesson_type === "video" && currentLesson.video_url && (
-                        <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-                          <iframe
-                            src={getEmbedUrl(currentLesson.video_url) || ""}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title={currentLesson.title}
-                          />
-                        </div>
-                      )}
+                      {currentLesson.lesson_type === "video" && currentLesson.video_url && (() => {
+                        const videoInfo = getVideoInfo(currentLesson.video_url);
+                        if (!videoInfo.src) return null;
+                        
+                        return (
+                          <div className="aspect-video rounded-xl overflow-hidden bg-muted">
+                            {videoInfo.type === 'embed' ? (
+                              <iframe
+                                src={videoInfo.src}
+                                className="w-full h-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                title={currentLesson.title}
+                              />
+                            ) : (
+                              <video
+                                src={videoInfo.src}
+                                className="w-full h-full object-cover"
+                                controls
+                                playsInline
+                                title={currentLesson.title}
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {currentLesson.content && (
                         <div className="prose prose-sm dark:prose-invert max-w-none">
