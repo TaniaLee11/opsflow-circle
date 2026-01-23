@@ -40,6 +40,7 @@ import Terms from "./pages/Terms";
 import AnalyticsPortal from "./pages/AnalyticsPortal";
 import FreeCourses from "./pages/FreeCourses";
 import FreeCourse from "./pages/FreeCourse";
+import BusinessHealthCheck from "./pages/BusinessHealthCheck";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => (
                   <Route path="/free-courses/:courseId" element={<FreeCourse />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />
+                  <Route path="/health-check" element={<BusinessHealthCheck />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/onboarding" element={<Onboarding />} />
                   <Route path="/select-tier" element={<TierSelection />} />
