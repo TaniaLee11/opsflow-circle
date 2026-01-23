@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import vopsLogo from "@/assets/vops-logo.svg";
+import vopsLogo from "@/assets/vops-logo.png";
 
 interface NavLink {
   label: string;
@@ -69,11 +68,6 @@ export function PublicNav() {
           ))}
         </div>
 
-        {/* Theme Toggle - Desktop */}
-        <div className="hidden lg:flex items-center">
-          <ThemeToggle />
-        </div>
-
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -123,13 +117,6 @@ export function PublicNav() {
                   </button>
                 )
               ))}
-              {/* Theme Toggle - Mobile */}
-              <div className="pt-2 border-t border-border/50 mt-2">
-                <div className="flex items-center justify-between px-4 py-2">
-                  <span className="text-sm text-muted-foreground">Theme</span>
-                  <ThemeToggle variant="switch" />
-                </div>
-              </div>
             </div>
           </motion.div>
         )}

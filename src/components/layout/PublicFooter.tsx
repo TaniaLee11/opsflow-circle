@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Zap, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import vopsLogo from "@/assets/vops-logo.png";
 
 const footerLinks = {
   company: [
@@ -29,9 +30,7 @@ export function PublicFooter() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary" />
-              </div>
+              <img src={vopsLogo} alt="Virtual OPS" className="h-10 w-auto" />
               <span className="font-bold text-foreground">Virtual OPS Assist</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">

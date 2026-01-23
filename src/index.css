@@ -163,13 +163,13 @@
 }
 
 @layer utilities {
-  /* Glass effect - subtle in light mode */
+  /* Glass effect - solid in light mode, glass in dark */
   .glass {
     @apply bg-card/80 backdrop-blur-xl border border-border/50;
   }
 
   .light .glass {
-    @apply bg-card/95 backdrop-blur-lg border border-border;
+    @apply bg-card border border-border backdrop-blur-0;
   }
 
   /* Glow effects - dark mode only */
