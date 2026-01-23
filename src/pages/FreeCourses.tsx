@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { 
@@ -16,12 +16,13 @@ import {
   Bot,
   Award
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { usePublicCourses } from "@/hooks/usePublicCourses";
+import { cn } from "@/lib/utils";
 
 const platformHighlights = [
   {
@@ -69,10 +70,6 @@ const testimonials = [
 export default function FreeCourses() {
   const navigate = useNavigate();
   const { courses, isLoading } = usePublicCourses();
-
-  const handleStartCourse = (courseId: string) => {
-    navigate(`/free-courses/${courseId}`);
-  };
 
   const handleSignUp = () => {
     navigate("/hub");
@@ -185,62 +182,72 @@ export default function FreeCourses() {
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <Card className="glass hover:border-primary/50 transition-all duration-300 group cursor-pointer h-full flex flex-col"
-                      onClick={() => handleStartCourse(course.id)}
-                    >
-                      <CardContent className="p-6 flex flex-col h-full">
-                        {/* Thumbnail */}
-                        <div className="relative h-40 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                          {course.thumbnail_url ? (
-                            <img 
-                              src={course.thumbnail_url} 
-                              alt={course.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <GraduationCap className="w-16 h-16 text-primary/50" />
-                          )}
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Play className="w-12 h-12 text-white" />
+                    <Link to={`/free-courses/${course.id}`} className="block h-full">
+                      <Card className="glass hover:border-primary/50 transition-all duration-300 group cursor-pointer h-full flex flex-col">
+                        <CardContent className="p-6 flex flex-col h-full">
+                          {/* Thumbnail */}
+                          <div className="relative h-40 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                            {course.thumbnail_url ? (
+                              <img
+                                src={course.thumbnail_url}
+                                alt={course.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <GraduationCap className="w-16 h-16 text-primary/50" />
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Play className="w-12 h-12 text-white" />
+                            </div>
+                            <Badge className="absolute top-3 left-3 bg-success text-success-foreground">
+                              FREE
+                            </Badge>
                           </div>
-                          <Badge className="absolute top-3 left-3 bg-success text-success-foreground">
-                            FREE
-                          </Badge>
-                        </div>
 
-                        {/* Content */}
-                        <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">
-                          {course.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-4 flex-grow">
-                          {course.description}
-                        </p>
+                          {/* Content */}
+                          <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">
+                            {course.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-4 flex-grow">
+                            {course.description}
+                          </p>
 
-                        {/* Meta */}
-                        <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border">
-                          <div className="flex items-center gap-4">
-                            <span className="flex items-center gap-1">
-                              <BookOpen className="w-4 h-4" />
-                              {course.lessons?.length || 0} lessons
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {Math.round((course.lessons?.reduce((acc, l) => acc + (l.duration_minutes || 5), 0) || 15))} min
+                          {/* Meta */}
+                          <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <BookOpen className="w-4 h-4" />
+                                {course.lessons?.length || 0} lessons
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                {Math.round(
+                                  course.lessons?.reduce(
+                                    (acc, l) => acc + (l.duration_minutes || 5),
+                                    0
+                                  ) || 15
+                                )} min
+                              </span>
+                            </div>
+                            <span className="flex items-center gap-1 text-primary">
+                              <Users className="w-4 h-4" />
+                              {course.enrollment_count || 0}
                             </span>
                           </div>
-                          <span className="flex items-center gap-1 text-primary">
-                            <Users className="w-4 h-4" />
-                            {course.enrollment_count || 0}
-                          </span>
-                        </div>
 
-                        {/* CTA */}
-                        <Button className="w-full mt-4 group-hover:bg-primary/90" size="sm">
-                          Start Course
-                          <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      </CardContent>
-                    </Card>
+                          {/* CTA (styled like a button; whole card is clickable) */}
+                          <div
+                            className={cn(
+                              buttonVariants({ size: "sm" }),
+                              "w-full mt-4 justify-center group-hover:bg-primary/90"
+                            )}
+                          >
+                            Start Course
+                            <ArrowRight className="ml-2 w-4 h-4" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   </motion.div>
                 ))}
               </div>

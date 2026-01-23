@@ -37,7 +37,7 @@ interface CourseViewerProps {
 
 export function CourseViewer({ course, isOpen, onClose }: CourseViewerProps) {
   const { user } = useAuth();
-  const { enroll, updateProgress } = useCourses();
+  const { enrollAsync, updateProgress } = useCourses();
   const { awardXp, issueCertificate, stats } = useGamification();
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
@@ -46,10 +46,15 @@ export function CourseViewer({ course, isOpen, onClose }: CourseViewerProps) {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpLevel, setLevelUpLevel] = useState(1);
   const [previousLevel, setPreviousLevel] = useState(stats?.current_level || 1);
+  const [localEnrollment, setLocalEnrollment] = useState(course.enrollment);
 
   const lessons = course.lessons || [];
   const currentLesson = lessons[currentLessonIndex];
-  const enrollment = course.enrollment;
+  useEffect(() => {
+    setLocalEnrollment(course.enrollment);
+  }, [course.id, course.enrollment?.id]);
+
+  const enrollment = localEnrollment;
 
   const completedLessons = new Set(
     (enrollment?.progress?.completed_lessons as string[]) || []
@@ -68,8 +73,17 @@ export function CourseViewer({ course, isOpen, onClose }: CourseViewerProps) {
     }
   }, [stats?.current_level, previousLevel]);
 
-  const handleEnroll = () => {
-    enroll(course.id);
+  const handleEnroll = async () => {
+    try {
+      const enrollmentData = await enrollAsync(course.id);
+      setLocalEnrollment(enrollmentData);
+      setCurrentLessonIndex(0);
+      setQuizAnswers({});
+      setQuizResults({});
+      setShowQuizResults(false);
+    } catch {
+      // toast handled in hook
+    }
   };
 
   const handleMarkComplete = () => {
