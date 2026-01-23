@@ -160,6 +160,15 @@ export default function About() {
                         <span className="text-sm font-medium">Facebook</span>
                         <ExternalLink className="w-4 h-4" />
                       </a>
+                      <a 
+                        href="https://www.instagram.com/virtualopsllc/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                      >
+                        <span className="text-sm font-medium">Instagram</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
                     </div>
                   </div>
                 </div>
