@@ -19,6 +19,12 @@ export interface Course {
   lessons?: CourseLesson[];
   enrollment?: CourseEnrollment | null;
   enrollment_count?: number;
+  tier_enrollments?: TierEnrollmentCount[];
+}
+
+export interface TierEnrollmentCount {
+  tier: string;
+  count: number;
 }
 
 export interface CourseLesson {
@@ -98,6 +104,36 @@ export function useCourses() {
       })) as Course[];
     },
     enabled: !!user,
+  });
+
+  // Fetch tier enrollment stats for owner view
+  const { data: tierEnrollmentStats } = useQuery({
+    queryKey: ["tier-enrollment-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("course_enrollments")
+        .select(`
+          course_id,
+          profiles!inner(subscription_tier, selected_tier)
+        `);
+
+      if (error) throw error;
+      
+      // Group by course_id and tier
+      const statsByCourse: Record<string, Record<string, number>> = {};
+      (data || []).forEach((enrollment: any) => {
+        const courseId = enrollment.course_id;
+        const tier = enrollment.profiles?.selected_tier || enrollment.profiles?.subscription_tier || 'free';
+        
+        if (!statsByCourse[courseId]) {
+          statsByCourse[courseId] = {};
+        }
+        statsByCourse[courseId][tier] = (statsByCourse[courseId][tier] || 0) + 1;
+      });
+      
+      return statsByCourse;
+    },
+    enabled: !!user && isOwner,
   });
 
   // Fetch user enrollments
@@ -394,14 +430,34 @@ export function useCourses() {
     },
   });
 
-  // Combine courses with enrollments
-  const coursesWithEnrollment = courses?.map(course => ({
-    ...course,
-    enrollment: enrollments?.find(e => e.course_id === course.id) || null,
-  }));
+  // Combine courses with enrollments and tier stats
+  const coursesWithEnrollment = courses?.map(course => {
+    const tierStats = tierEnrollmentStats?.[course.id] || {};
+    const tierEnrollments: TierEnrollmentCount[] = Object.entries(tierStats).map(([tier, count]) => ({
+      tier,
+      count: count as number,
+    }));
+    
+    return {
+      ...course,
+      enrollment: enrollments?.find(e => e.course_id === course.id) || null,
+      tier_enrollments: tierEnrollments,
+    };
+  });
+
+  // Calculate total enrollments by tier across all courses
+  const totalEnrollmentsByTier = Object.entries(
+    (tierEnrollmentStats || {}) as Record<string, Record<string, number>>
+  ).reduce((acc, [_, tiers]) => {
+    Object.entries(tiers).forEach(([tier, count]) => {
+      acc[tier] = (acc[tier] || 0) + count;
+    });
+    return acc;
+  }, {} as Record<string, number>);
 
   return {
     courses: coursesWithEnrollment || [],
+    totalEnrollmentsByTier,
     isLoading,
     refetch,
     createCourse: createCourseMutation.mutate,

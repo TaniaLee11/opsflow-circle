@@ -29,7 +29,8 @@ import {
   Flame,
   Zap,
   Wand2,
-  Trash2
+  Trash2,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,7 @@ import { Progress } from "@/components/ui/progress";
 function AcademyContent() {
   const { canCreateCourses, isOwner } = useAuth();
   const { viewedClient, isViewingClient } = useClientView();
-  const { courses, isLoading, deleteCourse } = useCourses();
+  const { courses, isLoading, deleteCourse, totalEnrollmentsByTier } = useCourses();
   const { stats, certificates, levelProgress, earnedBadges } = useGamification();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -235,34 +236,68 @@ function AcademyContent() {
                   
                   {/* Owner Course Stats */}
                   {isOwner && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass gradient-border rounded-xl p-5">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 rounded-xl bg-primary/10 text-primary"><BookOpen className="w-5 h-5" /></div>
-                          <div>
-                            <p className="text-xl font-bold text-foreground">{courses.length}</p>
-                            <p className="text-xs text-muted-foreground">Total Courses</p>
+                    <div className="space-y-4">
+                      {/* Course counts row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass gradient-border rounded-xl p-5">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-xl bg-primary/10 text-primary"><BookOpen className="w-5 h-5" /></div>
+                            <div>
+                              <p className="text-xl font-bold text-foreground">{courses.length}</p>
+                              <p className="text-xs text-muted-foreground">Total Courses</p>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
+                        </motion.div>
 
-                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass gradient-border rounded-xl p-5">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 rounded-xl bg-success/10 text-success"><CheckCircle2 className="w-5 h-5" /></div>
-                          <div>
-                            <p className="text-xl font-bold text-foreground">{courses.filter(c => c.status === 'published').length}</p>
-                            <p className="text-xs text-muted-foreground">Published</p>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass gradient-border rounded-xl p-5">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-xl bg-success/10 text-success"><CheckCircle2 className="w-5 h-5" /></div>
+                            <div>
+                              <p className="text-xl font-bold text-foreground">{courses.filter(c => c.status === 'published').length}</p>
+                              <p className="text-xs text-muted-foreground">Published</p>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
+                        </motion.div>
 
-                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass gradient-border rounded-xl p-5">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 rounded-xl bg-warning/10 text-warning"><Edit className="w-5 h-5" /></div>
-                          <div>
-                            <p className="text-xl font-bold text-foreground">{courses.filter(c => c.status === 'draft').length}</p>
-                            <p className="text-xs text-muted-foreground">Drafts</p>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass gradient-border rounded-xl p-5">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-xl bg-warning/10 text-warning"><Edit className="w-5 h-5" /></div>
+                            <div>
+                              <p className="text-xl font-bold text-foreground">{courses.filter(c => c.status === 'draft').length}</p>
+                              <p className="text-xs text-muted-foreground">Drafts</p>
+                            </div>
                           </div>
+                        </motion.div>
+                      </div>
+
+                      {/* Enrollments by tier row */}
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ delay: 0.3 }}
+                        className="glass gradient-border rounded-xl p-5"
+                      >
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 rounded-lg bg-info/10 text-info"><Users className="w-4 h-4" /></div>
+                          <h3 className="font-semibold text-foreground">Enrollments by Tier</h3>
+                          <Badge variant="secondary" className="ml-auto">
+                            {Object.values(totalEnrollmentsByTier || {}).reduce((a, b) => a + b, 0)} total
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                          {[
+                            { key: 'free', label: 'AI Free', color: 'bg-muted text-muted-foreground' },
+                            { key: 'ai_assistant', label: 'AI Assistant', color: 'bg-info/20 text-info' },
+                            { key: 'ai_operations', label: 'AI Operations', color: 'bg-primary/20 text-primary' },
+                            { key: 'ai_tax', label: 'AI Tax', color: 'bg-warning/20 text-warning' },
+                            { key: 'cohort', label: 'Cohort', color: 'bg-success/20 text-success' },
+                            { key: 'owner', label: 'Owner', color: 'bg-destructive/20 text-destructive' },
+                          ].map(tier => (
+                            <div key={tier.key} className={cn("rounded-lg p-3 text-center", tier.color)}>
+                              <p className="text-lg font-bold">{totalEnrollmentsByTier?.[tier.key] || 0}</p>
+                              <p className="text-xs opacity-80">{tier.label}</p>
+                            </div>
+                          ))}
                         </div>
                       </motion.div>
                     </div>
