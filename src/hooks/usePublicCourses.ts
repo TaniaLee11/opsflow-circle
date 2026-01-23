@@ -147,7 +147,88 @@ export function usePublicCourses() {
 }
 
 export function usePublicCourse(courseId: string) {
-  const { courses, isLoading, error } = usePublicCourses();
-  const course = courses.find(c => c.id === courseId);
-  return { course, isLoading, error };
+  const { data: course, isLoading, error } = useQuery({
+    queryKey: ["public-course", courseId],
+    enabled: Boolean(courseId),
+    queryFn: async () => {
+      const { data: courseData, error: courseError } = await supabase
+        .from("courses")
+        .select(
+          `
+          id,
+          title,
+          description,
+          thumbnail_url,
+          tier_access,
+          course_lessons (
+            id,
+            title,
+            content,
+            video_url,
+            lesson_type,
+            order_index,
+            duration_minutes
+          )
+        `
+        )
+        .eq("id", courseId)
+        .eq("status", "published")
+        .contains("tier_access", ["free"]) // only allow the public free catalog here
+        .maybeSingle();
+
+      if (courseError) throw courseError;
+      if (!courseData) return null;
+
+      const lessonIds = (courseData.course_lessons || []).map((l: any) => l.id);
+
+      let quizzesData: any[] = [];
+      if (lessonIds.length > 0) {
+        const { data: quizzes } = await supabase
+          .from("course_quizzes")
+          .select("*")
+          .in("lesson_id", lessonIds);
+        quizzesData = quizzes || [];
+      }
+
+      const { count } = await supabase
+        .from("course_enrollments")
+        .select("id", { count: "exact", head: true })
+        .eq("course_id", courseId);
+
+      const result: PublicCourse = {
+        id: courseData.id,
+        title: courseData.title,
+        description: courseData.description,
+        thumbnail_url: courseData.thumbnail_url,
+        tier_access: courseData.tier_access || [],
+        lessons: (courseData.course_lessons || [])
+          .sort((a: any, b: any) => a.order_index - b.order_index)
+          .map((l: any) => ({
+            id: l.id,
+            title: l.title,
+            content: l.content,
+            video_url: l.video_url,
+            lesson_type: l.lesson_type,
+            order_index: l.order_index,
+            duration_minutes: l.duration_minutes,
+          })),
+        quizzes: quizzesData.map((q) => ({
+          id: q.id,
+          lesson_id: q.lesson_id,
+          question: q.question,
+          question_type: q.question_type,
+          options: q.options as string[] | null,
+          correct_answer: q.correct_answer,
+          explanation: q.explanation,
+          order_index: q.order_index,
+        })),
+        enrollment_count: count || 0,
+      };
+
+      return result;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  return { course: course ?? undefined, isLoading, error };
 }
