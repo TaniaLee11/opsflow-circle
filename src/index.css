@@ -8,44 +8,36 @@
 
 @layer base {
   :root {
-    /* Light Theme - Cool slate/blue-gray with orange accents */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
-
-    --card: 210 20% 100%;
-    --card-foreground: 222 47% 11%;
-
-    --popover: 210 20% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --primary: 24 95% 50%;
+    /* Dark Theme - Original dark with orange accents */
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 6%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 6%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 214 20% 94%;
-    --secondary-foreground: 222 47% 11%;
-
-    --muted: 214 18% 93%;
-    --muted-foreground: 215 20% 42%;
-
-    --accent: 24 95% 50%;
+    --secondary: 217 33% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 24 95% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 15%;
+    --input: 217 33% 15%;
+    --ring: 24 95% 53%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens - Light */
-    --surface: 214 25% 95%;
-    --surface-foreground: 222 47% 11%;
-    --surface-hover: 214 22% 91%;
+    /* Custom tokens - Dark */
+    --surface: 222 47% 8%;
+    --surface-foreground: 210 40% 98%;
+    --surface-hover: 222 47% 10%;
     
-    --glow-primary: 24 95% 50%;
-    --glow-muted: 214 20% 85%;
+    --glow-primary: 24 95% 53%;
+    --glow-muted: 217 33% 20%;
     
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -56,14 +48,14 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    --sidebar-background: 214 25% 97%;
-    --sidebar-foreground: 222 30% 30%;
-    --sidebar-primary: 24 95% 50%;
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 215 20% 65%;
+    --sidebar-primary: 24 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 22% 93%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 20% 88%;
-    --sidebar-ring: 24 95% 50%;
+    --sidebar-accent: 217 33% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 12%;
+    --sidebar-ring: 24 95% 53%;
   }
 
   .dark {
