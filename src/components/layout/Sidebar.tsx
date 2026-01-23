@@ -26,11 +26,13 @@ import {
   Menu,
   X
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import vopsLogo from "@/assets/vops-logo.png";
+import vopsLogoLight from "@/assets/vops-logo.png";
+import vopsLogoDark from "@/assets/vops-logo-dark.png";
 
 interface NavItem {
   icon: React.ElementType;
@@ -75,6 +77,10 @@ export function Sidebar() {
   const location = useLocation();
   const { user, isOwner, isAdmin, logout } = useAuth();
   const isMobile = useIsMobile();
+  const { resolvedTheme } = useTheme();
+  
+  // Use dark logo for dark mode, light logo for light mode
+  const vopsLogo = resolvedTheme === "dark" ? vopsLogoDark : vopsLogoLight;
 
   const filteredItems = navItems.filter(item => {
     if (item.ownerOnly && !isOwner) return false;

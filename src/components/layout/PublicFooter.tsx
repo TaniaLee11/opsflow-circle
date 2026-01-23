@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
-import vopsLogo from "@/assets/vops-logo.png";
+import { useTheme } from "next-themes";
+import vopsLogoLight from "@/assets/vops-logo.png";
+import vopsLogoDark from "@/assets/vops-logo-dark.png";
 
 const footerLinks = {
   company: [
@@ -22,6 +24,10 @@ const footerLinks = {
 export function PublicFooter() {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+  const { resolvedTheme } = useTheme();
+  
+  // Use dark logo for dark mode, light logo for light mode
+  const vopsLogo = resolvedTheme === "dark" ? vopsLogoDark : vopsLogoLight;
 
   return (
     <footer className="border-t border-border bg-card/30">
