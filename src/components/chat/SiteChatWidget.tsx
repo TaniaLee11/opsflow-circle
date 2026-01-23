@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Loader2, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { MessageCircle, X, Send, Loader2, ChevronDown, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,8 +34,11 @@ export function SiteChatWidget() {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const constraintsRef = useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -119,6 +122,9 @@ export function SiteChatWidget() {
 
   return (
     <>
+      {/* Drag constraints container */}
+      <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-40" />
+      
       {/* Chat Button */}
       <AnimatePresence>
         {!isOpen && (
@@ -126,10 +132,14 @@ export function SiteChatWidget() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
+            drag
+            dragConstraints={constraintsRef}
+            dragElastic={0.1}
+            whileDrag={{ scale: 1.1 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-orange-500 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center group"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center group cursor-grab active:cursor-grabbing"
           >
-            <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:scale-110 transition-transform" />
+            <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground group-hover:scale-110 transition-transform" />
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-background animate-pulse" />
           </motion.button>
         )}
@@ -143,18 +153,27 @@ export function SiteChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
+            drag
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={constraintsRef}
+            dragElastic={0.1}
             className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[400px] h-[500px] sm:h-[550px] max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
-            {/* Header */}
-            <div className="p-4 border-b border-border bg-gradient-to-r from-primary/10 to-orange-500/10 flex items-center justify-between shrink-0">
+            {/* Header - Drag handle */}
+            <div 
+              className="p-4 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5 flex items-center justify-between shrink-0 cursor-grab active:cursor-grabbing"
+              onPointerDown={(e) => dragControls.start(e)}
+            >
               <div className="flex items-center gap-3">
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
                 <div className="w-10 h-10 relative">
                   <VOPSyMascot size="sm" animate={false} className="!w-10 !h-10" />
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-card" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">VOPSy</h3>
-                  <p className="text-xs text-muted-foreground">Virtual OPS Assistant</p>
+                  <p className="text-xs text-muted-foreground">Drag header to move</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
