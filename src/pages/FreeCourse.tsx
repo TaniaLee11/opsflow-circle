@@ -25,6 +25,18 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { usePublicCourse } from "@/hooks/usePublicCourses";
 
+// Import local course videos
+import ideationValidationVideo from "@/assets/videos/lesson-ideation-validation.mp4";
+import moneyTaxesVideo from "@/assets/videos/lesson-money-taxes.mp4";
+import brandBuildingVideo from "@/assets/videos/lesson-brand-building.mp4";
+
+// Map lesson IDs to local video assets
+const localVideoMap: Record<string, string> = {
+  'cdb9cd25-f813-4c84-a759-ca17deeb0390': ideationValidationVideo,
+  '59c83a77-12ac-4035-8f2c-36ea14a73409': moneyTaxesVideo,
+  'd9db66a2-0bc0-416c-8604-a9c075a3cf22': brandBuildingVideo,
+};
+
 export default function FreeCourse() {
   const navigate = useNavigate();
   const { courseId } = useParams();
@@ -56,7 +68,13 @@ export default function FreeCourse() {
     return quizzesForLesson.every((q) => quizResults[q.id]);
   }, [quizzesForLesson, quizResults]);
 
-  const getVideoInfo = (url: string | null): { type: 'embed' | 'direct' | null; src: string | null } => {
+  const getVideoInfo = (lessonId: string, url: string | null): { type: 'embed' | 'direct' | null; src: string | null } => {
+    // First check for locally mapped videos
+    const localVideo = localVideoMap[lessonId];
+    if (localVideo) {
+      return { type: 'direct', src: localVideo };
+    }
+    
     if (!url) return { type: null, src: null };
     
     // YouTube
@@ -273,8 +291,8 @@ export default function FreeCourse() {
                     <div className="p-6 text-muted-foreground">No lessons available.</div>
                   ) : (
                     <div className="p-6 space-y-6">
-                      {currentLesson.lesson_type === "video" && currentLesson.video_url && (() => {
-                        const videoInfo = getVideoInfo(currentLesson.video_url);
+                      {currentLesson.lesson_type === "video" && (() => {
+                        const videoInfo = getVideoInfo(currentLesson.id, currentLesson.video_url);
                         if (!videoInfo.src) return null;
                         
                         return (
