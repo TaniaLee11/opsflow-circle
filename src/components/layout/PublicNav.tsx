@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ExternalLink } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import vopsLogo from "@/assets/vops-logo.png";
+import vopsLogoLight from "@/assets/vops-logo.png";
+import vopsLogoDark from "@/assets/vops-logo-dark.png";
 
 interface NavLink {
   label: string;
@@ -23,8 +25,12 @@ export function PublicNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { resolvedTheme } = useTheme();
 
   const isActive = (href: string) => location.pathname === href;
+  
+  // Use dark logo for dark mode, light logo for light mode
+  const vopsLogo = resolvedTheme === "dark" ? vopsLogoDark : vopsLogoLight;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
