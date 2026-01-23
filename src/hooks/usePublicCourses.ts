@@ -34,11 +34,11 @@ export interface PublicCourse {
 }
 
 // These are the public preview course titles we want to feature
-// In production, you could use an is_public_preview column instead
 const PUBLIC_COURSE_TITLES = [
   "What It Means to Be 'In Business'",
   "How to Open a Business (Sole Prop, LLC, Nonprofit)",
-  "SoloLaunch: The Step-by-Step Blueprint"
+  "SoloLaunch: The Step-by-Step Blueprint",
+  "How to Go from Idea to Funded"
 ];
 
 export function usePublicCourses() {
