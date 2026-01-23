@@ -290,8 +290,8 @@ function AcademyContent() {
                             { key: 'ai_assistant', label: 'AI Assistant', color: 'bg-info/20 text-info' },
                             { key: 'ai_operations', label: 'AI Operations', color: 'bg-primary/20 text-primary' },
                             { key: 'ai_tax', label: 'AI Tax', color: 'bg-warning/20 text-warning' },
+                            { key: 'ai_advisory', label: 'AI Advisory', color: 'bg-destructive/20 text-destructive' },
                             { key: 'cohort', label: 'Cohort', color: 'bg-success/20 text-success' },
-                            { key: 'owner', label: 'Owner', color: 'bg-destructive/20 text-destructive' },
                           ].map(tier => (
                             <div key={tier.key} className={cn("rounded-lg p-3 text-center", tier.color)}>
                               <p className="text-lg font-bold">{totalEnrollmentsByTier?.[tier.key] || 0}</p>
