@@ -141,35 +141,15 @@ export default function About() {
                       <Globe className="w-4 h-4" />
                       <span>Greater Rochester, NY (Global / Remote)</span>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
-                      <a 
-                        href="https://www.linkedin.com/in/vops/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <span className="text-sm font-medium">LinkedIn</span>
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                      <a 
-                        href="https://www.facebook.com/vopsassist" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <span className="text-sm font-medium">Facebook</span>
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                      <a 
-                        href="https://www.instagram.com/virtualopsllc/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <span className="text-sm font-medium">Instagram</span>
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </div>
+                    <a 
+                      href="https://www.linkedin.com/in/vops/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <span className="text-sm font-medium">LinkedIn</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
                   </div>
                 </div>
 
