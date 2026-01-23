@@ -220,20 +220,12 @@ export default function Contact() {
                   <p className="text-muted-foreground mb-4">
                     Book a free 15-minute discovery call to discuss your needs and see if we're a good fit.
                   </p>
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => window.open("https://calendly.com/vops", "_blank", "noopener,noreferrer")}
+                  >
                     Schedule a Call
-                  </Button>
-                </div>
-
-                <div className="glass rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-3">
-                    Looking for Quick Answers?
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Check out our Hub page for a complete overview of what we offer and how it works.
-                  </p>
-                  <Button variant="outline" onClick={() => navigate("/hub")} className="w-full">
-                    Explore the Hub
                   </Button>
                 </div>
               </motion.div>
