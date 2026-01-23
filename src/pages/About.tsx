@@ -48,7 +48,7 @@ const values = [
 ];
 
 const milestones = [
-  { year: "2019", title: "Virtual OPS Founded", description: "Launched with a mission to provide AI-enabled operations for founders, executives, and nonprofits." },
+  { year: "2016", title: "Virtual OPS Founded", description: "Launched with a mission to provide expert bookkeeping, operations, and compliance support for founders, executives, and nonprofits." },
   { year: "2022", title: "500+ Clients Served", description: "Reached our milestone of serving over 500 businesses and nonprofits worldwide." },
   { year: "2024", title: "VOPSy AI Launch", description: "Introduced VOPSy, our AI Operations Director, to provide intelligent support and automation." },
   { year: "2026", title: "Integration Hub", description: "Launching the Virtual OPS Integration Hub—tool-agnostic architecture that orchestrates your existing platforms." }
@@ -237,7 +237,7 @@ export default function About() {
                 <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
                   Virtual OPS
                 </h2>
-                <p className="text-primary font-medium">Founded 2019 – Present</p>
+                <p className="text-primary font-medium">Founded 2016 – Present</p>
               </div>
 
               <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-8">
