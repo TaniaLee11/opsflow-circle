@@ -102,15 +102,19 @@ export default function Landing() {
   return (
     <>
       <Helmet>
-        <title>Virtual OPS Assist | Accounting, Bookkeeping & Financial Services</title>
-        <meta name="description" content="Expert bookkeeping, tax preparation, compliance, and CFO advisory services for entrepreneurs, nonprofits, and growing businesses. 500+ businesses served. Start free today." />
-        <meta property="og:title" content="Accounting & Financial Services That Actually Move You Forward" />
-        <meta property="og:description" content="Full-cycle bookkeeping, tax prep, compliance, and strategic advisory. Built for businesses that do it all. Trusted by 500+ organizations." />
+        <title>Virtual OPS | Accounting, Bookkeeping & CFO Services for Small Business</title>
+        <meta name="description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory for entrepreneurs and nonprofits. 500+ organizations served. Based in Rochester, NY — serving clients nationwide. Book a free call today." />
+        <meta property="og:title" content="Virtual OPS | Small Business Accounting & CFO Services" />
+        <meta property="og:description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory for entrepreneurs and nonprofits. 500+ organizations served. Book a free call today." />
         <meta property="og:image" content="https://virtualopsassist.com/og-home.png" />
         <meta property="og:url" content="https://virtualopsassist.com/" />
-        <meta name="twitter:title" content="Accounting & Financial Services That Actually Move You Forward" />
-        <meta name="twitter:description" content="Full-cycle bookkeeping, tax prep, compliance, and strategic advisory. Trusted by 500+ organizations." />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Virtual OPS Assist" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Virtual OPS | Small Business Accounting & CFO Services" />
+        <meta name="twitter:description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory. 500+ organizations served." />
         <meta name="twitter:image" content="https://virtualopsassist.com/og-home.png" />
+        <meta name="keywords" content="small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, CFO services for small business, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services, operations support" />
         <link rel="canonical" href="https://virtualopsassist.com/" />
       </Helmet>
     <div className="min-h-screen bg-background overflow-hidden">
@@ -456,7 +460,148 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Differentiation Section */}
+      {/* Services Preview Section */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-card/50">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8 sm:mb-12"
+          >
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 px-4">
+              Services That Scale With You
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+              From solo founders to growing enterprises—choose the level of support you need.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+            {[
+              { 
+                title: "Solo & Startup", 
+                price: "Free – $97/mo", 
+                features: ["AI-powered guidance", "Financial templates", "Compliance calendar", "VOPSy assistant"],
+                cta: "Get Started Free",
+                isHuman: false
+              },
+              { 
+                title: "Operations", 
+                price: "$297/mo", 
+                features: ["Full bookkeeping automation", "Read & write integrations", "Task management", "Priority support"],
+                cta: "Start Operations",
+                popular: true,
+                isHuman: false
+              },
+              { 
+                title: "Advisory & Tax", 
+                price: "Custom", 
+                features: ["Human-led by Tania Potter", "Tax preparation & filing", "Strategic CFO advisory", "Compliance management"],
+                cta: "Schedule a Call",
+                isHuman: true
+              }
+            ].map((tier, index) => (
+              <motion.div
+                key={tier.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className={`glass rounded-xl p-5 sm:p-6 relative ${tier.popular ? 'ring-2 ring-primary' : ''}`}
+              >
+                {tier.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full">
+                    Most Popular
+                  </div>
+                )}
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">{tier.title}</h3>
+                <p className="text-2xl font-bold text-primary mb-4">{tier.price}</p>
+                <ul className="space-y-2 mb-6">
+                  {tier.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  variant={tier.popular ? "default" : "outline"} 
+                  className="w-full"
+                  onClick={() => tier.isHuman ? handleScheduleCall() : navigate("/hub")}
+                >
+                  {tier.cta}
+                </Button>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Button variant="ghost" onClick={() => navigate("/services")} className="text-muted-foreground hover:text-foreground">
+              View all service tiers
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8 sm:mb-12"
+          >
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 px-4">
+              What Our Clients Say
+            </h2>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {[
+              {
+                quote: "Virtual OPS took the chaos out of our finances. We finally have clarity on our cash flow and can focus on growing the business.",
+                author: "Nonprofit Executive Director",
+                role: "501(c)(3) Organization"
+              },
+              {
+                quote: "Tania and her team handle our bookkeeping and compliance so seamlessly. It's like having a CFO on call without the full-time cost.",
+                author: "Tech Startup Founder",
+                role: "SaaS Company"
+              },
+              {
+                quote: "The platform is intuitive, but what really sets them apart is the human support. They actually understand small business challenges.",
+                author: "Solo Entrepreneur",
+                role: "Consulting Practice"
+              }
+            ].map((testimonial, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="glass rounded-xl p-5 sm:p-6"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Sparkles key={i} className="w-4 h-4 text-primary" />
+                  ))}
+                </div>
+                <p className="text-muted-foreground mb-4 italic">"{testimonial.quote}"</p>
+                <div>
+                  <p className="font-medium text-foreground">{testimonial.author}</p>
+                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Differentiators Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-card/50">
         <div className="max-w-6xl mx-auto">
           <motion.div
