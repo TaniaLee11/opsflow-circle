@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -195,13 +196,18 @@ export default function Hub() {
       </Helmet>
 
       <div className="min-h-screen bg-background">
-        {/* Background */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Background - Dark mode only */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none dark:block hidden">
           <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-[100px] animate-pulse-glow" />
           <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
         </div>
 
         <PublicNav />
+        
+        {/* Page Theme Toggle */}
+        <div className="fixed top-20 right-4 z-40">
+          <PageThemeToggle className="px-0 py-0" />
+        </div>
 
         {/* Hero with Auth */}
         <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 sm:px-6">

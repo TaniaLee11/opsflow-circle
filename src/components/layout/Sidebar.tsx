@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import vopsLogo from "@/assets/vops-logo.png";
 
 interface NavItem {
   icon: React.ElementType;
@@ -102,11 +102,7 @@ export function Sidebar() {
     )}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 sm:px-6 py-4 sm:py-6 border-b border-sidebar-border">
-        <div className="relative">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center glow-primary-sm">
-            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
-          </div>
-        </div>
+        <img src={vopsLogo} alt="Virtual OPS" className="h-9 sm:h-10 w-auto" />
         {(!collapsed || isMobileView) && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -229,7 +225,6 @@ export function Sidebar() {
           )}
           {(!collapsed || isMobileView) && (
             <div className="flex gap-1">
-              <ThemeToggle className="text-muted-foreground" />
               <button className="p-1.5 sm:p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
                 <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
               </button>
@@ -263,9 +258,7 @@ export function Sidebar() {
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2 ml-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src={vopsLogo} alt="Virtual OPS" className="h-8 w-auto" />
             <span className="font-semibold text-foreground">Virtual OPS Hub</span>
           </div>
         </header>

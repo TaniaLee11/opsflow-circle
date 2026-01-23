@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 
 // Operating paths for path selection
 const operatingPaths = [
@@ -118,14 +119,19 @@ export default function Landing() {
         <link rel="canonical" href="https://virtualopsassist.com/" />
       </Helmet>
     <div className="min-h-screen bg-background overflow-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      {/* Background Effects - Dark mode only */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none dark:block hidden">
         <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-[100px] animate-pulse-glow" />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/5 to-transparent rounded-full" />
       </div>
 
       <PublicNav />
+      
+      {/* Page Theme Toggle */}
+      <div className="fixed top-20 right-4 z-40">
+        <PageThemeToggle className="px-0 py-0" />
+      </div>
 
       {/* Hero Section */}
       <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
