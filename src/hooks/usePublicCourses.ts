@@ -35,9 +35,8 @@ export interface PublicCourse {
 
 // These are the public preview course titles we want to feature
 const PUBLIC_COURSE_TITLES = [
-  "What It Means to Be 'In Business'",
-  "How to Open a Business (Sole Prop, LLC, Nonprofit)",
-  "SoloLaunch: The Step-by-Step Blueprint",
+  "What It Means to Be",  // Matches "What It Means to Be 'In Business'"
+  "How to Open a Business",
   "How to Go from Idea to Funded"
 ];
 
