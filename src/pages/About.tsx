@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import taniaHeadshot from "@/assets/tania-headshot.jpeg";
 
 const values = [
   {
@@ -124,10 +125,12 @@ export default function About() {
                 {/* Profile Card */}
                 <div className="lg:col-span-1">
                   <div className="text-center lg:text-left">
-                    {/* Placeholder for professional headshot - replace src with actual photo */}
-                    <div className="w-32 h-32 mx-auto lg:mx-0 rounded-2xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center mb-6 overflow-hidden">
-                      {/* TODO: Replace with <img src="/tania-headshot.jpg" alt="Tania Potter" className="w-full h-full object-cover" /> */}
-                      <span className="text-4xl font-bold text-white">TP</span>
+                    <div className="w-32 h-32 mx-auto lg:mx-0 rounded-2xl overflow-hidden mb-6 ring-2 ring-primary/20">
+                      <img 
+                        src={taniaHeadshot} 
+                        alt="Tania Potter, Founder of Virtual OPS Assist" 
+                        className="w-full h-full object-cover object-top"
+                      />
                     </div>
                     <h2 className="text-2xl font-bold text-foreground mb-1">Tania Potter</h2>
                     <p className="text-primary font-medium mb-2">Founder & Owner, Virtual OPS</p>
