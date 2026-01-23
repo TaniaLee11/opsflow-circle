@@ -25,7 +25,7 @@ const FAQ_SUGGESTIONS = [
 const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
-  content: "Hi! I'm VOPSy, your Virtual Operations assistant. 👋\n\nI can help you learn about our services, answer questions about bookkeeping, taxes, compliance, and more. How can I help you today?",
+  content: "Hi! I'm VOPSy, your Virtual Operations assistant. 👋\n\nI can help you learn about our services, navigate the website, or answer questions about how Virtual OPS can support your business. What can I help you with today?",
   timestamp: new Date(),
 };
 
@@ -69,22 +69,17 @@ export function SiteChatWidget() {
     setIsLoading(true);
 
     try {
-      // Build conversation history for context
+      // Build conversation history for context (Role C - Website Support)
       const conversationHistory = messages.map(m => ({
         role: m.role,
         content: m.content,
       }));
       conversationHistory.push({ role: "user", content: content.trim() });
 
-      const { data, error } = await supabase.functions.invoke("vopsy-chat", {
+      // Use the public chat endpoint (Role C - no auth required)
+      const { data, error } = await supabase.functions.invoke("vopsy-public-chat", {
         body: {
           messages: conversationHistory,
-          userContext: {
-            name: "Visitor",
-            tier: "visitor",
-            isOwner: false,
-            capabilities: ["general_questions", "service_info"],
-          },
         },
       });
 
@@ -93,7 +88,7 @@ export function SiteChatWidget() {
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: data?.content || "I apologize, but I'm having trouble responding right now. Please try again or contact us directly.",
+        content: data?.message || "I apologize, but I'm having trouble responding right now. Please try again or visit our contact page.",
         timestamp: new Date(),
       };
 
