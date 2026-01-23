@@ -75,33 +75,34 @@
     --sidebar-ring: 24 95% 53%;
   }
 
-  /* Light Theme - Secondary & Controlled
+  /* Light Theme - Warm Cream/Ivory with Navy Text
      =====================================
-     ONE single background color only: cool-neutral gray
-     NO gradients, NO color bursts, NO fades, NO textures
-     Cards are white with subtle borders/shadows
-     Brand orange accent only (CTAs, links, dividers)
-     Should feel like: executive report, financial dashboard
+     Warm, inviting, professional
+     Background: Creamy off-white (warm ivory)
+     Text: Dark navy blue
+     Cards: Pure white with subtle shadows
+     Accent: Brand orange
   */
   .light {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Warm cream/ivory background */
+    --background: 40 33% 97%;
+    --foreground: 222 47% 18%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 40 20% 99%;
+    --card-foreground: 222 47% 18%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 40 20% 99%;
+    --popover-foreground: 222 47% 18%;
 
     /* Brand orange - consistent with dark mode */
     --primary: 24 95% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 222 47% 18%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 40 15% 94%;
+    --muted-foreground: 222 30% 40%;
 
     --accent: 24 95% 50%;
     --accent-foreground: 0 0% 100%;
@@ -109,18 +110,18 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
     --ring: 24 95% 50%;
 
     /* Custom tokens - Light */
-    --surface: 220 14% 96%;
-    --surface-foreground: 222 47% 11%;
-    --surface-hover: 220 14% 93%;
+    --surface: 40 20% 95%;
+    --surface-foreground: 222 47% 18%;
+    --surface-hover: 40 20% 92%;
 
     /* No glow effects in light mode */
     --glow-primary: 24 95% 50%;
-    --glow-muted: 220 14% 90%;
+    --glow-muted: 40 15% 88%;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -131,14 +132,14 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    /* Sidebar - Light */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 30% 35%;
+    /* Sidebar - Light (warm cream) */
+    --sidebar-background: 40 20% 99%;
+    --sidebar-foreground: 222 30% 30%;
     --sidebar-primary: 24 95% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-accent: 40 20% 94%;
+    --sidebar-accent-foreground: 222 47% 18%;
+    --sidebar-border: 40 15% 88%;
     --sidebar-ring: 24 95% 50%;
   }
 }
