@@ -38,6 +38,7 @@ import TaxServices from "./pages/TaxServices";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import AnalyticsPortal from "./pages/AnalyticsPortal";
+import FreeCourses from "./pages/FreeCourses";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,8 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
                   <Route path="/tax-services" element={<TaxServices />} />
+                  <Route path="/free-courses" element={<FreeCourses />} />
+                  <Route path="/free-courses/:courseId" element={<FreeCourses />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/auth" element={<Auth />} />
