@@ -8,43 +8,44 @@
 
 @layer base {
   :root {
-    --background: 222 47% 4%;
-    --foreground: 210 40% 98%;
+    /* Light Theme - Clean cream/warm white with orange accents */
+    --background: 40 30% 97%;
+    --foreground: 222 47% 11%;
 
-    --card: 222 47% 6%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 222 47% 6%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 24 95% 53%;
+    --primary: 24 95% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 12%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 40 20% 92%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 40 15% 93%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 24 95% 53%;
+    --accent: 24 95% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 15%;
-    --input: 217 33% 15%;
-    --ring: 24 95% 53%;
+    --border: 40 20% 88%;
+    --input: 40 20% 88%;
+    --ring: 24 95% 50%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens */
-    --surface: 222 47% 8%;
-    --surface-foreground: 210 40% 98%;
-    --surface-hover: 222 47% 10%;
+    /* Custom tokens - Light */
+    --surface: 40 25% 95%;
+    --surface-foreground: 222 47% 11%;
+    --surface-hover: 40 20% 92%;
     
-    --glow-primary: 24 95% 53%;
-    --glow-muted: 217 33% 20%;
+    --glow-primary: 24 95% 50%;
+    --glow-muted: 40 15% 85%;
     
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -55,14 +56,14 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    --sidebar-background: 222 47% 5%;
-    --sidebar-foreground: 215 20% 65%;
-    --sidebar-primary: 24 95% 53%;
+    --sidebar-background: 40 25% 96%;
+    --sidebar-foreground: 222 30% 35%;
+    --sidebar-primary: 24 95% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 12%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-accent: 40 20% 92%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 40 20% 88%;
+    --sidebar-ring: 24 95% 50%;
   }
 
   .dark {
@@ -85,6 +86,17 @@
     --border: 217 33% 15%;
     --input: 217 33% 15%;
     --ring: 24 95% 53%;
+    --surface: 222 47% 8%;
+    --surface-foreground: 210 40% 98%;
+    --surface-hover: 222 47% 10%;
+    --glow-primary: 24 95% 53%;
+    --glow-muted: 217 33% 20%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
     --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 215 20% 65%;
     --sidebar-primary: 24 95% 53%;
