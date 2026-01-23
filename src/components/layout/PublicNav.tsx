@@ -14,10 +14,10 @@ interface NavLink {
 const navLinks: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "Hub", href: "/hub" },
+  { label: "Free Courses", href: "/free-courses" },
   { label: "Services", href: "/services" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
-  // { label: "Courses", href: "https://academy.virtualopsassist.com", external: true }, // Hidden until live
 ];
 
 export function PublicNav() {
