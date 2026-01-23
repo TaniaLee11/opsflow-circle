@@ -73,6 +73,22 @@ export interface CourseEnrollment {
   completed_at: string | null;
 }
 
+function normalizeEnrollment(raw: any): CourseEnrollment {
+  const progress = (raw?.progress ?? {}) as any;
+  return {
+    id: raw.id,
+    course_id: raw.course_id,
+    user_id: raw.user_id,
+    enrolled_at: raw.enrolled_at,
+    completed_at: raw.completed_at ?? null,
+    progress: {
+      completed_lessons: Array.isArray(progress.completed_lessons)
+        ? progress.completed_lessons
+        : [],
+    },
+  };
+}
+
 export function useCourses() {
   const { user, isOwner } = useAuth();
   const queryClient = useQueryClient();
@@ -372,7 +388,20 @@ export function useCourses() {
 
   // Enroll in course
   const enrollMutation = useMutation({
-    mutationFn: async (courseId: string) => {
+    mutationFn: async (courseId: string): Promise<CourseEnrollment> => {
+      if (!user) throw new Error("Not authenticated");
+
+      // If already enrolled, return the existing enrollment so the UI can proceed immediately.
+      const { data: existingEnrollment, error: existingError } = await supabase
+        .from("course_enrollments")
+        .select("*")
+        .eq("course_id", courseId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+      if (existingEnrollment) return normalizeEnrollment(existingEnrollment);
+
       const { data, error } = await supabase
         .from("course_enrollments")
         .insert({
@@ -384,10 +413,11 @@ export function useCourses() {
         .single();
 
       if (error) throw error;
-      return data;
+      return normalizeEnrollment(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["course-enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
       toast.success("Enrolled in course!");
     },
     onError: (error: any) => {
@@ -470,6 +500,7 @@ export function useCourses() {
     addQuiz: addQuizMutation.mutate,
     deleteQuiz: deleteQuizMutation.mutate,
     enroll: enrollMutation.mutate,
+    enrollAsync: enrollMutation.mutateAsync,
     updateProgress: updateProgressMutation.mutate,
     isCreating: createCourseMutation.isPending,
     isUpdating: updateCourseMutation.isPending,
