@@ -38,10 +38,10 @@ export function PublicFooter() {
               Operations, bookkeeping, and compliance—expertly managed, all in one place.
             </p>
             <a 
-              href="mailto:info@virtualopsassist.com" 
+              href="mailto:tania@virtualopsassist.com" 
               className="text-sm text-primary hover:text-primary/80 transition-colors"
             >
-              info@virtualopsassist.com
+              tania@virtualopsassist.com
             </a>
           </div>
 

@@ -22,8 +22,8 @@ const contactInfo = [
   {
     icon: Mail,
     label: "Email",
-    value: "info@virtualopsassist.com",
-    href: "mailto:info@virtualopsassist.com"
+    value: "tania@virtualopsassist.com",
+    href: "mailto:tania@virtualopsassist.com"
   },
   {
     icon: Phone,
