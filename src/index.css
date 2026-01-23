@@ -8,24 +8,24 @@
 
 @layer base {
   :root {
-    /* Light Theme - Clean white/gray with orange accents */
-    --background: 0 0% 98%;
+    /* Light Theme - Cool slate/blue-gray with orange accents */
+    --background: 210 20% 98%;
     --foreground: 222 47% 11%;
 
-    --card: 0 0% 100%;
+    --card: 210 20% 100%;
     --card-foreground: 222 47% 11%;
 
-    --popover: 0 0% 100%;
+    --popover: 210 20% 100%;
     --popover-foreground: 222 47% 11%;
 
     --primary: 24 95% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
+    --secondary: 214 20% 94%;
     --secondary-foreground: 222 47% 11%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 214 18% 93%;
+    --muted-foreground: 215 20% 42%;
 
     --accent: 24 95% 50%;
     --accent-foreground: 0 0% 100%;
@@ -33,19 +33,19 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
     --ring: 24 95% 50%;
 
     --radius: 0.75rem;
 
     /* Custom tokens - Light */
-    --surface: 220 14% 96%;
+    --surface: 214 25% 95%;
     --surface-foreground: 222 47% 11%;
-    --surface-hover: 220 14% 93%;
+    --surface-hover: 214 22% 91%;
     
     --glow-primary: 24 95% 50%;
-    --glow-muted: 220 14% 90%;
+    --glow-muted: 214 20% 85%;
     
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -56,13 +56,13 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 30% 35%;
+    --sidebar-background: 214 25% 97%;
+    --sidebar-foreground: 222 30% 30%;
     --sidebar-primary: 24 95% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent: 214 22% 93%;
     --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 214 20% 88%;
     --sidebar-ring: 24 95% 50%;
   }
 
