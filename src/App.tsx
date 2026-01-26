@@ -42,6 +42,7 @@ import AnalyticsPortal from "./pages/AnalyticsPortal";
 import FreeCourses from "./pages/FreeCourses";
 import FreeCourse from "./pages/FreeCourse";
 import BusinessHealthCheck from "./pages/BusinessHealthCheck";
+import ManagedPartners from "./pages/ManagedPartners";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => (
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/health-check" element={<BusinessHealthCheck />} />
+                    <Route path="/managed-partners" element={<ManagedPartners />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/select-tier" element={<TierSelection />} />
