@@ -97,14 +97,10 @@ export function Sidebar() {
       <div className="flex items-center gap-3 px-4 sm:px-6 py-4 sm:py-6 border-b border-sidebar-border">
         <img src={vopsLogo} alt="Virtual OPS" className="h-9 sm:h-10 w-auto" />
         {(!collapsed || isMobileView) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col"
-          >
+          <div className="flex flex-col">
             <span className="font-semibold text-foreground text-sm sm:text-base">Virtual OPS Hub</span>
             <span className="text-[10px] sm:text-xs text-muted-foreground">Powered by VOPSy</span>
-          </motion.div>
+          </div>
         )}
         {isMobileView && (
           <button
@@ -284,13 +280,11 @@ export function Sidebar() {
     );
   }
 
-  // Desktop Sidebar
+  // Desktop Sidebar - Static, no motion animations
   return (
-    <motion.aside
-      initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
+    <aside
       className={cn(
-        "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border z-50 flex flex-col transition-all duration-300 hidden md:flex",
+        "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border z-50 flex-col hidden md:flex",
         collapsed ? "w-20" : "w-64"
       )}
     >
@@ -303,6 +297,6 @@ export function Sidebar() {
       >
         <ChevronLeft className={cn("w-4 h-4 transition-transform", collapsed && "rotate-180")} />
       </button>
-    </motion.aside>
+    </aside>
   );
 }
