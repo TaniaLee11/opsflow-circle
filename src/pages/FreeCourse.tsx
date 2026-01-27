@@ -19,6 +19,7 @@ import {
 
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -146,6 +147,11 @@ export default function FreeCourse() {
 
       <div className="min-h-screen bg-background">
         <PublicNav />
+        
+        {/* Page Theme Toggle */}
+        <div className="fixed top-20 right-4 z-40">
+          <PageThemeToggle className="px-0 py-0" />
+        </div>
 
         <main className="pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
           <div className="max-w-6xl mx-auto">

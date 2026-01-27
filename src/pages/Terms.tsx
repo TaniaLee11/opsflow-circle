@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 
 export default function Terms() {
   return (
@@ -12,6 +13,11 @@ export default function Terms() {
 
       <div className="min-h-screen bg-background flex flex-col">
         <PublicNav />
+        
+        {/* Page Theme Toggle */}
+        <div className="fixed top-20 right-4 z-40">
+          <PageThemeToggle className="px-0 py-0" />
+        </div>
 
         <main className="flex-1 py-16 sm:py-24">
           <div className="max-w-4xl mx-auto px-4 sm:px-6">

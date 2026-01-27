@@ -22,6 +22,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { useState } from "react";
 
 // Calculate days until deadline
@@ -252,6 +253,11 @@ export default function TaxSeason2026() {
           </div>
         </div>
       </nav>
+      
+      {/* Page Theme Toggle */}
+      <div className="fixed top-20 right-4 z-40">
+        <PageThemeToggle className="px-0 py-0" />
+      </div>
 
       {/* Main Carousel Section */}
       <section className="min-h-screen flex items-center justify-center pt-16 pb-8 px-4 sm:px-6">
