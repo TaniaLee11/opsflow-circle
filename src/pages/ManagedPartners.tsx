@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import tlProductionsLogo from "@/assets/partners/tl-productions-logo.png";
-
+import fatherhoodConnectionLogo from "@/assets/partners/fatherhood-connection-logo.png";
 interface ManagedPartner {
   name: string;
   description: string;
@@ -43,6 +43,7 @@ const managedPartners: ManagedPartner[] = [
     description: "Community platform supporting fathers through resources, connection, and mentorship opportunities.",
     icon: Users,
     url: "https://fatherhoodconnection.com",
+    logo: fatherhoodConnectionLogo,
   },
 ];
 
