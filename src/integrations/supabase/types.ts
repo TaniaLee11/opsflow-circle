@@ -1174,6 +1174,39 @@ export type Database = {
           },
         ]
       }
+      saved_contacts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          last_used_at: string
+          name: string | null
+          phone: string | null
+          use_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          last_used_at?: string
+          name?: string | null
+          phone?: string | null
+          use_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          last_used_at?: string
+          name?: string | null
+          phone?: string | null
+          use_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       studio_generations: {
         Row: {
           created_at: string
