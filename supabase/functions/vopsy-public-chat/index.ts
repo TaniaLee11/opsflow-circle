@@ -141,8 +141,8 @@ Virtual OPS offers these service tiers:
 
 **AI-Powered Platform Tiers:**
 - **AI Free** — Guidance and education only, no integrations
-- **AI Assistant ($59/mo)** — Read-only access to connected tools, analysis and recommendations
-- **AI Operations ($229/mo)** — Full execution authority, automations, workflow management
+- **AI Assistant ($34.99/mo)** — Read-only access to connected tools, analysis and recommendations
+- **AI Operations ($99.99/mo)** — Full execution authority, automations, workflow management
 
 **Human-Led Service Tiers:**
 - **AI Advisory** — Strategic planning with Tania Potter and team
