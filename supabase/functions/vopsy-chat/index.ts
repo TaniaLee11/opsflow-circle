@@ -461,9 +461,25 @@ serve(async (req) => {
 
     // Add user context if provided
     if (userContext) {
+      let contextContent = `User context:\n`;
+      contextContent += `- Name: ${userContext.userName || 'User'}\n`;
+      contextContent += `- Tier: ${userContext.tier || 'unknown'}\n`;
+      contextContent += `- VOPSy Tier: ${userContext.vopsyTier || 'free'}\n`;
+      
+      // Add email context if available
+      if (userContext.emailContext) {
+        contextContent += `\n${userContext.emailContext}\n`;
+        contextContent += `\nEMAIL CAPABILITIES:\n`;
+        contextContent += `- The user can say "scan inbox" to analyze their connected email\n`;
+        contextContent += `- When emails are loaded, you can reference them by number (e.g., "email #1")\n`;
+        contextContent += `- You can offer to draft replies by saying "Say 'draft reply' to write a response"\n`;
+        contextContent += `- After drafting, users can say "send it" to send the email\n`;
+        contextContent += `- Always acknowledge email context when discussing tasks or priorities\n`;
+      }
+      
       conversationMessages.push({
         role: 'system',
-        content: `User context: ${JSON.stringify(userContext)}`
+        content: contextContent
       });
     }
 
