@@ -6,12 +6,14 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
+import tlProductionsLogo from "@/assets/partners/tl-productions-logo.png";
 
 interface ManagedPartner {
   name: string;
   description: string;
   icon: React.ElementType;
   url: string;
+  logo?: string;
 }
 
 const managedPartners: ManagedPartner[] = [
@@ -20,18 +22,21 @@ const managedPartners: ManagedPartner[] = [
     description: "Faith-based ministry platform focused on spiritual formation, teaching, and community transformation.",
     icon: Church,
     url: "https://overcomeinc.lovable.app",
+    logo: "https://overcomeinc.lovable.app/favicon.png",
   },
   {
     name: "TL Productions",
     description: "Creative media and music platform producing content exploring faith, culture, and identity.",
     icon: Music,
     url: "https://tlprod.lovable.app",
+    logo: tlProductionsLogo,
   },
   {
     name: "Ren360",
     description: "AI-powered lead generation platform helping businesses identify and connect with qualified prospects.",
     icon: Zap,
     url: "https://www.ren360.io/ai-lead-generation",
+    logo: "https://images.clickfunnels.com/cdn-cgi/image/width=200px,fit=scale-down,f=auto,q=80/https://statics.myclickfunnels.com/image/1213415/file/74787ec1e85733da079f5adb5cfe7c92.png",
   },
   {
     name: "Fatherhood Connection",
@@ -98,7 +103,23 @@ export default function ManagedPartners() {
                 >
                   <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm hover:border-border transition-colors">
                     <CardHeader className="pb-4">
-                      <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4">
+                      {partner.logo ? (
+                        <div className="w-16 h-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4 overflow-hidden p-2">
+                          <img 
+                            src={partner.logo} 
+                            alt={`${partner.name} logo`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              // Fallback to icon if logo fails to load
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.classList.add('hidden');
+                              const fallback = e.currentTarget.parentElement?.nextElementSibling;
+                              if (fallback) fallback.classList.remove('hidden');
+                            }}
+                          />
+                        </div>
+                      ) : null}
+                      <div className={`w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4 ${partner.logo ? 'hidden' : ''}`}>
                         <partner.icon className="w-6 h-6 text-foreground" />
                       </div>
                       <CardTitle className="text-xl font-semibold text-foreground">
