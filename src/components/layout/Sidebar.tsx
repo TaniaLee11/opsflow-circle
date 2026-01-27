@@ -45,32 +45,18 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // Core - Dashboard first
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", category: "Core" },
+  // Top 3 - Always visible, no category label
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+  { icon: Brain, label: "VOPSy", href: "/vopsy" },
+  { icon: GraduationCap, label: "Academy", href: "/academy" },
   
-  // AI Assistant - VOPSy second
-  { icon: Brain, label: "VOPSy", href: "/vopsy", category: "AI Assistant" },
-  
-  // Communications - Core operational function
-  { icon: Send, label: "Communications", href: "/communications", category: "Core" },
-  
-  // Workflows - Projects & Calendar
-  { icon: FolderKanban, label: "Workflows", href: "/workflows", category: "Productivity" },
-  
-  // Documents & Storage
-  { icon: FolderLock, label: "Vault", href: "/vault", category: "Documents" },
-  
-  // Creative - Studio for content creation and marketing
-  { icon: Sparkles, label: "Studio", href: "/studio", category: "Creative" },
-  
-  // Learning
-  { icon: GraduationCap, label: "Academy", href: "/academy", category: "Learning" },
-  
-  // Financial Hub
-  { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Finance" },
-  
-  // Integrations
-  { icon: Workflow, label: "Automations", href: "/integrations", category: "Integrations" },
+  // Operations section
+  { icon: Send, label: "Communications", href: "/communications", category: "Operations" },
+  { icon: FolderKanban, label: "Workflows", href: "/workflows", category: "Operations" },
+  { icon: FolderLock, label: "Vault", href: "/vault", category: "Operations" },
+  { icon: Sparkles, label: "Studio", href: "/studio", category: "Operations" },
+  { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Operations" },
+  { icon: Workflow, label: "Automations", href: "/integrations", category: "Operations" },
 ];
 
 export function Sidebar() {
@@ -101,8 +87,6 @@ export function Sidebar() {
     if (isMobile) setMobileOpen(false);
   };
 
-  // Group items by category
-  const categories = [...new Set(filteredItems.map(item => item.category))];
 
   const SidebarContent = ({ isMobileView = false }: { isMobileView?: boolean }) => (
     <div className={cn(
@@ -145,56 +129,81 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-2 sm:px-3 py-2 space-y-1 overflow-y-auto">
-        {categories.map(category => {
-          const categoryItems = filteredItems.filter(item => item.category === category);
-          if (categoryItems.length === 0) return null;
-          
-          return (
-            <div key={category} className="mb-3 sm:mb-4">
-              {(!collapsed || isMobileView) && (
-                <p className="px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {category}
-                </p>
-              )}
-              {categoryItems.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <button
-                    key={item.href}
-                    onClick={() => handleNavigation(item.href)}
-                    className={cn(
-                      "w-full flex items-center gap-2 sm:gap-3 px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 group relative",
-                      isActive 
-                        ? "bg-primary/10 text-primary" 
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        {/* Top 3 items without category label */}
+        <div className="mb-3 sm:mb-4">
+          {filteredItems.filter(item => !item.category).map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <button
+                key={item.href}
+                onClick={() => handleNavigation(item.href)}
+                className={cn(
+                  "w-full flex items-center gap-2 sm:gap-3 px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 group relative",
+                  isActive 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 sm:h-6 bg-primary rounded-r-full" />
+                )}
+                <item.icon className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isActive && "text-primary")} />
+                {(!collapsed || isMobileView) && (
+                  <>
+                    <span className="flex-1 text-left text-xs sm:text-sm font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full bg-primary/20 text-primary">
+                        {item.badge}
+                      </span>
                     )}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeTab"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 sm:h-6 bg-primary rounded-r-full"
-                      />
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Operations section */}
+        <div className="mb-3 sm:mb-4">
+          {(!collapsed || isMobileView) && (
+            <p className="px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Operations
+            </p>
+          )}
+          {filteredItems.filter(item => item.category === "Operations").map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <button
+                key={item.href}
+                onClick={() => handleNavigation(item.href)}
+                className={cn(
+                  "w-full flex items-center gap-2 sm:gap-3 px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 group relative",
+                  isActive 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 sm:h-6 bg-primary rounded-r-full" />
+                )}
+                <item.icon className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isActive && "text-primary")} />
+                {(!collapsed || isMobileView) && (
+                  <>
+                    <span className="flex-1 text-left text-xs sm:text-sm font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full bg-primary/20 text-primary">
+                        {item.badge}
+                      </span>
                     )}
-                    <item.icon className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isActive && "text-primary")} />
-                    {(!collapsed || isMobileView) && (
-                      <>
-                        <span className="flex-1 text-left text-xs sm:text-sm font-medium">{item.label}</span>
-                        {item.badge && (
-                          <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full bg-primary/20 text-primary">
-                            {item.badge}
-                          </span>
-                        )}
-                        {item.adminOnly && (
-                          <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary/60" />
-                        )}
-                      </>
+                    {item.adminOnly && (
+                      <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary/60" />
                     )}
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })}
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </nav>
 
       {/* User Section */}
