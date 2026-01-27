@@ -138,7 +138,9 @@ export default function ManagedPartners() {
         />
       </Helmet>
 
-      <PageThemeToggle />
+      <div className="fixed top-20 right-4 z-40">
+        <PageThemeToggle className="px-0 py-0" />
+      </div>
       <PublicNav />
 
       <main className="min-h-screen pt-20 pb-16">
