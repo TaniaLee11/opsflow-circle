@@ -507,12 +507,12 @@ function BatchCommunications() {
   const { 
     contacts: savedContacts, 
     loading: loadingContacts, 
-    exportContacts, 
-    importContacts,
-    bulkSaveContacts 
+    exportEmailList, 
+    importEmailList,
+    bulkSaveEmails 
   } = useSavedContacts();
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
-  const [batchChannel, setBatchChannel] = useState<"email" | "sms" | "both">("email");
+  const [batchChannel, setBatchChannel] = useState<"email">("email");
   const [batchMessage, setBatchMessage] = useState("");
   const [batchSubject, setBatchSubject] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -540,21 +540,12 @@ function BatchCommunications() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      await importContacts(file);
+      await importEmailList(file);
       e.target.value = ''; // Reset file input
     }
   };
 
   const handleBatchSend = async () => {
-    if (batchChannel === "sms" || batchChannel === "both") {
-      toast({
-        title: "SMS not configured",
-        description: "SMS sending requires Vonage integration. Email will be sent only.",
-        variant: "destructive",
-      });
-      if (batchChannel === "sms") return;
-    }
-
     setIsSending(true);
     
     try {
@@ -580,8 +571,8 @@ function BatchCommunications() {
           description: `Email sent to ${bccEmails.length} recipients as BCC.`,
         });
         
-        // Save all contacts for future use
-        await bulkSaveContacts(bccEmails);
+        // Save all emails for future use
+        await bulkSaveEmails(bccEmails);
         
         setShowConfirmDialog(false);
         setSelectedContacts([]);
@@ -622,8 +613,8 @@ function BatchCommunications() {
         {/* Import/Export Controls */}
         <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
           <div className="flex-1">
-            <p className="text-sm font-medium">Manage Contacts</p>
-            <p className="text-xs text-muted-foreground">Import or export your saved contacts list</p>
+            <p className="text-sm font-medium">Email List</p>
+            <p className="text-xs text-muted-foreground">Import or export your saved email recipients</p>
           </div>
           <input
             ref={fileInputRef}
@@ -634,11 +625,11 @@ function BatchCommunications() {
           />
           <Button variant="outline" size="sm" onClick={handleImportClick} className="gap-1">
             <Upload className="w-3.5 h-3.5" />
-            Import
+            Import List
           </Button>
-          <Button variant="outline" size="sm" onClick={exportContacts} className="gap-1">
+          <Button variant="outline" size="sm" onClick={exportEmailList} className="gap-1">
             <Download className="w-3.5 h-3.5" />
-            Export
+            Export List
           </Button>
         </div>
 
@@ -656,7 +647,7 @@ function BatchCommunications() {
         {/* Contact Selection */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Select from Saved Contacts</Label>
+            <Label>Select Recipients</Label>
             <div className="flex gap-2">
               {selectedContacts.length > 0 && (
                 <Button variant="ghost" size="sm" onClick={clearSelection} className="text-xs">
@@ -674,16 +665,16 @@ function BatchCommunications() {
           {loadingContacts ? (
             <div className="p-4 text-center text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
-              Loading saved contacts...
+              Loading saved emails...
             </div>
           ) : savedContacts.length === 0 ? (
             <div className="p-4 text-center border rounded-lg bg-muted/30">
               <p className="text-sm text-muted-foreground mb-2">
-                No saved contacts yet. Send emails from the Compose tab or import a CSV file.
+                No saved emails yet. Send emails from the Compose tab or import a CSV file.
               </p>
               <Button variant="outline" size="sm" onClick={handleImportClick} className="gap-1">
                 <Upload className="w-3.5 h-3.5" />
-                Import Contacts
+                Import Email List
               </Button>
             </div>
           ) : (
@@ -723,32 +714,15 @@ function BatchCommunications() {
           )}
         </div>
 
-        {/* Channel Selection */}
-        <div className="space-y-2">
-          <Label>Delivery Channel</Label>
-          <Select value={batchChannel} onValueChange={(v) => setBatchChannel(v as any)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="email">Email Only</SelectItem>
-              <SelectItem value="sms">SMS Only</SelectItem>
-              <SelectItem value="both">Both Email & SMS</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Subject */}
-        {(batchChannel === "email" || batchChannel === "both") && (
-          <div className="space-y-2">
-            <Label>Subject</Label>
-            <Input
-              placeholder="Email subject..."
-              value={batchSubject}
-              onChange={(e) => setBatchSubject(e.target.value)}
-            />
-          </div>
-        )}
+        <div className="space-y-2">
+          <Label>Subject</Label>
+          <Input
+            placeholder="Email subject..."
+            value={batchSubject}
+            onChange={(e) => setBatchSubject(e.target.value)}
+          />
+        </div>
 
         {/* Message */}
         <div className="space-y-2">

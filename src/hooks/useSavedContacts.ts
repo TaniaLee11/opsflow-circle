@@ -3,19 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Email-only saved recipients for Communications
 export interface SavedContact {
   id: string;
   email: string;
   name?: string;
-  phone?: string;
   use_count: number;
   last_used_at: string;
-}
-
-export interface ContactExport {
-  email: string;
-  name?: string;
-  phone?: string;
 }
 
 export function useSavedContacts() {
@@ -52,8 +46,8 @@ export function useSavedContacts() {
     fetchContacts();
   }, [fetchContacts]);
 
-  // Save or update a contact (upsert)
-  const saveContact = useCallback(async (email: string, name?: string, phone?: string) => {
+  // Save or update an email recipient
+  const saveContact = useCallback(async (email: string, name?: string) => {
     if (!user || !email) return;
 
     const existingContact = contacts.find(c => c.email.toLowerCase() === email.toLowerCase());
@@ -67,20 +61,18 @@ export function useSavedContacts() {
             use_count: existingContact.use_count + 1,
             last_used_at: new Date().toISOString(),
             name: name || existingContact.name,
-            phone: phone || existingContact.phone,
           })
           .eq('id', existingContact.id);
 
         if (error) throw error;
       } else {
-        // Insert new contact
+        // Insert new email
         const { error } = await supabase
           .from('saved_contacts')
           .insert({
             user_id: user.id,
             email: email.toLowerCase(),
             name,
-            phone,
           });
 
         if (error) throw error;
@@ -88,7 +80,7 @@ export function useSavedContacts() {
 
       await fetchContacts();
     } catch (err) {
-      console.error('Error saving contact:', err);
+      console.error('Error saving email:', err);
     }
   }, [user, contacts, fetchContacts]);
 
@@ -120,16 +112,16 @@ export function useSavedContacts() {
     }
   }, [user, fetchContacts]);
 
-  // Export contacts to CSV
-  const exportContacts = useCallback(() => {
+  // Export email list to CSV
+  const exportEmailList = useCallback(() => {
     if (contacts.length === 0) {
-      toast.error('No contacts to export');
+      toast.error('No emails to export');
       return;
     }
 
-    const csvHeader = 'email,name,phone\n';
+    const csvHeader = 'email,name\n';
     const csvRows = contacts.map(c => 
-      `"${c.email}","${c.name || ''}","${c.phone || ''}"`
+      `"${c.email}","${c.name || ''}"`
     ).join('\n');
     
     const csvContent = csvHeader + csvRows;
@@ -137,17 +129,17 @@ export function useSavedContacts() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `contacts_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `email_list_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    toast.success(`Exported ${contacts.length} contacts`);
+    toast.success(`Exported ${contacts.length} emails`);
   }, [contacts]);
 
-  // Import contacts from CSV
-  const importContacts = useCallback(async (file: File): Promise<number> => {
+  // Import email list from CSV
+  const importEmailList = useCallback(async (file: File): Promise<number> => {
     if (!user) return 0;
 
     return new Promise((resolve) => {
@@ -169,7 +161,6 @@ export function useSavedContacts() {
 
             const email = matches[0]?.replace(/"/g, '').trim();
             const name = matches[1]?.replace(/"/g, '').trim() || undefined;
-            const phone = matches[2]?.replace(/"/g, '').trim() || undefined;
 
             if (email && email.includes('@')) {
               // Check if already exists
@@ -181,7 +172,6 @@ export function useSavedContacts() {
                     user_id: user.id,
                     email: email.toLowerCase(),
                     name,
-                    phone,
                   });
                 if (!error) importedCount++;
               }
@@ -189,11 +179,11 @@ export function useSavedContacts() {
           }
 
           await fetchContacts();
-          toast.success(`Imported ${importedCount} new contacts`);
+          toast.success(`Imported ${importedCount} new emails`);
           resolve(importedCount);
         } catch (err) {
           console.error('Import error:', err);
-          toast.error('Failed to import contacts');
+          toast.error('Failed to import email list');
           resolve(0);
         }
       };
@@ -201,8 +191,8 @@ export function useSavedContacts() {
     });
   }, [user, contacts, fetchContacts]);
 
-  // Bulk save contacts (for batch operations)
-  const bulkSaveContacts = useCallback(async (emails: string[]) => {
+  // Bulk save emails (for batch operations)
+  const bulkSaveEmails = useCallback(async (emails: string[]) => {
     if (!user || emails.length === 0) return;
 
     for (const email of emails) {
@@ -216,9 +206,9 @@ export function useSavedContacts() {
     saveContact,
     searchContacts,
     deleteContact,
-    exportContacts,
-    importContacts,
-    bulkSaveContacts,
+    exportEmailList,
+    importEmailList,
+    bulkSaveEmails,
     refetch: fetchContacts,
   };
 }
