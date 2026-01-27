@@ -109,7 +109,7 @@ function VOPSyAssistant({
     <Card className="border-primary/20 bg-card/50">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
-          <VOPSyMascot size="sm" />
+          <VOPSyMascot size="sm" animate={false} />
           <div>
             <CardTitle className="text-sm font-medium">VOPSy Communications</CardTitle>
             <CardDescription className="text-xs">Your AI operations assistant</CardDescription>
