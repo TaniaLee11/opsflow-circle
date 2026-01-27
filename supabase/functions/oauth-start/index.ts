@@ -75,6 +75,19 @@ const OAUTH_CONFIGS: Record<string, {
     scopes: [],
     // Zoom OAuth doesn't use scope param in auth URL - scopes are configured in the Zoom App
   },
+  salesforce: {
+    authUrl: "https://login.salesforce.com/services/oauth2/authorize",
+    scopes: ["api", "refresh_token", "offline_access"],
+  },
+  zoho: {
+    authUrl: "https://accounts.zoho.com/oauth/v2/auth",
+    scopes: ["ZohoCRM.modules.ALL", "ZohoCRM.settings.ALL", "offline_access"],
+    extraParams: { access_type: "offline" },
+  },
+  pipedrive: {
+    authUrl: "https://oauth.pipedrive.com/oauth/authorize",
+    scopes: [],
+  },
 };
 
 const logStep = (step: string, details?: any) => {

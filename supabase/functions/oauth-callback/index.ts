@@ -52,6 +52,16 @@ const TOKEN_CONFIGS: Record<string, {
     tokenUrl: "https://zoom.us/oauth/token",
     usesBasicAuth: true,
   },
+  salesforce: {
+    tokenUrl: "https://login.salesforce.com/services/oauth2/token",
+  },
+  zoho: {
+    tokenUrl: "https://accounts.zoho.com/oauth/v2/token",
+  },
+  pipedrive: {
+    tokenUrl: "https://oauth.pipedrive.com/oauth/token",
+    usesBasicAuth: true,
+  },
 };
 
 const logStep = (step: string, details?: Record<string, unknown>) => {

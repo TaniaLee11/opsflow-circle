@@ -8,7 +8,8 @@ import {
   MessageSquare,
   Paperclip,
   Mail,
-  RefreshCw
+  RefreshCw,
+  Users
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserTier } from "@/contexts/UserTierContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useVOPSyEmailIntelligence } from "@/hooks/useVOPSyEmailIntelligence";
+import { useVOPSyCRMIntelligence } from "@/hooks/useVOPSyCRMIntelligence";
 import { toast } from "sonner";
 
 interface Message {
@@ -30,6 +32,7 @@ export function VOPSyAgent() {
   const { user } = useAuth();
   const { currentTier } = useUserTier();
   const emailIntelligence = useVOPSyEmailIntelligence();
+  const crmIntelligence = useVOPSyCRMIntelligence();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,12 +41,12 @@ export function VOPSyAgent() {
     {
       id: "welcome",
       role: "vopsy",
-      content: `Hey ${user?.name?.split(" ")[0] || "there"}! I'm VOPSy — your Virtual OPS Intelligence.\n\nI'm your single AI agent covering **all business operations**: finance, compliance, marketing, operations, and education.\n\n📧 **New: Inbox Intelligence** — Say "scan inbox" to analyze your emails and I'll help you process them with contextual responses.\n\nYou're on the **${currentTier.displayName}** plan.`,
+      content: `Hey ${user?.name?.split(" ")[0] || "there"}! I'm VOPSy — your Virtual OPS Intelligence.\n\nI'm your single AI agent covering **all business operations**: finance, compliance, marketing, operations, and education.\n\n📧 **Inbox Intelligence** — Say "scan inbox" to analyze your emails\n👥 **CRM Intelligence** — Say "scan CRM" to review contacts and deals\n\nYou're on the **${currentTier.displayName}** plan.`,
       timestamp: new Date(),
       actions: [
         { label: "📧 Scan my inbox", action: "Scan my inbox" },
-        { label: "💰 Review cash flow", action: "Show me my current cash flow and runway" },
-        { label: "🎯 What should I focus on?", action: "What are my strategic priorities this week?" }
+        { label: "👥 Scan my CRM", action: "Scan my CRM" },
+        { label: "💰 Review cash flow", action: "Show me my current cash flow and runway" }
       ]
     }
   ]);
@@ -71,7 +74,25 @@ export function VOPSyAgent() {
     setIsTyping(true);
 
     try {
-      // Check for email-related intent first
+      // Check for CRM-related intent first
+      const crmIntent = crmIntelligence.parseCRMIntent(messageText);
+      
+      if (crmIntent) {
+        const crmResponse = await crmIntelligence.executeCRMAction(crmIntent);
+        
+        const vopsyResponse: Message = {
+          id: crypto.randomUUID(),
+          role: "vopsy",
+          content: crmResponse,
+          timestamp: new Date(),
+          actions: getCRMActions(crmIntent.action)
+        };
+        setMessages(prev => [...prev, vopsyResponse]);
+        setIsTyping(false);
+        return;
+      }
+
+      // Check for email-related intent
       const emailIntent = emailIntelligence.parseEmailIntent(messageText);
       
       if (emailIntent) {
@@ -99,8 +120,9 @@ export function VOPSyAgent() {
       }));
       conversationHistory.push({ role: 'user', content: messageText });
 
-      // Include email context in user context
+      // Include email and CRM context in user context
       const emailContext = emailIntelligence.buildEmailContextForPrompt();
+      const crmContext = crmIntelligence.getCRMContext();
       
       // Map tier ID to vopsy tier capability
       const vopsyTierMap: Record<string, string> = {
@@ -118,6 +140,7 @@ export function VOPSyAgent() {
         tier: currentTier.id,
         vopsyTier: vopsyTierMap[currentTier.id] || 'free',
         emailContext: emailContext,
+        crmContext: crmContext,
       };
 
       const { data, error } = await supabase.functions.invoke('vopsy-chat', {
@@ -195,6 +218,42 @@ export function VOPSyAgent() {
         return [
           { label: "📊 Summary", action: "Back to summary" },
           { label: "🔄 Scan again", action: "Scan inbox" }
+        ];
+      
+      default:
+        return undefined;
+    }
+  };
+
+  // Generate contextual action buttons based on CRM state
+  const getCRMActions = (actionType: string): { label: string; action: string }[] | undefined => {
+    switch (actionType) {
+      case 'summary':
+        return [
+          { label: "🔍 Search contact", action: "Find contact" },
+          { label: "💼 View deals", action: "Show my deals" },
+          { label: "➕ Add contact", action: "Add a new contact" }
+        ];
+      
+      case 'search_contact':
+        return [
+          { label: "📧 Email them", action: "Send email to this contact" },
+          { label: "💼 Create deal", action: "Create deal for this contact" },
+          { label: "🔍 Search another", action: "Find contact" }
+        ];
+      
+      case 'search_deal':
+        return [
+          { label: "📊 Update stage", action: "Update deal stage" },
+          { label: "👤 View contact", action: "Show contact for this deal" },
+          { label: "📊 Pipeline summary", action: "Scan my CRM" }
+        ];
+      
+      case 'create_contact':
+      case 'create_deal':
+        return [
+          { label: "📊 CRM summary", action: "Scan my CRM" },
+          { label: "🔍 Search", action: "Find contact" }
         ];
       
       default:

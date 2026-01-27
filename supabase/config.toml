@@ -74,3 +74,9 @@ verify_jwt = false
 
 [functions.send-email]
 verify_jwt = false
+
+[functions.crm-fetch]
+verify_jwt = false
+
+[functions.vopsy-public-chat]
+verify_jwt = false
