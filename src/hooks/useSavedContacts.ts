@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export interface SavedContact {
   id: string;
@@ -9,6 +10,12 @@ export interface SavedContact {
   phone?: string;
   use_count: number;
   last_used_at: string;
+}
+
+export interface ContactExport {
+  email: string;
+  name?: string;
+  phone?: string;
 }
 
 export function useSavedContacts() {
@@ -113,12 +120,105 @@ export function useSavedContacts() {
     }
   }, [user, fetchContacts]);
 
+  // Export contacts to CSV
+  const exportContacts = useCallback(() => {
+    if (contacts.length === 0) {
+      toast.error('No contacts to export');
+      return;
+    }
+
+    const csvHeader = 'email,name,phone\n';
+    const csvRows = contacts.map(c => 
+      `"${c.email}","${c.name || ''}","${c.phone || ''}"`
+    ).join('\n');
+    
+    const csvContent = csvHeader + csvRows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `contacts_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Exported ${contacts.length} contacts`);
+  }, [contacts]);
+
+  // Import contacts from CSV
+  const importContacts = useCallback(async (file: File): Promise<number> => {
+    if (!user) return 0;
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const text = e.target?.result as string;
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          // Skip header if present
+          const startIndex = lines[0]?.toLowerCase().includes('email') ? 1 : 0;
+          let importedCount = 0;
+
+          for (let i = startIndex; i < lines.length; i++) {
+            const line = lines[i];
+            // Parse CSV line (handle quoted values)
+            const matches = line.match(/("([^"]*)"|[^,]+)/g);
+            if (!matches || matches.length < 1) continue;
+
+            const email = matches[0]?.replace(/"/g, '').trim();
+            const name = matches[1]?.replace(/"/g, '').trim() || undefined;
+            const phone = matches[2]?.replace(/"/g, '').trim() || undefined;
+
+            if (email && email.includes('@')) {
+              // Check if already exists
+              const exists = contacts.find(c => c.email.toLowerCase() === email.toLowerCase());
+              if (!exists) {
+                const { error } = await supabase
+                  .from('saved_contacts')
+                  .insert({
+                    user_id: user.id,
+                    email: email.toLowerCase(),
+                    name,
+                    phone,
+                  });
+                if (!error) importedCount++;
+              }
+            }
+          }
+
+          await fetchContacts();
+          toast.success(`Imported ${importedCount} new contacts`);
+          resolve(importedCount);
+        } catch (err) {
+          console.error('Import error:', err);
+          toast.error('Failed to import contacts');
+          resolve(0);
+        }
+      };
+      reader.readAsText(file);
+    });
+  }, [user, contacts, fetchContacts]);
+
+  // Bulk save contacts (for batch operations)
+  const bulkSaveContacts = useCallback(async (emails: string[]) => {
+    if (!user || emails.length === 0) return;
+
+    for (const email of emails) {
+      await saveContact(email);
+    }
+  }, [user, saveContact]);
+
   return {
     contacts,
     loading,
     saveContact,
     searchContacts,
     deleteContact,
+    exportContacts,
+    importContacts,
+    bulkSaveContacts,
     refetch: fetchContacts,
   };
 }
