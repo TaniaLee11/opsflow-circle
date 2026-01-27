@@ -43,6 +43,7 @@ import FreeCourses from "./pages/FreeCourses";
 import FreeCourse from "./pages/FreeCourse";
 import BusinessHealthCheck from "./pages/BusinessHealthCheck";
 import ManagedPartners from "./pages/ManagedPartners";
+import Communications from "./pages/Communications";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,7 @@ const App = () => (
                     <Route path="/integrations" element={<Integrations />} />
                     <Route path="/integrations/callback" element={<IntegrationCallback />} />
                     <Route path="/workflows" element={<Workflows />} />
+                    <Route path="/communications" element={<Communications />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-canceled" element={<PaymentCanceled />} />
