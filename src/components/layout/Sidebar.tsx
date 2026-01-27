@@ -51,6 +51,9 @@ const navItems: NavItem[] = [
   // AI Assistant - VOPSy second
   { icon: Brain, label: "VOPSy", href: "/vopsy", category: "AI Assistant" },
   
+  // Communications - Core operational function
+  { icon: Send, label: "Communications", href: "/communications", category: "Core" },
+  
   // Workflows - Projects & Calendar
   { icon: FolderKanban, label: "Workflows", href: "/workflows", category: "Productivity" },
   
