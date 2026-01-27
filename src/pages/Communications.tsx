@@ -22,8 +22,12 @@ import {
   ListChecks,
   Zap,
   Search,
-  Trash2
+  Trash2,
+  Download,
+  Upload,
+  Loader2
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -500,13 +504,20 @@ function ComposeMessage({
 // Batch Communications Component
 function BatchCommunications() {
   const { toast } = useToast();
-  const { contacts: savedContacts, loading: loadingContacts } = useSavedContacts();
+  const { 
+    contacts: savedContacts, 
+    loading: loadingContacts, 
+    exportContacts, 
+    importContacts,
+    bulkSaveContacts 
+  } = useSavedContacts();
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [batchChannel, setBatchChannel] = useState<"email" | "sms" | "both">("email");
   const [batchMessage, setBatchMessage] = useState("");
   const [batchSubject, setBatchSubject] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleContact = (id: string) => {
     setSelectedContacts(prev => 
@@ -518,15 +529,77 @@ function BatchCommunications() {
     setSelectedContacts(savedContacts.map(c => c.id));
   };
 
-  const handleBatchSend = () => {
-    toast({
-      title: "Batch messages sent",
-      description: `${selectedContacts.length} messages have been queued for delivery.`,
-    });
-    setShowConfirmDialog(false);
+  const clearSelection = () => {
     setSelectedContacts([]);
-    setBatchMessage("");
-    setBatchSubject("");
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await importContacts(file);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
+  const handleBatchSend = async () => {
+    if (batchChannel === "sms" || batchChannel === "both") {
+      toast({
+        title: "SMS not configured",
+        description: "SMS sending requires Vonage integration. Email will be sent only.",
+        variant: "destructive",
+      });
+      if (batchChannel === "sms") return;
+    }
+
+    setIsSending(true);
+    
+    try {
+      // Get BCC list from selected contacts
+      const bccEmails = selectedContacts
+        .map(id => savedContacts.find(c => c.id === id)?.email)
+        .filter((email): email is string => !!email);
+
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          subject: batchSubject,
+          body: batchMessage,
+          bcc: bccEmails,
+          isNewEmail: true,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Batch email sent",
+          description: `Email sent to ${bccEmails.length} recipients as BCC.`,
+        });
+        
+        // Save all contacts for future use
+        await bulkSaveContacts(bccEmails);
+        
+        setShowConfirmDialog(false);
+        setSelectedContacts([]);
+        setBatchMessage("");
+        setBatchSubject("");
+      } else {
+        throw new Error(data?.error || "Failed to send batch email");
+      }
+    } catch (err: any) {
+      console.error("Batch send error:", err);
+      toast({
+        title: "Send failed",
+        description: err.message || "Failed to send batch email. Please check your email integration.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -538,32 +611,80 @@ function BatchCommunications() {
               <Users className="w-5 h-5" />
               Batch Communications
             </CardTitle>
-            <CardDescription>Send to multiple recipients from your saved contacts</CardDescription>
+            <CardDescription>Send to multiple recipients as BCC from your connected account</CardDescription>
           </div>
-          <Badge variant="outline">{selectedContacts.length} selected</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{selectedContacts.length} selected</Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Import/Export Controls */}
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+          <div className="flex-1">
+            <p className="text-sm font-medium">Manage Contacts</p>
+            <p className="text-xs text-muted-foreground">Import or export your saved contacts list</p>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <Button variant="outline" size="sm" onClick={handleImportClick} className="gap-1">
+            <Upload className="w-3.5 h-3.5" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportContacts} className="gap-1">
+            <Download className="w-3.5 h-3.5" />
+            Export
+          </Button>
+        </div>
+
+        {/* BCC Notice */}
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+          <Mail className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Sent as BCC</p>
+            <p className="text-xs text-muted-foreground">
+              All recipients are added as BCC (blind carbon copy). Recipients cannot see each other's email addresses.
+            </p>
+          </div>
+        </div>
+
         {/* Contact Selection */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Select from Saved Contacts</Label>
-            {savedContacts.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs">
-                Select All
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {selectedContacts.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearSelection} className="text-xs">
+                  Clear
+                </Button>
+              )}
+              {savedContacts.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs">
+                  Select All
+                </Button>
+              )}
+            </div>
           </div>
           
           {loadingContacts ? (
             <div className="p-4 text-center text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
               Loading saved contacts...
             </div>
           ) : savedContacts.length === 0 ? (
             <div className="p-4 text-center border rounded-lg bg-muted/30">
               <p className="text-sm text-muted-foreground mb-2">
-                No saved contacts yet. Send emails from the Compose tab to build your contact list.
+                No saved contacts yet. Send emails from the Compose tab or import a CSV file.
               </p>
+              <Button variant="outline" size="sm" onClick={handleImportClick} className="gap-1">
+                <Upload className="w-3.5 h-3.5" />
+                Import Contacts
+              </Button>
             </div>
           ) : (
             <ScrollArea className="h-[200px]">
@@ -651,12 +772,12 @@ function BatchCommunications() {
         </Button>
 
         {/* Confirmation Dialog */}
-        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <Dialog open={showConfirmDialog} onOpenChange={(open) => !isSending && setShowConfirmDialog(open)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Confirm Batch Send</DialogTitle>
+              <DialogTitle>Confirm Batch Send (BCC)</DialogTitle>
               <DialogDescription>
-                You are about to send messages to {selectedContacts.length} recipients via {batchChannel === "both" ? "email and SMS" : batchChannel}.
+                You are about to send an email to {selectedContacts.length} recipients as BCC using your connected email account.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -664,26 +785,38 @@ function BatchCommunications() {
                 {batchSubject && (
                   <p className="text-sm font-medium mb-2">Subject: {batchSubject}</p>
                 )}
-                <p className="text-sm text-muted-foreground">{batchMessage}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{batchMessage}</p>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {selectedContacts.map(id => {
-                  const contact = savedContacts.find(c => c.id === id);
-                  return contact && (
-                    <Badge key={id} variant="secondary" className="text-xs">
-                      {contact.email}
-                    </Badge>
-                  );
-                })}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">BCC Recipients ({selectedContacts.length}):</p>
+                <div className="flex flex-wrap gap-1 max-h-[100px] overflow-auto">
+                  {selectedContacts.map(id => {
+                    const contact = savedContacts.find(c => c.id === id);
+                    return contact && (
+                      <Badge key={id} variant="secondary" className="text-xs">
+                        {contact.email}
+                      </Badge>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+              <Button variant="outline" onClick={() => setShowConfirmDialog(false)} disabled={isSending}>
                 Cancel
               </Button>
-              <Button onClick={handleBatchSend} className="gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                Confirm Send
+              <Button onClick={handleBatchSend} className="gap-2" disabled={isSending}>
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Confirm Send
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

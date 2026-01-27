@@ -17,10 +17,12 @@ const corsHeaders = {
 };
 
 interface SendEmailRequest {
-  originalEmailId: string;
+  originalEmailId?: string;  // Optional for new emails
   subject: string;
   body: string;
-  to: string;
+  to?: string;           // Single recipient
+  bcc?: string[];        // BCC recipients for batch sends
+  isNewEmail?: boolean;  // True for compose (not reply)
 }
 
 interface SendResult {
@@ -136,7 +138,59 @@ async function refreshMicrosoftToken(
   return tokens.access_token;
 }
 
-// Send email via Gmail API
+// Send new email via Gmail API (with BCC support)
+async function sendGmailNewEmail(
+  accessToken: string,
+  to: string | undefined,
+  bcc: string[] | undefined,
+  subject: string,
+  body: string
+): Promise<SendResult> {
+  // Build RFC 2822 message with BCC
+  const messageLines = [];
+  if (to) {
+    messageLines.push(`To: ${to}`);
+  }
+  if (bcc && bcc.length > 0) {
+    messageLines.push(`Bcc: ${bcc.join(', ')}`);
+  }
+  messageLines.push(`Subject: ${subject}`);
+  messageLines.push('Content-Type: text/html; charset=utf-8');
+  messageLines.push('');
+  messageLines.push(body);
+
+  const message = messageLines.join('\r\n');
+
+  const encodedMessage = btoa(unescape(encodeURIComponent(message)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  const sendResponse = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        raw: encodedMessage,
+      }),
+    }
+  );
+
+  if (!sendResponse.ok) {
+    const error = await sendResponse.text();
+    logStep("Gmail send failed", { error });
+    return { success: false, error: "Failed to send email" };
+  }
+
+  const result = await sendResponse.json();
+  return { success: true, messageId: result.id };
+}
+
+// Send email via Gmail API (reply to existing thread)
 async function sendGmailReply(
   accessToken: string,
   originalMessageId: string,
@@ -202,7 +256,52 @@ async function sendGmailReply(
   return { success: true, messageId: result.id };
 }
 
-// Send email via Outlook API
+// Send new email via Outlook API (with BCC support)
+async function sendOutlookNewEmail(
+  accessToken: string,
+  to: string | undefined,
+  bcc: string[] | undefined,
+  subject: string,
+  body: string
+): Promise<SendResult> {
+  const message: any = {
+    subject,
+    body: {
+      contentType: 'HTML',
+      content: body,
+    },
+  };
+
+  if (to) {
+    message.toRecipients = [{ emailAddress: { address: to } }];
+  }
+
+  if (bcc && bcc.length > 0) {
+    message.bccRecipients = bcc.map(email => ({ emailAddress: { address: email } }));
+  }
+
+  const sendResponse = await fetch(
+    'https://graph.microsoft.com/v1.0/me/sendMail',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message }),
+    }
+  );
+
+  if (!sendResponse.ok) {
+    const error = await sendResponse.text();
+    logStep("Outlook send failed", { error });
+    return { success: false, error: "Failed to send email" };
+  }
+
+  return { success: true };
+}
+
+// Send email via Outlook API (reply to existing thread)
 async function sendOutlookReply(
   accessToken: string,
   originalMessageId: string,
@@ -303,16 +402,30 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id });
 
-    const { originalEmailId, subject, body, to }: SendEmailRequest = await req.json();
+    const { originalEmailId, subject, body, to, bcc, isNewEmail }: SendEmailRequest = await req.json();
 
-    if (!originalEmailId || !subject || !body || !to) {
+    // Validate required fields based on mode
+    if (!subject || !body) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: originalEmailId, subject, body, to" }),
+        JSON.stringify({ error: "Missing required fields: subject, body" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    logStep("Send request received", { to, subjectLength: subject.length });
+    // Must have either to, bcc, or originalEmailId for reply
+    if (!to && (!bcc || bcc.length === 0) && !originalEmailId) {
+      return new Response(
+        JSON.stringify({ error: "Must specify to, bcc, or originalEmailId" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Send request received", { 
+      to, 
+      bccCount: bcc?.length || 0, 
+      isNewEmail: isNewEmail || false,
+      subjectLength: subject.length 
+    });
 
     // Check for connected email integrations
     const { data: integrations, error: intError } = await serviceClient
@@ -402,16 +515,35 @@ serve(async (req) => {
     // Send the email
     let result: SendResult;
 
-    if (integration.provider === "google") {
-      result = await sendGmailReply(accessToken, originalEmailId, to, subject, body);
-    } else if (integration.provider === "microsoft") {
-      result = await sendOutlookReply(accessToken, originalEmailId, to, subject, body);
+    // Determine if this is a new email or a reply
+    const shouldSendNewEmail = isNewEmail || !originalEmailId || (bcc && bcc.length > 0);
+
+    if (shouldSendNewEmail) {
+      // New email with optional BCC (batch send)
+      if (integration.provider === "google") {
+        result = await sendGmailNewEmail(accessToken, to, bcc, subject, body);
+      } else if (integration.provider === "microsoft") {
+        result = await sendOutlookNewEmail(accessToken, to, bcc, subject, body);
+      } else {
+        result = { success: false, error: "Unsupported email provider" };
+      }
     } else {
-      result = { success: false, error: "Unsupported email provider" };
+      // Reply to existing thread
+      if (integration.provider === "google") {
+        result = await sendGmailReply(accessToken, originalEmailId!, to!, subject, body);
+      } else if (integration.provider === "microsoft") {
+        result = await sendOutlookReply(accessToken, originalEmailId!, to!, subject, body);
+      } else {
+        result = { success: false, error: "Unsupported email provider" };
+      }
     }
 
     if (result.success) {
-      logStep("Email sent successfully", { provider: integration.provider, messageId: result.messageId });
+      logStep("Email sent successfully", { 
+        provider: integration.provider, 
+        messageId: result.messageId,
+        isBatch: bcc && bcc.length > 0 
+      });
     } else {
       logStep("Email send failed", { error: result.error });
     }
