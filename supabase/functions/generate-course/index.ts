@@ -1,4 +1,5 @@
 // AI Course Generator Edge Function
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,51 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authentication check - require platform owner access
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    // Verify the user's token
+    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      console.error("[generate-course] Auth error:", claimsError);
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
+    console.log("[generate-course] User authenticated:", userId);
+
+    // Check if user is platform owner
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+    const { data: isPlatformOwner } = await serviceClient.rpc("is_platform_owner", {
+      _user_id: userId,
+    });
+
+    if (!isPlatformOwner) {
+      console.warn("[generate-course] Non-owner attempted access:", userId);
+      return new Response(
+        JSON.stringify({ error: "This feature requires platform owner access" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { topic, preferences } = (await req.json()) as CourseGenerationRequest;
 
     if (!topic) {

@@ -18,8 +18,6 @@ verify_jwt = false
 [functions.migrate-tokens]
 verify_jwt = false
 
-[functions.generate-course]
-verify_jwt = false
 
 [functions.gdrive-fetch]
 verify_jwt = false
@@ -69,8 +67,6 @@ verify_jwt = false
 [functions.draft-email-reply]
 verify_jwt = false
 
-[functions.provision-owner]
-verify_jwt = false
 
 [functions.send-email]
 verify_jwt = false
