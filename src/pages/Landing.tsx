@@ -487,14 +487,14 @@ export default function Landing() {
             {[
               { 
                 title: "Solo & Startup", 
-                price: "Free – $97/mo", 
+                price: "Free – $34.99/mo", 
                 features: ["AI-powered guidance", "Financial templates", "Compliance calendar", "VOPSy assistant"],
                 cta: "Get Started Free",
                 isHuman: false
               },
               { 
                 title: "Operations", 
-                price: "$297/mo", 
+                price: "$99.99/mo", 
                 features: ["Full bookkeeping automation", "Read & write integrations", "Task management", "Priority support"],
                 cta: "Start Operations",
                 popular: true,
