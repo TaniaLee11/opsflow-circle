@@ -27,8 +27,7 @@ const builtAndManaged: Partner[] = [
     description: "Faith-based ministry platform focused on spiritual formation, teaching, and community transformation.",
     icon: Church,
     url: "https://overcomeinc.lovable.app",
-    logoLight: overcomeLogoLight,
-    logoDark: "https://overcomeinc.lovable.app/favicon.png", // Favicon works on dark
+    logo: overcomeLogoLight, // Use uploaded logo for all themes
   },
   {
     name: "TL Productions",
