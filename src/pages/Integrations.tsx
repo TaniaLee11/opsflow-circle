@@ -181,11 +181,33 @@ const integrations: Integration[] = [
   {
     id: "salesforce",
     name: "Salesforce",
-    description: "Customer relationship management platform",
+    description: "Enterprise CRM platform for sales and customer management",
     icon: "https://www.salesforce.com/favicon.ico",
     category: "crm",
     status: "disconnected",
+    oauthProvider: "salesforce",
     features: ["Contact management", "Sales pipeline", "Reports", "Automation"],
+    popular: true,
+  },
+  {
+    id: "zoho-crm",
+    name: "Zoho CRM",
+    description: "Cost-effective CRM for solopreneurs and small businesses",
+    icon: "https://www.zoho.com/favicon.ico",
+    category: "crm",
+    status: "disconnected",
+    oauthProvider: "zoho",
+    features: ["Lead management", "Deal tracking", "Email integration", "Workflow automation"],
+  },
+  {
+    id: "pipedrive",
+    name: "Pipedrive",
+    description: "Sales-focused CRM with simple pipeline management",
+    icon: "https://www.pipedrive.com/favicon.ico",
+    category: "crm",
+    status: "disconnected",
+    oauthProvider: "pipedrive",
+    features: ["Visual pipeline", "Activity tracking", "Sales forecasting", "Email sync"],
   },
 ];
 
@@ -246,6 +268,9 @@ export default function Integrations() {
     zoom: "zoom",
     xero: "xero",
     dropbox: "dropbox",
+    salesforce: "salesforce",
+    zoho: "zoho-crm",
+    pipedrive: "pipedrive",
   };
 
   // Update integration statuses based on database
@@ -324,6 +349,9 @@ export default function Integrations() {
       "dropbox": "dropbox",
       "xero": "xero",
       "zoom": "zoom",
+      "salesforce": "salesforce",
+      "zoho-crm": "zoho",
+      "pipedrive": "pipedrive",
     };
     
     const provider = integration.oauthProvider || providerMap[integration.id];
@@ -433,6 +461,9 @@ export default function Integrations() {
       "dropbox": "dropbox",
       "xero": "xero",
       "zoom": "zoom",
+      "salesforce": "salesforce",
+      "zoho-crm": "zoho",
+      "pipedrive": "pipedrive",
     };
     
     const provider = integration.oauthProvider || idToProviderMap[integration.id];
