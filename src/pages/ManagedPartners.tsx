@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { ExternalLink, Building2, Music, Church, Users, Zap } from "lucide-react";
+import { useTheme } from "next-themes";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +9,16 @@ import { Button } from "@/components/ui/button";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import tlProductionsLogo from "@/assets/partners/tl-productions-logo.png";
 import fatherhoodConnectionLogo from "@/assets/partners/fatherhood-connection-logo.png";
+import overcomeLogoLight from "@/assets/partners/overcome-logo-light.png";
+
 interface Partner {
   name: string;
   description: string;
   icon: React.ElementType;
   url: string;
   logo?: string;
+  logoDark?: string; // Optional dark mode variant
+  logoLight?: string; // Optional light mode variant
 }
 
 const builtAndManaged: Partner[] = [
@@ -22,14 +27,15 @@ const builtAndManaged: Partner[] = [
     description: "Faith-based ministry platform focused on spiritual formation, teaching, and community transformation.",
     icon: Church,
     url: "https://overcomeinc.lovable.app",
-    logo: "https://overcomeinc.lovable.app/favicon.png",
+    logoLight: overcomeLogoLight,
+    logoDark: "https://overcomeinc.lovable.app/favicon.png", // Favicon works on dark
   },
   {
     name: "TL Productions",
     description: "Creative media and music platform producing content exploring faith, culture, and identity.",
     icon: Music,
     url: "https://tlprod.lovable.app",
-    logo: tlProductionsLogo,
+    logo: tlProductionsLogo, // Works on both themes
   },
 ];
 
@@ -51,6 +57,13 @@ const advisedAndSupported: Partner[] = [
 ];
 
 function PartnerCard({ partner, index, tagline }: { partner: Partner; index: number; tagline: string }) {
+  const { resolvedTheme } = useTheme();
+  
+  // Determine which logo to use based on theme
+  const logoSrc = partner.logoLight && partner.logoDark
+    ? (resolvedTheme === 'dark' ? partner.logoDark : partner.logoLight)
+    : partner.logo;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -59,10 +72,10 @@ function PartnerCard({ partner, index, tagline }: { partner: Partner; index: num
     >
       <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm hover:border-border transition-colors">
         <CardHeader className="pb-4">
-          {partner.logo ? (
+          {logoSrc ? (
             <div className="w-16 h-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4 overflow-hidden p-2">
               <img 
-                src={partner.logo} 
+                src={logoSrc} 
                 alt={`${partner.name} logo`}
                 className="w-full h-full object-contain"
                 onError={(e) => {
@@ -74,7 +87,7 @@ function PartnerCard({ partner, index, tagline }: { partner: Partner; index: num
               />
             </div>
           ) : null}
-          <div className={`w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4 ${partner.logo ? 'hidden' : ''}`}>
+          <div className={`w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4 ${logoSrc ? 'hidden' : ''}`}>
             <partner.icon className="w-6 h-6 text-foreground" />
           </div>
           <CardTitle className="text-xl font-semibold text-foreground">
