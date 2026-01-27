@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { cn } from "@/lib/utils";
 
 interface Question {
@@ -128,6 +129,11 @@ export default function BusinessHealthCheck() {
       </Helmet>
 
       <div className="min-h-screen bg-background">
+        {/* Page Theme Toggle */}
+        <div className="fixed top-4 right-4 z-40">
+          <PageThemeToggle className="px-0 py-0" />
+        </div>
+        
         <div className="mx-auto max-w-2xl px-6 py-16 md:py-24">
           {/* Header */}
           <header className="mb-12 text-center">

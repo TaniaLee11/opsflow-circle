@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 
 const contactInfo = [
@@ -81,6 +82,11 @@ export default function Contact() {
         </div>
 
         <PublicNav />
+        
+        {/* Page Theme Toggle */}
+        <div className="fixed top-20 right-4 z-40">
+          <PageThemeToggle className="px-0 py-0" />
+        </div>
 
         {/* Hero */}
         <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 sm:px-6">

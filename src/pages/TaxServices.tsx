@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 
 const CALENDLY_URL = "https://calendly.com/vops";
 
@@ -145,6 +146,11 @@ export default function TaxServices() {
         </div>
 
         <PublicNav />
+        
+        {/* Page Theme Toggle */}
+        <div className="fixed top-20 right-4 z-40">
+          <PageThemeToggle className="px-0 py-0" />
+        </div>
 
         {/* Hero Section */}
         <section className="relative pt-28 sm:pt-36 pb-12 sm:pb-16 px-4 sm:px-6">

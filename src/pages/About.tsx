@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import taniaHeadshot from "@/assets/tania-headshot.jpeg";
 
 const values = [
@@ -91,6 +92,11 @@ export default function About() {
         </div>
 
         <PublicNav />
+        
+        {/* Page Theme Toggle */}
+        <div className="fixed top-20 right-4 z-40">
+          <PageThemeToggle className="px-0 py-0" />
+        </div>
 
         {/* Hero */}
         <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 sm:px-6">
