@@ -179,7 +179,7 @@ export default function ManagedPartners() {
               </h2>
               <div className="grid gap-8 md:grid-cols-2">
                 {builtAndManaged.map((partner, index) => (
-                  <PartnerCard key={partner.name} partner={partner} index={index} tagline="Built and operationally managed by Virtual Ops." />
+                  <PartnerCard key={partner.name} partner={partner} index={index} tagline="Built & managed by Virtual OPS." />
                 ))}
               </div>
             </motion.div>
