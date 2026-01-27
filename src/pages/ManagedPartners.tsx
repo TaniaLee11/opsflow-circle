@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { ExternalLink, Building2, Music, Church } from "lucide-react";
+import { ExternalLink, Building2, Music, Church, Users, Zap } from "lucide-react";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,19 @@ const managedPartners: ManagedPartner[] = [
     name: "TL Productions",
     description: "Creative media and music platform producing content exploring faith, culture, and identity.",
     icon: Music,
-    url: "https://tlproductions.lovable.app",
+    url: "https://tlprod.lovable.app",
+  },
+  {
+    name: "Ren360",
+    description: "AI-powered lead generation platform helping businesses identify and connect with qualified prospects.",
+    icon: Zap,
+    url: "https://www.ren360.io/ai-lead-generation",
+  },
+  {
+    name: "Fatherhood Connection",
+    description: "Community platform supporting fathers through resources, connection, and mentorship opportunities.",
+    icon: Users,
+    url: "https://fatherhoodconnection.com",
   },
 ];
 
