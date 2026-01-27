@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -20,7 +20,9 @@ import {
   Inbox,
   SendHorizontal,
   ListChecks,
-  Zap
+  Zap,
+  Search,
+  Trash2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -38,6 +40,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { useSavedContacts, SavedContact } from "@/hooks/useSavedContacts";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
 import { cn } from "@/lib/utils";
 
@@ -62,14 +65,6 @@ interface Message {
   sentAt?: Date;
   createdAt: Date;
 }
-
-// Mock contacts for demo
-const mockContacts: Contact[] = [
-  { id: "1", name: "John Smith", email: "john@example.com", phone: "+1234567890" },
-  { id: "2", name: "Sarah Johnson", email: "sarah@example.com", phone: "+1987654321" },
-  { id: "3", name: "Mike Wilson", email: "mike@example.com", phone: "+1456789012" },
-  { id: "4", name: "Emily Davis", email: "emily@example.com", phone: "+1789012345" },
-];
 
 // VOPSy Embedded Assistant Component
 function VOPSyAssistant({ 
@@ -216,7 +211,16 @@ function ComposeMessage({
   onSchedule: () => void;
 }) {
   const { toast } = useToast();
-  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  
+  // Saved contacts hook
+  const { contacts: savedContacts, saveContact, searchContacts } = useSavedContacts();
+  
+  // Filter suggestions based on input
+  const suggestions = searchContacts(emailInput);
   
   // Voice input for body
   const {
@@ -238,15 +242,83 @@ function ComposeMessage({
     continuous: true,
   });
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(e.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const removeRecipient = (id: string) => {
     setRecipients(recipients.filter(r => r.id !== id));
   };
 
-  const addRecipient = (contact: Contact) => {
-    if (!recipients.find(r => r.id === contact.id)) {
-      setRecipients([...recipients, contact]);
+  // Validate email format
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  // Add recipient from email input
+  const addRecipientFromInput = (email: string, name?: string) => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) return;
+    
+    if (!isValidEmail(trimmedEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
     }
-    setShowContactPicker(false);
+
+    // Check if already added
+    if (recipients.find(r => r.email?.toLowerCase() === trimmedEmail)) {
+      toast({
+        title: "Already added",
+        description: "This email is already in the recipients list.",
+      });
+      setEmailInput("");
+      setShowSuggestions(false);
+      return;
+    }
+
+    const newContact: Contact = {
+      id: crypto.randomUUID(),
+      name: name || trimmedEmail.split('@')[0],
+      email: trimmedEmail,
+    };
+    
+    setRecipients([...recipients, newContact]);
+    setEmailInput("");
+    setShowSuggestions(false);
+    
+    // Save to database for future autocomplete
+    saveContact(trimmedEmail, name);
+  };
+
+  // Handle key press in email input
+  const handleEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addRecipientFromInput(emailInput);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  // Select suggestion
+  const selectSuggestion = (contact: SavedContact) => {
+    addRecipientFromInput(contact.email, contact.name);
   };
 
   return (
@@ -284,28 +356,63 @@ function ComposeMessage({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Recipients */}
+        {/* Recipients - Email Input with Autocomplete */}
         <div className="space-y-2">
           <Label>Recipients</Label>
-          <div className="flex flex-wrap gap-2 p-2 min-h-[42px] border rounded-md bg-background">
+          <div className="flex flex-wrap gap-2 p-2 min-h-[42px] border rounded-md bg-background relative">
             {recipients.map((contact) => (
               <Badge key={contact.id} variant="secondary" className="gap-1">
-                {contact.name}
+                {contact.email || contact.name}
                 <button onClick={() => removeRecipient(contact.id)}>
                   <X className="w-3 h-3" />
                 </button>
               </Badge>
             ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={() => setShowContactPicker(true)}
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Add
-            </Button>
+            <div className="relative flex-1 min-w-[200px]">
+              <Input
+                ref={inputRef}
+                type="email"
+                placeholder="Type email address..."
+                value={emailInput}
+                onChange={(e) => {
+                  setEmailInput(e.target.value);
+                  setShowSuggestions(e.target.value.length >= 2);
+                }}
+                onKeyDown={handleEmailKeyDown}
+                onFocus={() => emailInput.length >= 2 && setShowSuggestions(true)}
+                className="border-0 shadow-none h-7 p-0 focus-visible:ring-0"
+              />
+              
+              {/* Autocomplete Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 mt-1 w-full bg-popover border rounded-md shadow-lg z-50 max-h-[200px] overflow-auto"
+                >
+                  {suggestions.map((contact) => (
+                    <button
+                      key={contact.id}
+                      onClick={() => selectSuggestion(contact)}
+                      className="w-full p-2 text-left hover:bg-accent transition-colors flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{contact.email}</p>
+                        {contact.name && (
+                          <p className="text-xs text-muted-foreground">{contact.name}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Used {contact.use_count}x
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Type an email and press Enter to add. Previously used emails will appear as suggestions.
+          </p>
         </div>
 
         {/* Subject (Email only) */}
@@ -385,37 +492,6 @@ function ComposeMessage({
             Schedule
           </Button>
         </div>
-
-        {/* Contact Picker Dialog */}
-        <Dialog open={showContactPicker} onOpenChange={setShowContactPicker}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Select Recipients</DialogTitle>
-              <DialogDescription>
-                Choose contacts to add to your message.
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="h-[300px]">
-              <div className="space-y-2">
-                {mockContacts.map((contact) => (
-                  <button
-                    key={contact.id}
-                    onClick={() => addRecipient(contact)}
-                    className={cn(
-                      "w-full p-3 rounded-lg border text-left transition-colors hover:bg-accent",
-                      recipients.find(r => r.id === contact.id) && "bg-primary/10 border-primary"
-                    )}
-                  >
-                    <p className="font-medium">{contact.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {contact.email} {contact.phone && `• ${contact.phone}`}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
       </CardContent>
     </Card>
   );
@@ -424,11 +500,13 @@ function ComposeMessage({
 // Batch Communications Component
 function BatchCommunications() {
   const { toast } = useToast();
+  const { contacts: savedContacts, loading: loadingContacts } = useSavedContacts();
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [batchChannel, setBatchChannel] = useState<"email" | "sms" | "both">("email");
   const [batchMessage, setBatchMessage] = useState("");
   const [batchSubject, setBatchSubject] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
 
   const toggleContact = (id: string) => {
     setSelectedContacts(prev => 
@@ -437,7 +515,7 @@ function BatchCommunications() {
   };
 
   const selectAll = () => {
-    setSelectedContacts(mockContacts.map(c => c.id));
+    setSelectedContacts(savedContacts.map(c => c.id));
   };
 
   const handleBatchSend = () => {
@@ -460,7 +538,7 @@ function BatchCommunications() {
               <Users className="w-5 h-5" />
               Batch Communications
             </CardTitle>
-            <CardDescription>Send to multiple recipients at once</CardDescription>
+            <CardDescription>Send to multiple recipients from your saved contacts</CardDescription>
           </div>
           <Badge variant="outline">{selectedContacts.length} selected</Badge>
         </div>
@@ -469,37 +547,59 @@ function BatchCommunications() {
         {/* Contact Selection */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Select Recipients</Label>
-            <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs">
-              Select All
-            </Button>
+            <Label>Select from Saved Contacts</Label>
+            {savedContacts.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs">
+                Select All
+              </Button>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {mockContacts.map((contact) => (
-              <button
-                key={contact.id}
-                onClick={() => toggleContact(contact.id)}
-                className={cn(
-                  "p-3 rounded-lg border text-left transition-colors",
-                  selectedContacts.includes(contact.id) 
-                    ? "bg-primary/10 border-primary" 
-                    : "hover:bg-accent"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "w-4 h-4 rounded border flex items-center justify-center",
-                    selectedContacts.includes(contact.id) && "bg-primary border-primary"
-                  )}>
-                    {selectedContacts.includes(contact.id) && (
-                      <CheckCircle2 className="w-3 h-3 text-primary-foreground" />
+          
+          {loadingContacts ? (
+            <div className="p-4 text-center text-muted-foreground">
+              Loading saved contacts...
+            </div>
+          ) : savedContacts.length === 0 ? (
+            <div className="p-4 text-center border rounded-lg bg-muted/30">
+              <p className="text-sm text-muted-foreground mb-2">
+                No saved contacts yet. Send emails from the Compose tab to build your contact list.
+              </p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[200px]">
+              <div className="grid grid-cols-2 gap-2 pr-4">
+                {savedContacts.map((contact) => (
+                  <button
+                    key={contact.id}
+                    onClick={() => toggleContact(contact.id)}
+                    className={cn(
+                      "p-3 rounded-lg border text-left transition-colors",
+                      selectedContacts.includes(contact.id) 
+                        ? "bg-primary/10 border-primary" 
+                        : "hover:bg-accent"
                     )}
-                  </div>
-                  <span className="text-sm font-medium">{contact.name}</span>
-                </div>
-              </button>
-            ))}
-          </div>
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-4 h-4 rounded border flex items-center justify-center",
+                        selectedContacts.includes(contact.id) && "bg-primary border-primary"
+                      )}>
+                        {selectedContacts.includes(contact.id) && (
+                          <CheckCircle2 className="w-3 h-3 text-primary-foreground" />
+                        )}
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-sm font-medium truncate">{contact.email}</p>
+                        {contact.name && (
+                          <p className="text-xs text-muted-foreground truncate">{contact.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </div>
 
         {/* Channel Selection */}
@@ -568,10 +668,10 @@ function BatchCommunications() {
               </div>
               <div className="flex flex-wrap gap-1">
                 {selectedContacts.map(id => {
-                  const contact = mockContacts.find(c => c.id === id);
+                  const contact = savedContacts.find(c => c.id === id);
                   return contact && (
                     <Badge key={id} variant="secondary" className="text-xs">
-                      {contact.name}
+                      {contact.email}
                     </Badge>
                   );
                 })}
