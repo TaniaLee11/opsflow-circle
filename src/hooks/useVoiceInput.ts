@@ -46,7 +46,25 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  // Initialize speech recognition
+  // Store callbacks in refs to avoid reinitializing recognition
+  const onTranscriptRef = useRef(onTranscript);
+  const onInterimTranscriptRef = useRef(onInterimTranscript);
+  const continuousRef = useRef(continuous);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
+
+  useEffect(() => {
+    onInterimTranscriptRef.current = onInterimTranscript;
+  }, [onInterimTranscript]);
+
+  useEffect(() => {
+    continuousRef.current = continuous;
+  }, [continuous]);
+
+  // Initialize speech recognition only once
   useEffect(() => {
     if (!isSupported) return;
 
@@ -84,16 +102,16 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
 
       if (interim) {
         setInterimTranscript(interim);
-        onInterimTranscript?.(interim);
+        onInterimTranscriptRef.current?.(interim);
       }
 
       if (finalTranscript) {
         setTranscript(finalTranscript);
         setInterimTranscript('');
-        onTranscript?.(finalTranscript);
+        onTranscriptRef.current?.(finalTranscript);
         
         // Auto-stop after getting final result if not continuous
-        if (!continuous) {
+        if (!continuousRef.current) {
           recognition.stop();
         }
       }
@@ -131,7 +149,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
         recognitionRef.current.abort();
       }
     };
-  }, [continuous, language, onTranscript, onInterimTranscript, isSupported]);
+  }, [language, isSupported]); // Only reinitialize on language change
 
   const startListening = useCallback(() => {
     if (!isSupported) {
