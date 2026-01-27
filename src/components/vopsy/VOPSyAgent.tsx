@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
@@ -6,12 +6,17 @@ import {
   Send, 
   Loader2,
   MessageSquare,
-  Upload,
-  Paperclip
+  Paperclip,
+  Mail,
+  RefreshCw
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTier } from "@/contexts/UserTierContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useVOPSyEmailIntelligence } from "@/hooks/useVOPSyEmailIntelligence";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -21,72 +26,34 @@ interface Message {
   actions?: { label: string; action: string }[];
 }
 
-// VOPSy is ONE agent with FULL capabilities across all domains
-// Tiers affect what features users can access, not VOPSy's abilities
-const generateVOPSyResponse = (input: string, tierCapabilities: string[]): string => {
-  const lower = input.toLowerCase();
-  
-  // Financial queries
-  if (lower.includes("tax") || lower.includes("taxes")) {
-    return "**VOPSy — Tax Analysis**\n\nBased on your financial data:\n\n**Q4 Estimated Tax:** $3,200\n\n**Calculation:**\n• YTD Profit: ~$42,500\n• Estimated Rate: 30%\n• Q4 Portion: $3,200\n\n**Recommendation:** Set aside this amount by January 15.\n\n⚠️ *Note: This is an estimate. Consult a tax professional for official advice.*";
-  }
-  
-  if (lower.includes("cash") || lower.includes("flow") || lower.includes("runway")) {
-    return "**VOPSy — Cash Flow Analysis**\n\n**Current Position:**\n• Cash on Hand: $24,580\n• Monthly Burn Rate: $8,200 (↓5% from last month)\n• Runway: ~3 months\n\n**Assessment:** You're in a stable position. The reduced burn rate is positive.\n\n**Watch Items:**\n• ABC Corp invoice is overdue ($5,000)\n• Quarterly taxes due soon ($3,200)";
-  }
-
-  // Operations queries
-  if (lower.includes("automat") || lower.includes("workflow")) {
-    if (tierCapabilities.includes("automation_execution")) {
-      return "**VOPSy — Automation Setup**\n\nI can help you create and execute automations.\n\n**Recommendation:**\n1. Identify the repetitive task\n2. Define trigger conditions\n3. Map the process steps\n4. Set approval checkpoints\n\nI'll prepare the automation for your approval before executing. What task would you like to automate?";
-    }
-    return "**VOPSy — Workflow Guidance**\n\nI can help you plan workflows! However, executing automations requires the **AI Operations** tier.\n\nIn the meantime, I can:\n• Document your current process\n• Identify automation opportunities\n• Create step-by-step guides\n\nWould you like me to help plan a workflow?";
-  }
-
-  // Strategic queries
-  if (lower.includes("priorit") || lower.includes("focus") || lower.includes("strategic")) {
-    return "**VOPSy — Strategic Assessment**\n\nLooking across your operations:\n\n🔴 **Immediate Priority:** Quarterly tax payment due in 3 days (~$3,200)\n\n🟡 **This Week:** Follow up on overdue invoices to maintain cash flow\n\n🟢 **Strategic Initiative:** Your runway is stable — consider growth investments\n\n**Cross-Domain View:**\n• Finance: Tax prep urgent\n• Marketing: Campaign performing +24% above benchmark\n• Operations: 3 workflows ready for optimization\n\nWhat area would you like me to focus on?";
-  }
-
-  // Marketing queries
-  if (lower.includes("marketing") || lower.includes("campaign") || lower.includes("content")) {
-    return "**VOPSy — Marketing Insights**\n\n**Quick Stats:**\n• Email open rate: 24% (above industry avg)\n• Top performing content: How-to guides\n• Lead quality score: 7.2/10\n\nI can help with content ideas, campaign analysis, and audience insights. What marketing challenge are you working on?";
-  }
-
-  // Compliance queries
-  if (lower.includes("compliance") || lower.includes("regulatory") || lower.includes("deadline")) {
-    return "**VOPSy — Compliance Check**\n\n**Upcoming Deadlines:**\n• Q4 Tax Filing: 15 days\n• Annual Report: 45 days\n• Business License Renewal: 90 days\n\n**Status:**\n✅ Current on all regulatory requirements\n⚠️ Tax payment approaching\n\nNeed me to set reminders or prepare documentation?";
-  }
-
-  // Learning queries
-  if (lower.includes("learn") || lower.includes("course") || lower.includes("training")) {
-    return "**VOPSy — Learning Path** 🎓\n\nBased on your recent activity, I recommend:\n\n**Priority Course:**\n📚 \"Understanding Cash Flow\" (45 min)\n*Triggered by: Recent cash flow questions*\n\n**Learning Path:**\n1. Cash Flow Basics\n2. Tax Planning for Business\n3. Building Business Credit\n\nShall I start the recommended course or show your full learning path?";
-  }
-
-  // Default response
-  return "**VOPSy — Ready to Help**\n\nI'm your virtual operations intelligence — one agent covering all business domains:\n\n• **Finance** — Cash flow, taxes, budgeting\n• **Operations** — Workflows, automations, SOPs\n• **Marketing** — Campaigns, content, analytics\n• **Compliance** — Deadlines, regulations, documentation\n• **Education** — Courses, learning paths, skill development\n\nWhat would you like to work on?";
-};
-
 export function VOPSyAgent() {
   const { user } = useAuth();
-  const { currentTier, canAccessFeature } = useUserTier();
+  const { currentTier } = useUserTier();
+  const emailIntelligence = useVOPSyEmailIntelligence();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "vopsy",
-      content: `Hey ${user?.name?.split(" ")[0] || "there"}! I'm VOPSy — your Virtual OPS Intelligence.\n\nI'm your single AI agent covering **all business operations**: finance, compliance, marketing, operations, and education. No need to switch modes — just ask me anything.\n\nYou're on the **${currentTier.displayName}** plan.`,
+      content: `Hey ${user?.name?.split(" ")[0] || "there"}! I'm VOPSy — your Virtual OPS Intelligence.\n\nI'm your single AI agent covering **all business operations**: finance, compliance, marketing, operations, and education.\n\n📧 **New: Inbox Intelligence** — Say "scan inbox" to analyze your emails and I'll help you process them with contextual responses.\n\nYou're on the **${currentTier.displayName}** plan.`,
       timestamp: new Date(),
       actions: [
-        { label: "Review my cash flow", action: "Show me my current cash flow and runway" },
-        { label: "What should I focus on?", action: "What are my strategic priorities this week?" }
+        { label: "📧 Scan my inbox", action: "Scan my inbox" },
+        { label: "💰 Review cash flow", action: "Show me my current cash flow and runway" },
+        { label: "🎯 What should I focus on?", action: "What are my strategic priorities this week?" }
       ]
     }
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = async (text?: string) => {
     const messageText = text || input;
@@ -103,21 +70,136 @@ export function VOPSyAgent() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI thinking time
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    try {
+      // Check for email-related intent first
+      const emailIntent = emailIntelligence.parseEmailIntent(messageText);
+      
+      if (emailIntent) {
+        // Handle email action
+        const emailResponse = await emailIntelligence.executeEmailAction(emailIntent);
+        
+        if (emailResponse) {
+          const vopsyResponse: Message = {
+            id: crypto.randomUUID(),
+            role: "vopsy",
+            content: emailResponse,
+            timestamp: new Date(),
+            actions: getEmailActions(emailIntent.type)
+          };
+          setMessages(prev => [...prev, vopsyResponse]);
+          setIsTyping(false);
+          return;
+        }
+      }
 
-    // Get tier capabilities for context-aware responses
-    const tierCapabilities = currentTier.capabilities;
+      // Call the VOPSy chat edge function for non-email queries
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+      conversationHistory.push({ role: 'user', content: messageText });
+
+      // Include email context in user context
+      const emailContext = emailIntelligence.buildEmailContextForPrompt();
+      
+      // Map tier ID to vopsy tier capability
+      const vopsyTierMap: Record<string, string> = {
+        'free': 'free',
+        'ai_assistant': 'assistant',
+        'ai_operations': 'operations',
+        'ai_enterprise': 'operations',
+        'ai_advisory': 'ai_advisory',
+        'ai_tax': 'ai_tax',
+        'ai_compliance': 'ai_compliance',
+      };
+      
+      const userContext = {
+        userName: user?.name || 'User',
+        tier: currentTier.id,
+        vopsyTier: vopsyTierMap[currentTier.id] || 'free',
+        emailContext: emailContext,
+      };
+
+      const { data, error } = await supabase.functions.invoke('vopsy-chat', {
+        body: {
+          messages: conversationHistory,
+          userContext,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to get response');
+      }
+
+      const vopsyResponse: Message = {
+        id: crypto.randomUUID(),
+        role: "vopsy",
+        content: data.message || "I apologize, but I couldn't process that request. Please try again.",
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, vopsyResponse]);
+    } catch (error) {
+      console.error('VOPSy error:', error);
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "vopsy",
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // Generate contextual action buttons based on email state
+  const getEmailActions = (actionType: string): { label: string; action: string }[] | undefined => {
+    const ctx = emailIntelligence.getEmailContext();
     
-    const vopsyResponse: Message = {
-      id: crypto.randomUUID(),
-      role: "vopsy",
-      content: generateVOPSyResponse(messageText, tierCapabilities),
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, vopsyResponse]);
-    setIsTyping(false);
+    switch (actionType) {
+      case 'scan_inbox':
+        if (ctx.totalEmails > 0) {
+          return [
+            { label: "📧 Show emails", action: "Show emails" },
+            { label: "🔴 Skip to urgent", action: "Skip to urgent" }
+          ];
+        }
+        return undefined;
+      
+      case 'show_emails':
+      case 'next_email':
+      case 'prev_email':
+      case 'skip_to_urgent':
+        return [
+          { label: "✍️ Draft reply", action: "Draft reply" },
+          { label: "➡️ Next", action: "Next" },
+          { label: "📊 Summary", action: "Back to summary" }
+        ];
+      
+      case 'draft_reply':
+      case 'refine_draft':
+        return [
+          { label: "📤 Send it", action: "Send it" },
+          { label: "✏️ Make it shorter", action: "Make it shorter" },
+          { label: "🔄 Start over", action: "Draft reply" }
+        ];
+      
+      case 'send_draft':
+        if (ctx.currentEmailIndex < ctx.totalEmails) {
+          return [
+            { label: "➡️ Next email", action: "Next" },
+            { label: "📊 Summary", action: "Back to summary" }
+          ];
+        }
+        return [
+          { label: "📊 Summary", action: "Back to summary" },
+          { label: "🔄 Scan again", action: "Scan inbox" }
+        ];
+      
+      default:
+        return undefined;
+    }
   };
 
   if (!isOpen) {
@@ -143,23 +225,31 @@ export function VOPSyAgent() {
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
         className={cn(
           "fixed bottom-6 right-6 z-50 w-[420px] rounded-2xl overflow-hidden shadow-2xl border border-border",
-          "bg-card backdrop-blur-xl",
+          "bg-card backdrop-blur-xl flex flex-col",
           isMinimized ? "h-16" : "h-[36rem]"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/20 to-primary/5 border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/20 to-primary/5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="font-semibold text-foreground text-sm">VOPSy</h3>
-              <p className="text-xs text-muted-foreground">Virtual OPS Intelligence</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                Virtual OPS Intelligence
+                {emailIntelligence.status?.connected && (
+                  <Mail className="w-3 h-3 text-green-500" />
+                )}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
+            {emailIntelligence.isProcessing && (
+              <RefreshCw className="w-4 h-4 text-primary animate-spin" />
+            )}
             <button
               onClick={() => setIsMinimized(!isMinimized)}
               className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -178,7 +268,7 @@ export function VOPSyAgent() {
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 h-[26rem] overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((message) => (
                 <motion.div
                   key={message.id}
@@ -200,7 +290,9 @@ export function VOPSyAgent() {
                       ? "bg-muted text-foreground" 
                       : "bg-primary text-primary-foreground"
                   )}>
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <div className="text-sm prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-li:my-0 max-w-none">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
                     
                     {message.actions && message.role === "vopsy" && (
                       <div className="flex flex-wrap gap-2 mt-3">
@@ -208,7 +300,8 @@ export function VOPSyAgent() {
                           <button
                             key={action.action}
                             onClick={() => handleSend(action.action)}
-                            className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                            disabled={isTyping || emailIntelligence.isProcessing}
+                            className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
                           >
                             {action.label}
                           </button>
@@ -219,7 +312,7 @@ export function VOPSyAgent() {
                 </motion.div>
               ))}
 
-              {isTyping && (
+              {(isTyping || emailIntelligence.isProcessing) && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -229,17 +322,22 @@ export function VOPSyAgent() {
                     <Sparkles className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div className="bg-muted rounded-xl px-4 py-3">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      <span className="text-sm text-muted-foreground">VOPSy is thinking...</span>
+                      <span className="text-sm text-muted-foreground">
+                        {emailIntelligence.isAnalyzing ? "Analyzing your inbox..." : 
+                         emailIntelligence.isSending ? "Sending email..." :
+                         "VOPSy is thinking..."}
+                      </span>
                     </div>
                   </div>
                 </motion.div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 shrink-0">
               <div className="flex items-center gap-2 p-2 rounded-xl bg-muted border border-border">
                 <button className="p-1.5 rounded-lg hover:bg-background/50 transition-colors text-muted-foreground hover:text-foreground">
                   <Paperclip className="w-4 h-4" />
@@ -248,13 +346,14 @@ export function VOPSyAgent() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  onKeyDown={(e) => e.key === "Enter" && !isTyping && handleSend()}
                   placeholder="Ask VOPSy anything..."
-                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none px-2"
+                  disabled={isTyping || emailIntelligence.isProcessing}
+                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none px-2 disabled:opacity-50"
                 />
                 <button
                   onClick={() => handleSend()}
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || isTyping || emailIntelligence.isProcessing}
                   className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
