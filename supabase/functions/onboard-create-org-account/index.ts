@@ -112,6 +112,8 @@ Deno.serve(async (req) => {
     // ==== STEP A: Create Organization ====
     console.log("[onboard-create-org-account] Step A: Creating organization");
     const dbSubscriptionTier = mapTierToDbSubscriptionTier(payload.selectedTier, payload.isCohortUser || false);
+    console.log("[onboard-create-org-account] Subscription tier:", dbSubscriptionTier);
+    console.log("[onboard-create-org-account] Is cohort user:", payload.isCohortUser);
     
     const { data: organization, error: orgError } = await serviceClient
       .from("organizations")
@@ -128,6 +130,7 @@ Deno.serve(async (req) => {
 
     if (orgError) {
       console.error("[onboard-create-org-account] Organization insert failed:", orgError.message);
+      console.error("[onboard-create-org-account] Full error:", JSON.stringify(orgError));
       return new Response(
         JSON.stringify({ error: `Failed to create organization: ${orgError.message}`, table: "organizations" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -161,6 +164,7 @@ Deno.serve(async (req) => {
 
     if (accountError) {
       console.error("[onboard-create-org-account] Account insert failed:", accountError.message);
+      console.error("[onboard-create-org-account] Full error:", JSON.stringify(accountError));
       // Rollback: delete organization
       await serviceClient.from("organizations").delete().eq("id", organization.id);
       return new Response(
@@ -185,6 +189,7 @@ Deno.serve(async (req) => {
 
     if (membershipError) {
       console.error("[onboard-create-org-account] Membership insert failed:", membershipError.message);
+      console.error("[onboard-create-org-account] Full error:", JSON.stringify(membershipError));
       // Rollback: delete account and organization
       await serviceClient.from("accounts").delete().eq("id", account.id);
       await serviceClient.from("organizations").delete().eq("id", organization.id);
@@ -215,6 +220,7 @@ Deno.serve(async (req) => {
 
     if (profileError) {
       console.error("[onboard-create-org-account] Profile update failed:", profileError.message);
+      console.error("[onboard-create-org-account] Full error:", JSON.stringify(profileError));
       // Don't rollback - the core entities were created successfully
       // Profile update can be retried
       return new Response(
