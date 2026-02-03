@@ -259,16 +259,21 @@ export default function Onboarding() {
         // ignore
       }
       
+      // Force refresh subscription status before navigation
+      // This ensures AuthContext has latest cohort membership data
+      await refreshSubscription();
+      
       // Cohort users always go to dashboard (they have full AI Operations access via AI_COHORT)
       if (isNewCohortSignup) {
         toast.success("Welcome to the AI Cohort! Your 90-day access has started.");
-        navigate("/dashboard");
+        // Small delay to ensure subscription state is updated
+        setTimeout(() => navigate("/dashboard"), 500);
       } else if (selectedTier === "free") {
         toast.success("Welcome aboard! Your workspace is ready.");
-        navigate("/dashboard");
+        setTimeout(() => navigate("/dashboard"), 500);
       } else {
         toast.success("Welcome aboard! Let's set up your subscription.");
-        navigate("/select-product");
+        setTimeout(() => navigate("/select-product"), 500);
       }
     } catch (error: any) {
       console.error("Onboarding error:", error);

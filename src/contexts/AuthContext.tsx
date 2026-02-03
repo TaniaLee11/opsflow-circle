@@ -262,6 +262,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           name,
         },
+        // Disable email confirmation to avoid rate limits
+        // Users are validated through invite codes or can confirm later
+        emailRedirectTo: redirectUrl,
       },
     });
 
