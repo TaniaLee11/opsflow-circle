@@ -214,16 +214,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Periodically refresh subscription status (every minute)
-  useEffect(() => {
-    if (!session) return;
-    
-    const interval = setInterval(() => {
-      refreshSubscription();
-    }, 60000);
-    
-    return () => clearInterval(interval);
-  }, [session]);
+  // Subscription status is checked:
+  // 1. On login/session start
+  // 2. When explicitly called via refreshSubscription() (e.g., after payment)
+  // NO automatic polling - prevents infinite spinners and unnecessary API calls
 
   const isOwner = user?.role === "owner";
   const isAdmin = user?.role === "admin" || isOwner;
