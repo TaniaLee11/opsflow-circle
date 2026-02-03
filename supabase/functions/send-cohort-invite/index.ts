@@ -250,6 +250,14 @@ serve(async (req) => {
       throw new Error("Valid email is required");
     }
 
+    // Check if user already exists
+    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
+    const userExists = existingUser?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
+    
+    if (userExists) {
+      throw new Error("User already registered. Cannot send invite to existing users.");
+    }
+
     // If resend, delete any existing pending invite for this email
     if (resend) {
       await supabaseAdmin
