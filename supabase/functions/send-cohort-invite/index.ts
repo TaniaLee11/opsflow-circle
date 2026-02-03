@@ -162,16 +162,17 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    const { data: userData, error: userError } = await authClient.auth.getUser(token);
+    if (userError || !userData?.user) {
+      console.error("[send-cohort-invite] Auth error:", userError?.message);
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
 
-    const userId = claimsData.claims.sub;
-    const userEmail = (claimsData.claims as any).email as string | undefined;
+    const userId = userData.user.id;
+    const userEmail = userData.user.email;
     console.log("User authenticated:", { userId, userEmail });
 
     // Check if user is an owner (use admin client to bypass RLS)
