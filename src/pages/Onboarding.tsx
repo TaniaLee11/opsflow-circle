@@ -100,7 +100,8 @@ export default function Onboarding() {
     isLoading: authLoading, 
     isOwner,
     isCohort,
-    isCheckingSubscription
+    isCheckingSubscription,
+    refreshSubscription
   } = useAuth();
   
   // Cohort detection for NEW signups only (before cohort_membership is created)
