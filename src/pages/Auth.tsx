@@ -72,7 +72,10 @@ export default function Auth() {
           });
 
           if (error || !data?.valid) {
-            setError(data?.error || "Invalid invite code. Please check your invite link.");
+            const errorMsg = typeof data?.error === 'string' 
+              ? data.error 
+              : error?.message || "Invalid invite code. Please check your invite link.";
+            setError(errorMsg);
             return;
           }
 
@@ -85,7 +88,9 @@ export default function Auth() {
           setEmail(data.email);
           setMode("signup");
         } catch (err: any) {
-          setError(err?.message || "Failed to validate invite. Please try again.");
+          const errorMsg = err?.message || JSON.stringify(err) || "Failed to validate invite. Please try again.";
+          console.error("[Auth] Invite validation error:", err);
+          setError(errorMsg);
         } finally {
           setInviteChecking(false);
         }
