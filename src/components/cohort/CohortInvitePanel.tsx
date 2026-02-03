@@ -86,11 +86,26 @@ export function CohortInvitePanel() {
     setIsLoading(true);
     
     try {
+      console.log("[CohortInvite] Sending invite to:", rawEmail);
+      
       const { data, error } = await supabase.functions.invoke("send-cohort-invite", {
         body: { email: rawEmail }
       });
 
-      if (error) throw error;
+      console.log("[CohortInvite] Response:", { data, error });
+
+      if (error) {
+        console.error("[CohortInvite] Edge function error:", error);
+        throw new Error(error.message || "Edge function returned an error");
+      }
+
+      if (!data) {
+        throw new Error("No response from server");
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       if (data.success) {
         setEmail("");
@@ -99,16 +114,23 @@ export function CohortInvitePanel() {
         // Make it easy to share immediately even if the email lands in spam.
         const inviteLink = data?.invite?.inviteLink as string | undefined;
         if (inviteLink) {
+          console.log("[CohortInvite] Invite link:", inviteLink);
           navigator.clipboard.writeText(inviteLink).then(
             () => toast.message("Invite link copied to clipboard"),
             () => void 0
           );
         }
         queryClient.invalidateQueries({ queryKey: ["cohort-invites"] });
+      } else {
+        throw new Error("Invite creation failed");
       }
     } catch (error: any) {
-      console.error("Invite error:", error);
-      toast.error(error.message || "Failed to send invite");
+      console.error("[CohortInvite] Full error:", error);
+      console.error("[CohortInvite] Error stack:", error.stack);
+      
+      // Show detailed error message
+      const errorMsg = error.message || error.toString() || "Failed to send invite";
+      toast.error(`Failed to send invite: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
