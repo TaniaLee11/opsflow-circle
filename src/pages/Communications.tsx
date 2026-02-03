@@ -915,7 +915,7 @@ export default function Communications() {
     });
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (recipients.length === 0) {
       toast({
         variant: "destructive",
@@ -932,14 +932,63 @@ export default function Communications() {
       });
       return;
     }
-    toast({
-      title: "Message sent",
-      description: `Your ${channel === "auto" ? "message" : channel} has been sent to ${recipients.length} recipient(s).`,
-    });
-    // Reset form
-    setSubject("");
-    setBody("");
-    setRecipients([]);
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Not authenticated",
+        description: "Please log in to send emails.",
+      });
+      return;
+    }
+
+    // Send email to each recipient
+    try {
+      toast({
+        title: "Sending...",
+        description: `Sending email to ${recipients.length} recipient(s)...`,
+      });
+
+      for (const recipient of recipients) {
+        if (!recipient.email) continue;
+
+        const { data, error } = await supabase.functions.invoke("send-email", {
+          body: {
+            to: recipient.email,
+            subject: subject || "(No Subject)",
+            body: body,
+            userId: user.id,
+          },
+        });
+
+        if (error) {
+          throw new Error(error.message || "Failed to send email");
+        }
+
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+      }
+
+      toast({
+        title: "Message sent",
+        description: `Your email has been sent to ${recipients.length} recipient(s).`,
+      });
+      
+      // Reset form
+      setSubject("");
+      setBody("");
+      setRecipients([]);
+    } catch (error) {
+      console.error("Send email error:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to send",
+        description: error instanceof Error ? error.message : "An error occurred while sending the email.",
+      });
+    }
   };
 
   const handleSchedule = () => {
