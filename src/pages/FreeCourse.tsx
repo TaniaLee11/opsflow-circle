@@ -140,7 +140,7 @@ export default function FreeCourse() {
         {courseId && (
           <link
             rel="canonical"
-            href={`https://virtualops.lovable.app/free-courses/${courseId}`}
+            href={`https://www.virtualopsassist.com/free-courses/${courseId}`}
           />
         )}
       </Helmet>

@@ -88,7 +88,7 @@ export default function FreeCourses() {
         <meta property="og:title" content="Free Business Courses | Virtual OPS Hub" />
         <meta property="og:description" content="Learn business fundamentals for free. No sign-up required." />
         <meta property="og:type" content="website" />
-        <link rel="canonical" href="https://virtualops.lovable.app/free-courses" />
+        <link rel="canonical" href="https://www.virtualopsassist.com/free-courses" />
       </Helmet>
 
       <div className="min-h-screen bg-background">

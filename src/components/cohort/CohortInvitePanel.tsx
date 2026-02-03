@@ -157,7 +157,7 @@ export function CohortInvitePanel() {
 
   const copyToClipboard = async (inviteCode: string, id: string) => {
     // ALWAYS use production URL for invite links - cohort users need live environment
-    const productionOrigin = "https://virtualops.lovable.app";
+    const productionOrigin = "https://www.virtualopsassist.com";
     const link = `${productionOrigin}/auth?invite=${inviteCode}`;
     await navigator.clipboard.writeText(link);
     setCopiedId(id);

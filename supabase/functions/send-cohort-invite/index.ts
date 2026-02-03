@@ -282,7 +282,7 @@ serve(async (req) => {
     }
 
     // Build the invite link
-    const origin = req.headers.get("origin") || "https://virtualops.lovable.app";
+    const origin = req.headers.get("origin") || "https://www.virtualopsassist.com";
     const inviteLink = `${origin}/auth?invite=${inviteCode}`;
 
     // Send email via Gmail

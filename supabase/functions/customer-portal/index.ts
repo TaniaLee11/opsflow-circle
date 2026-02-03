@@ -62,7 +62,7 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    const origin = req.headers.get("origin") || "https://virtualops.lovable.app";
+    const origin = req.headers.get("origin") || "https://www.virtualopsassist.com";
 
     // Create billing portal session
     const portalSession = await stripe.billingPortal.sessions.create({
