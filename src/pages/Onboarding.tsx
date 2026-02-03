@@ -268,7 +268,7 @@ export default function Onboarding() {
       
       // Cohort users always go to dashboard (they have full AI Operations access via AI_COHORT)
       if (isNewCohortSignup) {
-        toast.success("Welcome to the AI Cohort! Your 90-day access has started.");
+        toast.success("Welcome to the AI Cohort! Your 60-day access has started.");
         // Small delay to ensure subscription state is updated
         setTimeout(() => navigate("/dashboard"), 500);
       } else if (selectedTier === "free") {

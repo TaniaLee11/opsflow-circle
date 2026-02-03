@@ -67,7 +67,7 @@ When generating alerts:
 Priority levels:
 - URGENT: Within 7 days
 - IMPORTANT: Within 30 days
-- REMINDER: Within 90 days`,
+- REMINDER: Within 60 days`,
     enabled: true,
     userTypes: ["gig_worker", "entrepreneur", "nonprofit"]
   },

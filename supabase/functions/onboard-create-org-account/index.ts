@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         subscription_tier: dbSubscriptionTier,
         // For cohort users, set cohort expiry
         cohort_expires_at: payload.isCohortUser 
-          ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() 
+          ? new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString() 
           : null,
       })
       .select()
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
         tier_selected: true,
         // Cohort is pre-confirmed (no payment needed), free is also pre-confirmed
         subscription_confirmed: payload.selectedTier === "free" || payload.isCohortUser,
-        // Cohort gets "cohort" tier which grants AI Operations-like access for 90 days
+        // Cohort gets "cohort" tier which grants AI Operations-like access for 60 days
         subscription_tier: payload.isCohortUser ? "cohort" : (payload.selectedTier === "free" ? payload.selectedTier : null),
         display_name: payload.contactName || null,
       })
@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           organization_id: organization.id,
           status: "active",
-          expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
         });
 
       if (cohortError) {

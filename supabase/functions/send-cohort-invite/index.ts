@@ -289,8 +289,8 @@ serve(async (req) => {
     // Send email via Gmail
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #333;">You're Invited to the 90-Day AI Cohort!</h1>
-        <p>You've been invited to join an exclusive 90-day AI transformation program.</p>
+        <h1 style="color: #333;">You're Invited to the 60-Day AI Cohort!</h1>
+        <p>You've been invited to join an exclusive 60-day AI transformation program.</p>
         <p>This cohort gives you access to:</p>
         <ul>
           <li>AI-powered operations tools</li>
@@ -316,7 +316,7 @@ serve(async (req) => {
     const emailResult = await sendGmailEmail(
       accessToken,
       email,
-      "You're Invited to the 90-Day AI Cohort!",
+      "You're Invited to the 60-Day AI Cohort!",
       emailHtml
     );
 

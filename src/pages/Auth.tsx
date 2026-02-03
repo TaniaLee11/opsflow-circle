@@ -282,7 +282,7 @@ export default function Auth() {
             className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4"
           >
             {inviteData?.valid ? (
-              <>You've been invited to the <span className="text-primary font-medium">90-day AI Operations</span> program</>
+              <>You've been invited to the <span className="text-primary font-medium">60-day AI Operations</span> program</>
             ) : (
               <>Powered by <span className="text-primary font-medium">VOPSy</span> — Your AI Operations Intelligence</>
             )}
@@ -462,7 +462,7 @@ export default function Auth() {
           className="text-center mt-8 text-sm text-muted-foreground"
         >
           {inviteData?.valid 
-            ? "Your 90-day access starts when you create your account."
+            ? "Your 60-day access starts when you create your account."
             : "Platform access restricted to active operational partners."
           }
         </motion.p>

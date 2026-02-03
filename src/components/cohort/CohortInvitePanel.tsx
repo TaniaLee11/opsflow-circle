@@ -225,7 +225,7 @@ export function CohortInvitePanel() {
           <div>
             <h3 className="font-semibold text-foreground">AI Cohort Invites</h3>
             <p className="text-xs text-muted-foreground">
-              Invite users to the 90-day cohort program
+              Invite users to the 60-day cohort program
             </p>
           </div>
         </div>
@@ -262,9 +262,9 @@ export function CohortInvitePanel() {
           <div className="flex items-start gap-2">
             <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-foreground">90-Day AI Operations Access</p>
+              <p className="font-medium text-foreground">60-Day AI Operations Access</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Invited users receive full AI Operations functionality. After 90 days, 
+                Invited users receive full AI Operations functionality. After 60 days, 
                 they auto-convert to AI Free and can upgrade via subscription.
               </p>
             </div>
