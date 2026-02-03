@@ -238,13 +238,16 @@ export default function Onboarding() {
       });
 
       if (error) {
-        console.error("Edge function error:", error);
-        throw new Error(error.message || "Failed to complete onboarding");
+        console.error("[Onboarding] Edge function error:", error);
+        console.error("[Onboarding] Error details:", JSON.stringify(error));
+        const errorMsg = typeof error === 'string' ? error : (error.message || error.msg || JSON.stringify(error));
+        throw new Error(`Failed to complete onboarding: ${errorMsg}`);
       }
 
       if (!data?.success) {
-        console.error("Onboarding failed:", data);
-        throw new Error(data?.error || "Failed to create organization and account");
+        console.error("[Onboarding] Backend returned failure:", data);
+        const errorMsg = data?.error || data?.message || "Failed to create organization and account";
+        throw new Error(errorMsg);
       }
 
       console.log("Onboarding completed:", data);
