@@ -218,6 +218,29 @@ export default function Onboarding() {
         throw new Error("No active session");
       }
 
+      // IDEMPOTENCY CHECK: Check if user already has an organization
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("organization_id, tier_selected")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingProfile?.organization_id && existingProfile?.tier_selected) {
+        console.log("[Onboarding] User already onboarded, skipping Edge Function call");
+        // Clear cohort markers
+        try {
+          localStorage.removeItem("vopsy_cohort_invite");
+          localStorage.removeItem("vopsy_cohort_invite_code");
+          localStorage.removeItem("vopsy_cohort_invite_email");
+        } catch {}
+        
+        // Refresh subscription and navigate
+        await refreshSubscription();
+        toast.success("Welcome back! Your workspace is ready.");
+        setTimeout(() => navigate("/dashboard"), 500);
+        return;
+      }
+
       // Call the Edge Function to handle all server-side inserts
       // This bypasses RLS issues by using service role on the server
       // For cohort users, backend assigns AI_COHORT tier (not ai_operations)
@@ -240,12 +263,39 @@ export default function Onboarding() {
       if (error) {
         console.error("[Onboarding] Edge function error:", error);
         console.error("[Onboarding] Error details:", JSON.stringify(error));
+        
+        // FALLBACK PATH: If function fails but user is authenticated, allow entry
+        // Check if partial success (org created but function errored)
+        const { data: profileCheck } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        
+        if (profileCheck?.organization_id) {
+          console.log("[Onboarding] Partial success detected, allowing entry");
+          toast.success("Setup completed! Entering your workspace...");
+          await refreshSubscription();
+          setTimeout(() => navigate("/dashboard"), 500);
+          return;
+        }
+        
         const errorMsg = typeof error === 'string' ? error : (error.message || error.msg || JSON.stringify(error));
         throw new Error(`Failed to complete onboarding: ${errorMsg}`);
       }
 
       if (!data?.success) {
         console.error("[Onboarding] Backend returned failure:", data);
+        
+        // FALLBACK PATH: Check for partial success
+        if (data?.partialSuccess && data?.organization_id) {
+          console.log("[Onboarding] Partial success from backend, allowing entry");
+          toast.success("Setup completed! Entering your workspace...");
+          await refreshSubscription();
+          setTimeout(() => navigate("/dashboard"), 500);
+          return;
+        }
+        
         const errorMsg = data?.error || data?.message || "Failed to create organization and account";
         throw new Error(errorMsg);
       }
