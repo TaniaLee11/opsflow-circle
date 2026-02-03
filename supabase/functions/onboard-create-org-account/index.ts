@@ -109,6 +109,29 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
+    // ==== IDEMPOTENCY CHECK ====
+    // If user already has an organization, return success immediately
+    console.log("[onboard-create-org-account] Checking for existing organization");
+    const { data: existingProfile } = await serviceClient
+      .from("profiles")
+      .select("organization_id, primary_account_id, tier_selected")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingProfile?.organization_id && existingProfile?.tier_selected) {
+      console.log("[onboard-create-org-account] User already onboarded, returning success");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "User already onboarded",
+          organization_id: existingProfile.organization_id,
+          account_id: existingProfile.primary_account_id,
+          already_exists: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ==== STEP A: Create Organization ====
     console.log("[onboard-create-org-account] Step A: Creating organization");
     const dbSubscriptionTier = mapTierToDbSubscriptionTier(payload.selectedTier, payload.isCohortUser || false);
