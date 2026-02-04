@@ -41,6 +41,23 @@ export interface FinancialSummary {
     overdueCount: number;
     upcomingPayments: number;
   };
+  // Financial Reports
+  profitAndLoss?: {
+    totalRevenue: number;
+    totalExpenses: number;
+    netIncome: number;
+    grossProfit: number;
+    operatingIncome: number;
+    period: string;
+  };
+  balanceSheet?: {
+    totalAssets: number;
+    totalLiabilities: number;
+    totalEquity: number;
+    currentAssets: number;
+    currentLiabilities: number;
+    asOfDate: string;
+  };
   // Error state fields for handling re-auth requirements
   error?: string;
   errorMessage?: string;
