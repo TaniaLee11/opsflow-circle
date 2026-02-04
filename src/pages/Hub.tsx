@@ -583,15 +583,14 @@ export default function Hub() {
                 The Hub brings it all together—learn at your pace, get help when you need it.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a 
-                  href="https://academy.virtualopsassist.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  onClick={() => navigate("/academy")} 
+                  className="text-lg px-8 h-14"
                 >
-                  <Button variant="outline" size="lg" className="text-lg px-8 h-14">
-                    Browse Courses
-                  </Button>
-                </a>
+                  Browse Courses
+                </Button>
                 <Button size="lg" onClick={() => navigate("/services")} className="glow-primary-sm text-lg px-8 h-14">
                   See Full Services
                 </Button>
