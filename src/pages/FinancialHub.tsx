@@ -38,6 +38,7 @@ import { useFinancialDocuments } from "@/hooks/useFinancialDocuments";
 import { DocumentUploadDialog } from "@/components/financial/DocumentUploadDialog";
 import { UploadedDocumentsList } from "@/components/financial/UploadedDocumentsList";
 import { FinancialExportButton } from "@/components/financial/FinancialExportButton";
+import { FinancialHealthDashboard } from "@/components/financial/FinancialHealthDashboard";
 
 interface FinancialMetric {
   label: string;
@@ -407,133 +408,38 @@ export default function FinancialHub() {
                 ))}
               </div>
 
-              {/* Financial Reports - P&L and Balance Sheet */}
-              {financialData && financialData.length > 0 && financialData.some(d => d.profitAndLoss || d.balanceSheet) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  {/* Profit & Loss */}
-                  {financialData.find(d => d.profitAndLoss) && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="glass gradient-border rounded-xl overflow-hidden"
-                    >
-                      <div className="px-6 py-4 border-b border-border">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-primary" />
-                          <h3 className="font-semibold text-foreground">Profit & Loss</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {financialData.find(d => d.profitAndLoss)?.profitAndLoss?.period}
-                        </p>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        {(() => {
-                          const pl = financialData.find(d => d.profitAndLoss)?.profitAndLoss;
-                          if (!pl) return null;
-                          return (
-                            <>
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">Total Revenue</span>
-                                <span className="font-semibold text-success">
-                                  ${pl.totalRevenue.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">Total Expenses</span>
-                                <span className="font-semibold text-foreground">
-                                  ${pl.totalExpenses.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">Gross Profit</span>
-                                <span className="font-semibold text-foreground">
-                                  ${pl.grossProfit.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="border-t border-border pt-4 mt-4">
-                                <div className="flex justify-between items-center">
-                                  <span className="font-semibold text-foreground">Net Income</span>
-                                  <span className={cn(
-                                    "text-lg font-bold",
-                                    pl.netIncome >= 0 ? "text-success" : "text-destructive"
-                                  )}>
-                                    ${pl.netIncome.toLocaleString()}
-                                  </span>
-                                </div>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Balance Sheet */}
-                  {financialData.find(d => d.balanceSheet) && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.25 }}
-                      className="glass gradient-border rounded-xl overflow-hidden"
-                    >
-                      <div className="px-6 py-4 border-b border-border">
-                        <div className="flex items-center gap-2">
-                          <PiggyBank className="w-5 h-5 text-primary" />
-                          <h3 className="font-semibold text-foreground">Balance Sheet</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          As of {financialData.find(d => d.balanceSheet)?.balanceSheet?.asOfDate}
-                        </p>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        {(() => {
-                          const bs = financialData.find(d => d.balanceSheet)?.balanceSheet;
-                          if (!bs) return null;
-                          return (
-                            <>
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">Total Assets</span>
-                                <span className="font-semibold text-foreground">
-                                  ${bs.totalAssets.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">Current Assets</span>
-                                <span className="font-medium text-muted-foreground">
-                                  ${bs.currentAssets.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="border-t border-border pt-4 mt-4">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm text-muted-foreground">Total Liabilities</span>
-                                  <span className="font-semibold text-foreground">
-                                    ${bs.totalLiabilities.toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between items-center mt-2">
-                                  <span className="text-sm text-muted-foreground">Current Liabilities</span>
-                                  <span className="font-medium text-muted-foreground">
-                                    ${bs.currentLiabilities.toLocaleString()}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="border-t border-border pt-4 mt-4">
-                                <div className="flex justify-between items-center">
-                                  <span className="font-semibold text-foreground">Total Equity</span>
-                                  <span className="text-lg font-bold text-primary">
-                                    ${bs.totalEquity.toLocaleString()}
-                                  </span>
-                                </div>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              )}
+              {/* Financial Health Dashboard */}
+              {financialData && financialData.length > 0 && (() => {
+                const dataWithReports = financialData.find(d => d.profitAndLoss && d.balanceSheet);
+                if (!dataWithReports || !dataWithReports.profitAndLoss || !dataWithReports.balanceSheet) return null;
+                
+                const pl = dataWithReports.profitAndLoss;
+                const bs = dataWithReports.balanceSheet;
+                
+                // TODO: Get industry from organization profile
+                const industry = undefined; // Will be fetched from user's organization
+                
+                return (
+                  <div className="mb-6">
+                    <FinancialHealthDashboard 
+                      financialData={{
+                        totalRevenue: pl.totalRevenue,
+                        totalExpenses: pl.totalExpenses,
+                        netIncome: pl.netIncome,
+                        grossProfit: pl.grossProfit,
+                        totalAssets: bs.totalAssets,
+                        totalLiabilities: bs.totalLiabilities,
+                        currentAssets: bs.currentAssets,
+                        currentLiabilities: bs.currentLiabilities,
+                        accountsReceivable: 0, // TODO: Add to QuickBooks fetch
+                        cashOnHand: bs.currentAssets, // Approximation
+                        monthlyBurnRate: pl.totalExpenses / 12, // Approximation
+                      }}
+                      industry={industry}
+                    />
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Recent Transactions */}
