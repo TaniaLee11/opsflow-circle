@@ -376,20 +376,18 @@ export default function FinancialHub() {
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6 sm:space-y-8">
               {/* Financial Health Dashboard */}
-              {financialSummary && (
-                <FinancialHealthDashboard 
-                  financialData={{
-                    revenue: financialSummary.totalRevenue || 0,
-                    expenses: financialSummary.totalExpenses || 0,
-                    assets: financialSummary.totalAssets || 0,
-                    liabilities: financialSummary.totalLiabilities || 0,
-                    equity: financialSummary.totalEquity || 0,
-                    currentAssets: financialSummary.currentAssets || 0,
-                    currentLiabilities: financialSummary.currentLiabilities || 0,
-                  }}
-                  industry="services" // TODO: Get from user profile
-                />
-              )}
+              <FinancialHealthDashboard 
+                financialData={{
+                  revenue: financialSummary?.totalRevenue || 0,
+                  expenses: financialSummary?.totalExpenses || 0,
+                  assets: financialSummary?.totalAssets || 0,
+                  liabilities: financialSummary?.totalLiabilities || 0,
+                  equity: financialSummary?.totalEquity || 0,
+                  currentAssets: financialSummary?.currentAssets || 0,
+                  currentLiabilities: financialSummary?.currentLiabilities || 0,
+                }}
+                industry="services" // TODO: Get from user profile
+              />
 
               {/* Key Metrics */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
