@@ -63,6 +63,23 @@ interface FinancialSummary {
     overdueCount: number;
     upcomingPayments: number;
   };
+  // Financial Reports
+  profitAndLoss?: {
+    totalRevenue: number;
+    totalExpenses: number;
+    netIncome: number;
+    grossProfit: number;
+    operatingIncome: number;
+    period: string;
+  };
+  balanceSheet?: {
+    totalAssets: number;
+    totalLiabilities: number;
+    totalEquity: number;
+    currentAssets: number;
+    currentLiabilities: number;
+    asOfDate: string;
+  };
   // Error state fields for handling re-auth requirements
   error?: string;
   errorMessage?: string;
@@ -196,8 +213,8 @@ async function fetchQuickBooksData(accessToken: string, realmId: string): Promis
   const recentTransactions: FinancialSummary['recentTransactions'] = [];
 
   try {
-    // Fetch invoices
-    const invoiceQuery = encodeURIComponent("SELECT * FROM Invoice ORDERBY DueDate DESC MAXRESULTS 20");
+    // Fetch ALL outstanding invoices (unpaid + overdue)
+    const invoiceQuery = encodeURIComponent("SELECT * FROM Invoice WHERE Balance > '0' ORDERBY DueDate DESC MAXRESULTS 1000");
     const invoiceResponse = await fetch(
       `${baseUrl}/query?query=${invoiceQuery}`,
       { headers }
@@ -251,25 +268,161 @@ async function fetchQuickBooksData(accessToken: string, realmId: string): Promis
       companyName = companyData.CompanyInfo?.CompanyName || 'QuickBooks';
     }
 
-    // Fetch recent purchases/expenses
+    // Fetch recent purchases/expenses (increased limit)
     const purchaseResponse = await fetch(
-      `${baseUrl}/query?query=SELECT * FROM Purchase ORDERBY TxnDate DESC MAXRESULTS 10`,
+      `${baseUrl}/query?query=SELECT * FROM Purchase ORDERBY TxnDate DESC MAXRESULTS 50`,
       { headers }
     );
+
+    const transactionIds = new Set<string>(); // Track IDs to prevent duplicates
 
     if (purchaseResponse.ok) {
       const purchaseData = await purchaseResponse.json();
       const purchases = purchaseData.QueryResponse?.Purchase || [];
       
       for (const p of purchases) {
-        recentTransactions.push({
-          id: p.Id,
-          date: p.TxnDate,
-          description: p.PrivateNote || p.Line?.[0]?.Description || 'Purchase',
-          amount: p.TotalAmt || 0,
-          type: 'expense',
-        });
+        const txnId = `purchase-${p.Id}`;
+        if (!transactionIds.has(txnId)) {
+          transactionIds.add(txnId);
+          recentTransactions.push({
+            id: txnId,
+            date: p.TxnDate,
+            description: p.PrivateNote || p.Line?.[0]?.Description || 'Purchase',
+            amount: p.TotalAmt || 0,
+            type: 'expense',
+          });
+        }
       }
+    }
+
+    // Fetch recent payments/income
+    const paymentResponse = await fetch(
+      `${baseUrl}/query?query=SELECT * FROM Payment ORDERBY TxnDate DESC MAXRESULTS 50`,
+      { headers }
+    );
+
+    if (paymentResponse.ok) {
+      const paymentData = await paymentResponse.json();
+      const payments = paymentData.QueryResponse?.Payment || [];
+      
+      for (const p of payments) {
+        const txnId = `payment-${p.Id}`;
+        if (!transactionIds.has(txnId)) {
+          transactionIds.add(txnId);
+          recentTransactions.push({
+            id: txnId,
+            date: p.TxnDate,
+            description: `Payment from ${p.CustomerRef?.name || 'Customer'}`,
+            amount: p.TotalAmt || 0,
+            type: 'income',
+          });
+        }
+      }
+    }
+
+    // Fetch Profit & Loss Report
+    let profitAndLoss = undefined;
+    try {
+      const today = new Date();
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const startDate = startOfYear.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
+      
+      const plResponse = await fetch(
+        `${baseUrl}/reports/ProfitAndLoss?start_date=${startDate}&end_date=${endDate}`,
+        { headers }
+      );
+      
+      if (plResponse.ok) {
+        const plData = await plResponse.json();
+        const rows = plData.Rows?.Row || [];
+        
+        let totalRevenue = 0;
+        let totalExpenses = 0;
+        let grossProfit = 0;
+        
+        // Parse P&L report structure
+        for (const row of rows) {
+          if (row.group === 'Income' && row.Summary?.ColData?.[1]?.value) {
+            totalRevenue = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+          if (row.group === 'Expenses' && row.Summary?.ColData?.[1]?.value) {
+            totalExpenses = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+          if (row.group === 'GrossProfit' && row.Summary?.ColData?.[1]?.value) {
+            grossProfit = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+        }
+        
+        const netIncome = totalRevenue - totalExpenses;
+        
+        profitAndLoss = {
+          totalRevenue,
+          totalExpenses,
+          netIncome,
+          grossProfit,
+          operatingIncome: netIncome,
+          period: `${startDate} to ${endDate}`,
+        };
+        
+        logStep("QuickBooks P&L fetched", { totalRevenue, totalExpenses, netIncome });
+      }
+    } catch (error) {
+      logStep("QuickBooks P&L fetch error", { error: String(error) });
+    }
+
+    // Fetch Balance Sheet
+    let balanceSheet = undefined;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const bsResponse = await fetch(
+        `${baseUrl}/reports/BalanceSheet?date=${today}`,
+        { headers }
+      );
+      
+      if (bsResponse.ok) {
+        const bsData = await bsResponse.json();
+        const rows = bsData.Rows?.Row || [];
+        
+        let totalAssets = 0;
+        let totalLiabilities = 0;
+        let totalEquity = 0;
+        let currentAssets = 0;
+        let currentLiabilities = 0;
+        
+        // Parse Balance Sheet structure
+        for (const row of rows) {
+          if (row.group === 'TotalAssets' && row.Summary?.ColData?.[1]?.value) {
+            totalAssets = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+          if (row.group === 'TotalLiabilities' && row.Summary?.ColData?.[1]?.value) {
+            totalLiabilities = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+          if (row.group === 'TotalEquity' && row.Summary?.ColData?.[1]?.value) {
+            totalEquity = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+          if (row.group === 'TotalCurrentAssets' && row.Summary?.ColData?.[1]?.value) {
+            currentAssets = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+          if (row.group === 'TotalCurrentLiabilities' && row.Summary?.ColData?.[1]?.value) {
+            currentLiabilities = parseFloat(row.Summary.ColData[1].value) || 0;
+          }
+        }
+        
+        balanceSheet = {
+          totalAssets,
+          totalLiabilities,
+          totalEquity,
+          currentAssets,
+          currentLiabilities,
+          asOfDate: today,
+        };
+        
+        logStep("QuickBooks Balance Sheet fetched", { totalAssets, totalLiabilities, totalEquity });
+      }
+    } catch (error) {
+      logStep("QuickBooks Balance Sheet fetch error", { error: String(error) });
     }
 
     // Calculate metrics
@@ -291,6 +444,8 @@ async function fetchQuickBooksData(accessToken: string, realmId: string): Promis
       invoices,
       recentTransactions,
       cashFlow: null,
+      profitAndLoss,
+      balanceSheet,
       metrics: {
         totalReceivable,
         totalPayable: 0,
