@@ -38,6 +38,7 @@ import { useFinancialDocuments } from "@/hooks/useFinancialDocuments";
 import { DocumentUploadDialog } from "@/components/financial/DocumentUploadDialog";
 import { UploadedDocumentsList } from "@/components/financial/UploadedDocumentsList";
 import { FinancialExportButton } from "@/components/financial/FinancialExportButton";
+import { SimpleFinancialDashboard } from "@/components/financial/SimpleFinancialDashboard";
 
 
 interface FinancialMetric {
@@ -357,6 +358,9 @@ export default function FinancialHub() {
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6 sm:space-y-8">
+              {/* Financial Health Dashboard */}
+              <SimpleFinancialDashboard data={financialSummary} />
+              
               {/* Key Metrics */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {metrics.map((metric, index) => (
