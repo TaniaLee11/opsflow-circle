@@ -11,7 +11,8 @@ import {
   RefreshCw,
   Settings,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Plus
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AccessGate } from "@/components/access/AccessGate";
@@ -869,6 +870,29 @@ export default function Integrations() {
                   ))}
                 </div>
               )}
+              
+              {/* Request Integration Card */}
+              <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 mt-6">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-xl bg-primary/10 w-fit mx-auto mb-4">
+                    <Plus className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Don't see your tool?</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Request an integration and we'll add it to the platform
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      // TODO: Open request integration dialog
+                      toast.info("Integration request feature coming soon!");
+                    }}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Request Integration
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </motion.div>
         </main>
