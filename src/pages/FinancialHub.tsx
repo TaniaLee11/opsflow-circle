@@ -39,6 +39,8 @@ import { DocumentUploadDialog } from "@/components/financial/DocumentUploadDialo
 import { UploadedDocumentsList } from "@/components/financial/UploadedDocumentsList";
 import { FinancialExportButton } from "@/components/financial/FinancialExportButton";
 import { FinancialHealthDashboard } from "@/components/financial/FinancialHealthDashboard";
+import { PlatformMetricsDashboard } from "@/components/financial/PlatformMetricsDashboard";
+import { EnterpriseTeamMetrics } from "@/components/financial/EnterpriseTeamMetrics";
 
 interface FinancialMetric {
   label: string;
@@ -353,6 +355,22 @@ export default function FinancialHub() {
                 <span className="hidden sm:inline">Client Invoices</span>
                 <span className="sm:hidden">Invoices</span>
               </TabsTrigger>
+              {/* Platform Owner: Platform Metrics tab */}
+              {isOwner && (
+                <TabsTrigger value="platform" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Platform Metrics</span>
+                  <span className="sm:hidden">Platform</span>
+                </TabsTrigger>
+              )}
+              {/* TODO: Enterprise clients - Team Metrics tab */}
+              {/* {isEnterpriseClient && (
+                <TabsTrigger value="team" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Team Metrics</span>
+                  <span className="sm:hidden">Team</span>
+                </TabsTrigger>
+              )} */}
             </TabsList>
 
             {/* Overview Tab */}
@@ -752,6 +770,54 @@ export default function FinancialHub() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Platform Metrics Tab (Platform Owner Only) */}
+            {isOwner && (
+              <TabsContent value="platform" className="space-y-6">
+                <PlatformMetricsDashboard 
+                  metrics={{
+                    mrr: 0, // TODO: Fetch from platform-metrics edge function
+                    mrrGrowth: 0,
+                    totalUsers: 0,
+                    activeUsers: 0,
+                    newUsersThisMonth: 0,
+                    churnedUsersThisMonth: 0,
+                    churnRate: 0,
+                    tierDistribution: {
+                      AI_FREE: 0,
+                      AI_ASSISTANT: 0,
+                      AI_OPERATIONS: 0,
+                    },
+                    revenueByTier: {
+                      AI_ASSISTANT: 0,
+                      AI_OPERATIONS: 0,
+                    },
+                    avgRevenuePerUser: 0,
+                    lifetimeValue: 0,
+                    topClients: [],
+                  }}
+                />
+              </TabsContent>
+            )}
+
+            {/* Team Metrics Tab (Enterprise Clients Only) */}
+            {/* TODO: Add isEnterpriseClient check */}
+            {/* {isEnterpriseClient && (
+              <TabsContent value="team" className="space-y-6">
+                <EnterpriseTeamMetrics 
+                  metrics={{
+                    totalSeats: 0,
+                    activeSeats: 0,
+                    seatUtilization: 0,
+                    teamMembers: [],
+                    totalTasksCompleted: 0,
+                    totalVOPSyInteractions: 0,
+                    avgTasksPerMember: 0,
+                    topPerformers: [],
+                  }}
+                />
+              </TabsContent>
+            )} */}
           </Tabs>
         </div>
       </main>
