@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Activity, AlertCircle, CheckCircle2, Clock, TrendingUp, Crown, Sparkles, Zap, Rocket } from "lucide-react";
+import { Users, Activity, AlertCircle, CheckCircle2, Clock, TrendingUp } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -19,16 +18,6 @@ interface PlatformStats {
   totalOrganizations: number;
   integrationConnections: number;
   systemErrors: number;
-}
-
-interface TierStats {
-  tierId: string;
-  tierName: string;
-  userCount: number;
-  activeCount: number;
-  mrr: number;
-  icon: React.ReactNode;
-  color: string;
 }
 
 interface RecentUser {
@@ -50,7 +39,6 @@ interface RecentActivity {
 export default function OwnerDashboard() {
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<PlatformStats>({
     totalUsers: 0,
@@ -60,7 +48,6 @@ export default function OwnerDashboard() {
     integrationConnections: 0,
     systemErrors: 0,
   });
-  const [tierStats, setTierStats] = useState<TierStats[]>([]);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
 
@@ -98,56 +85,6 @@ export default function OwnerDashboard() {
         .select("*", { count: "exact", head: true })
         .eq("status", "connected");
 
-      // Load tier statistics
-      const { data: tierData } = await supabase
-        .from("accounts")
-        .select(`
-          tier_id,
-          subscription_confirmed,
-          profiles (user_id)
-        `);
-
-      // Calculate tier stats
-      const tiers = [
-        { id: "free", name: "AI Free", icon: <Users className="w-5 h-5" />, color: "from-gray-500 to-gray-400" },
-        { id: "ai_assistant", name: "AI Assistant", icon: <Sparkles className="w-5 h-5" />, color: "from-blue-500 to-cyan-400" },
-        { id: "ai_operations", name: "AI Operations", icon: <Zap className="w-5 h-5" />, color: "from-purple-500 to-pink-400" },
-        { id: "ai_tax", name: "AI Tax", icon: <Crown className="w-5 h-5" />, color: "from-amber-500 to-yellow-400" },
-        { id: "ai_advisory", name: "AI Advisory", icon: <TrendingUp className="w-5 h-5" />, color: "from-emerald-500 to-teal-400" },
-        { id: "ai_enterprise", name: "AI Enterprise", icon: <Rocket className="w-5 h-5" />, color: "from-primary to-orange-400" },
-        { id: "ai_compliance", name: "AI Compliance", icon: <CheckCircle2 className="w-5 h-5" />, color: "from-rose-500 to-red-400" },
-      ];
-
-      const tierStatsData: TierStats[] = tiers.map(tier => {
-        const tierUsers = tierData?.filter(account => account.tier_id === tier.id) || [];
-        const activeUsers = tierUsers.filter(account => account.subscription_confirmed).length;
-        
-        // Calculate MRR based on tier pricing
-        const tierPrices: Record<string, number> = {
-          free: 0,
-          ai_assistant: 34.99,
-          ai_operations: 99.99,
-          ai_tax: 125, // Average pricing
-          ai_advisory: 125, // Per hour, estimate monthly
-          ai_enterprise: 499,
-          ai_compliance: 175, // Average pricing
-        };
-        
-        const mrr = activeUsers * (tierPrices[tier.id] || 0);
-
-        return {
-          tierId: tier.id,
-          tierName: tier.name,
-          userCount: tierUsers.length,
-          activeCount: activeUsers,
-          mrr,
-          icon: tier.icon,
-          color: tier.color,
-        };
-      });
-
-      setTierStats(tierStatsData);
-
       // Load recent users
       const { data: recentUsersData } = await supabase
         .from("profiles")
@@ -174,7 +111,7 @@ export default function OwnerDashboard() {
       setStats({
         totalUsers: totalUsers || 0,
         newUsersToday: newUsersToday || 0,
-        activeUsers: tierStatsData.reduce((sum, tier) => sum + tier.activeCount, 0),
+        activeUsers: 0, // TODO: Implement active users tracking
         totalOrganizations: totalOrganizations || 0,
         integrationConnections: integrationConnections || 0,
         systemErrors: 0, // TODO: Implement error tracking
@@ -230,31 +167,7 @@ export default function OwnerDashboard() {
           </Badge>
         </div>
 
-        {/* Tier Analytics Cards - Clickable */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {tierStats.map((tier) => (
-            <Card 
-              key={tier.tierId}
-              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-              onClick={() => navigate(`/portal/${tier.tierId}`)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{tier.tierName}</CardTitle>
-                <div className={`p-2 rounded-lg bg-gradient-to-br ${tier.color} text-white`}>
-                  {tier.icon}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{tier.userCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  {tier.activeCount} active • ${tier.mrr.toFixed(0)}/mo
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Summary Stats Grid */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

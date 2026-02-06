@@ -491,22 +491,18 @@ serve(async (req) => {
       });
     }
 
-    // Use Claude API (Anthropic) for immediate responses with tool use
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Use Lovable AI
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': Deno.env.get('ANTHROPIC_API_KEY'),
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-7-sonnet-20250219',
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        messages: conversationMessages.map(msg => ({
-          role: msg.role === 'assistant' ? 'assistant' : 'user',
-          content: msg.content
-        })),
+        model: 'google/gemini-3-flash-preview',
+        messages: conversationMessages,
+        max_tokens: 2048,
+        temperature: 0.7,
       }),
     });
 
@@ -529,7 +525,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const assistantMessage = data.content[0].text;
+    const assistantMessage = data.choices[0].message.content;
 
     return new Response(JSON.stringify({ 
       message: assistantMessage,
