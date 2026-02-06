@@ -152,7 +152,7 @@ const vopsyDemoPrompts = [
 
 export default function Hub() {
   const navigate = useNavigate();
-  const { isAuthenticated, login, signup, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isOwner, user, login, signup, isLoading: authLoading } = useAuth();
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -160,12 +160,21 @@ export default function Hub() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users based on role
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
+    if (isAuthenticated && user) {
+      if (isOwner) {
+        // Owner goes to owner dashboard
+        navigate("/owner");
+      } else if (!user.tierSelected) {
+        // Sub-users without tier go to onboarding
+        navigate("/onboarding");
+      } else {
+        // Sub-users with tier go to their dashboard
+        navigate("/dashboard");
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isOwner, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
