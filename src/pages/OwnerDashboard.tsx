@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, Activity, AlertCircle, CheckCircle2, Clock, TrendingUp } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PlatformStats {
   totalUsers: number;
@@ -36,6 +38,7 @@ interface RecentActivity {
 
 export default function OwnerDashboard() {
   const { user, profile } = useAuth();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<PlatformStats>({
     totalUsers: 0,
@@ -148,7 +151,9 @@ export default function OwnerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <>
+      <Sidebar />
+      <div className={`min-h-screen bg-background p-6 ${isMobile ? 'pt-20' : 'md:ml-64'}`}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -276,5 +281,6 @@ export default function OwnerDashboard() {
         </Tabs>
       </div>
     </div>
+    </>
   );
 }
