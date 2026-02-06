@@ -44,6 +44,7 @@ import FreeCourse from "./pages/FreeCourse";
 import BusinessHealthCheck from "./pages/BusinessHealthCheck";
 import ManagedPartners from "./pages/ManagedPartners";
 import Communications from "./pages/Communications";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -89,20 +90,20 @@ const App = () => (
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/select-tier" element={<TierSelection />} />
                     <Route path="/select-product" element={<ProductSelection />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                     <Route path="/portal/:tierId" element={<AnalyticsPortal />} />
                     <Route path="/analytics/:tierId" element={<AnalyticsPortal />} />
-                    <Route path="/vopsy" element={<VOPSy />} />
-                    <Route path="/vault" element={<Vault />} />
-                    <Route path="/studio" element={<Studio />} />
-                    <Route path="/ai-studio" element={<AIStudio />} />
-                    <Route path="/academy" element={<Academy />} />
-                    <Route path="/financial" element={<FinancialHub />} />
-                    <Route path="/integrations" element={<Integrations />} />
+                    <Route path="/vopsy" element={<ProtectedRoute><VOPSy /></ProtectedRoute>} />
+                    <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
+                    <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
+                    <Route path="/ai-studio" element={<ProtectedRoute><AIStudio /></ProtectedRoute>} />
+                    <Route path="/academy" element={<ProtectedRoute><Academy /></ProtectedRoute>} />
+                    <Route path="/financial" element={<ProtectedRoute><FinancialHub /></ProtectedRoute>} />
+                    <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                     <Route path="/integrations/callback" element={<IntegrationCallback />} />
-                    <Route path="/workflows" element={<Workflows />} />
-                    <Route path="/communications" element={<Communications />} />
-                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/workflows" element={<ProtectedRoute><Workflows /></ProtectedRoute>} />
+                    <Route path="/communications" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-canceled" element={<PaymentCanceled />} />
                     <Route path="*" element={<NotFound />} />
