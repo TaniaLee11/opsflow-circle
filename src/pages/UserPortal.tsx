@@ -33,7 +33,12 @@ import {
   UserX,
   Clock,
   Search,
-  Eye
+  Eye,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Trash2,
+  Ban,
+  MoreVertical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +46,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Component for viewing client Vault/Academy
 interface ViewClientButtonProps {
@@ -92,6 +114,76 @@ function PortalContent() {
   const navigate = useNavigate();
   const { isOwner } = useAuth();
   const [userSearch, setUserSearch] = useState("");
+  const [actionDialog, setActionDialog] = useState<{
+    open: boolean;
+    userId: string | null;
+    action: 'upgrade' | 'downgrade' | 'suspend' | 'remove' | null;
+    selectedTier?: string;
+  }>({ open: false, userId: null, action: null });
+
+  const handleUserAction = (userId: string, action: 'upgrade' | 'downgrade' | 'suspend' | 'remove') => {
+    if (action === 'upgrade' || action === 'downgrade') {
+      // Open dialog to select new tier
+      setActionDialog({ open: true, userId, action });
+    } else {
+      // Confirm and execute action
+      setActionDialog({ open: true, userId, action });
+    }
+  };
+
+  const executeUserAction = async () => {
+    if (!actionDialog.userId || !actionDialog.action) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const payload: any = {
+        action: actionDialog.action,
+        userId: actionDialog.userId,
+      };
+
+      if (actionDialog.action === 'upgrade' || actionDialog.action === 'downgrade') {
+        if (!actionDialog.selectedTier) {
+          toast.error("Please select a tier");
+          return;
+        }
+        payload.newTier = actionDialog.selectedTier;
+      }
+
+      if (actionDialog.action === 'suspend') {
+        payload.action = 'status_change';
+        payload.newStatus = 'suspended';
+      }
+
+      const response = await fetch(
+        `${supabase.supabaseUrl}/functions/v1/manage-user`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(result.message);
+        refetch(); // Refresh user list
+        setActionDialog({ open: false, userId: null, action: null });
+      } else {
+        throw new Error(result.error || "Failed to perform action");
+      }
+    } catch (error: any) {
+      console.error("Error managing user:", error);
+      toast.error(error.message || "Failed to perform action");
+    }
+  };
+
+  const availableTiers = Object.values(USER_TIERS).filter(t => t.id !== validTierId);
 
   // Validate tier ID
   const validTierId = tierId as UserTierId;
@@ -633,7 +725,7 @@ function PortalContent() {
                                 </div>
                               </div>
 
-                              {/* Quick Links */}
+                              {/* Quick Links & Actions */}
                               <div className="flex flex-col gap-2 shrink-0">
                                 <ViewClientButton 
                                   user={user} 
@@ -645,6 +737,43 @@ function PortalContent() {
                                   tierId={validTierId} 
                                   destination="academy" 
                                 />
+                                <div className="h-px bg-border my-1" />
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="gap-1.5 text-xs text-green-600 hover:text-green-700"
+                                  onClick={() => handleUserAction(user.id, 'upgrade')}
+                                >
+                                  <ArrowUpCircle className="w-3 h-3" />
+                                  Upgrade
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="gap-1.5 text-xs text-orange-600 hover:text-orange-700"
+                                  onClick={() => handleUserAction(user.id, 'downgrade')}
+                                >
+                                  <ArrowDownCircle className="w-3 h-3" />
+                                  Downgrade
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="gap-1.5 text-xs text-yellow-600 hover:text-yellow-700"
+                                  onClick={() => handleUserAction(user.id, 'suspend')}
+                                >
+                                  <Ban className="w-3 h-3" />
+                                  Suspend
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="gap-1.5 text-xs text-red-600 hover:text-red-700"
+                                  onClick={() => handleUserAction(user.id, 'remove')}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  Remove
+                                </Button>
                               </div>
                             </div>
                           </motion.div>
@@ -663,6 +792,59 @@ function PortalContent() {
           </>
         )}
       </div>
+
+      {/* User Action Dialog */}
+      <Dialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {actionDialog.action === 'upgrade' && 'Upgrade User'}
+              {actionDialog.action === 'downgrade' && 'Downgrade User'}
+              {actionDialog.action === 'suspend' && 'Suspend User'}
+              {actionDialog.action === 'remove' && 'Remove User'}
+            </DialogTitle>
+            <DialogDescription>
+              {(actionDialog.action === 'upgrade' || actionDialog.action === 'downgrade') && (
+                <div className="space-y-4 mt-4">
+                  <p>Select the new tier for this user:</p>
+                  <Select
+                    value={actionDialog.selectedTier}
+                    onValueChange={(value) => setActionDialog({ ...actionDialog, selectedTier: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTiers.map((tier) => (
+                        <SelectItem key={tier.id} value={tier.id}>
+                          {tier.displayName} - {tier.price ? `$${tier.price}/mo` : tier.priceLabel || 'Free'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {actionDialog.action === 'suspend' && (
+                <p className="mt-4">Are you sure you want to suspend this user? They will lose access to the platform until reactivated.</p>
+              )}
+              {actionDialog.action === 'remove' && (
+                <p className="mt-4 text-destructive font-semibold">⚠️ Are you sure you want to permanently remove this user? This action cannot be undone.</p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionDialog({ open: false, userId: null, action: null })}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={executeUserAction}
+              variant={actionDialog.action === 'remove' ? 'destructive' : 'default'}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
