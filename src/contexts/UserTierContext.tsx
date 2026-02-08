@@ -26,8 +26,7 @@ export type UserTierId =
   | "ai_enterprise" 
   | "ai_advisory" 
   | "ai_tax" 
-  | "ai_compliance"
-  | "cohort";
+  | "ai_compliance";
 
 // LMS Access Levels
 export type LmsAccessLevel = 
@@ -293,30 +292,6 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     lmsAccess: "full_academy",
     includesHumanServices: true,
     includesTaxPrep: true, // Annual 990 filings
-    includesAdvisory: false
-  },
-
-  // 🟠 AI COHORT — Invite-Only Members
-  cohort: {
-    id: "cohort",
-    name: "AI Cohort",
-    displayName: "AI Cohort",
-    price: null,
-    description: "Invite-only members",
-    whoItsFor: "Special cohort members with invite-only access.",
-    capabilities: [
-      "Full platform access",
-      "Cohort-specific features",
-      "Community support"
-    ],
-    limitations: [
-      "Invite-only access"
-    ],
-    icon: "🟠",
-    color: "from-orange-500 to-amber-400",
-    lmsAccess: "full_operations",
-    includesHumanServices: false,
-    includesTaxPrep: false,
     includesAdvisory: false
   }
 };
