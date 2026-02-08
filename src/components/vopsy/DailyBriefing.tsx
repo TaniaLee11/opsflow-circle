@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Calendar, AlertCircle, TrendingUp, CheckCircle2, BookOpen } from "lucide-react";
+import { Loader2, Calendar, AlertCircle, TrendingUp, CheckCircle2, BookOpen, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,7 @@ export function DailyBriefing() {
       return;
     }
 
+    // Automatically generate briefing on mount (proactive)
     generateBriefing();
   }, [showBriefing, selectedTier]);
 
@@ -74,13 +75,15 @@ export function DailyBriefing() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <VOPSyMascot size="sm" />
-            <CardTitle>Daily Briefing</CardTitle>
+          <div className="flex items-center gap-3">
+            <VOPSyMascot size="md" />
+            <div>
+              <CardTitle className="text-xl">VOPSy's Daily Directive</CardTitle>
+              <CardDescription>Analyzing your operations and priorities...</CardDescription>
+            </div>
           </div>
-          <CardDescription>Preparing your daily operations overview...</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -91,17 +94,19 @@ export function DailyBriefing() {
 
   if (error) {
     return (
-      <Card>
+      <Card className="border-destructive/20">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <VOPSyMascot size="sm" />
-            <CardTitle>Daily Briefing</CardTitle>
+          <div className="flex items-center gap-3">
+            <VOPSyMascot size="md" />
+            <div>
+              <CardTitle className="text-xl">VOPSy's Daily Directive</CardTitle>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">{error}</p>
           <Button onClick={generateBriefing} variant="outline">
-            Try Again
+            Regenerate Briefing
           </Button>
         </CardContent>
       </Card>
@@ -115,15 +120,17 @@ export function DailyBriefing() {
   const { briefing } = briefingData;
 
   return (
-    <Card>
+    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <VOPSyMascot size="sm" />
-          <div className="flex-1">
-            <CardTitle>Daily Briefing</CardTitle>
-            <CardDescription>
-              Generated for {briefing.date}
-            </CardDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <VOPSyMascot size="md" />
+            <div>
+              <CardTitle className="text-xl">VOPSy's Daily Directive</CardTitle>
+              <CardDescription>
+                Your operations priorities for {new Date(briefing.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </CardDescription>
+            </div>
           </div>
           <Button onClick={generateBriefing} variant="ghost" size="sm">
             Refresh
@@ -131,58 +138,61 @@ export function DailyBriefing() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Priority Tasks */}
+        {/* Priority Actions - Most Important */}
         {briefing.priorities && briefing.priorities.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0 }}
-            className="flex gap-3 p-3 rounded-lg bg-muted/50"
+            className="flex gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20"
           >
-            <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <ArrowRight className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-semibold text-sm mb-2">Priority Tasks</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <h4 className="font-bold text-base mb-2 text-primary">Here's what you need to do today:</h4>
+              <ul className="text-sm space-y-2">
                 {briefing.priorities.map((priority, index) => (
-                  <li key={index}>• {priority}</li>
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="font-semibold text-primary">{index + 1}.</span>
+                    <span className="font-medium">{priority}</span>
+                  </li>
                 ))}
               </ul>
             </div>
           </motion.div>
         )}
 
-        {/* Upcoming Deadlines */}
+        {/* Urgent Deadlines */}
         {briefing.deadlines && briefing.deadlines.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex gap-3 p-3 rounded-lg bg-muted/50"
+            className="flex gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20"
           >
-            <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-semibold text-sm mb-2">Upcoming Deadlines</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <h4 className="font-bold text-base mb-2 text-destructive">Don't miss these deadlines:</h4>
+              <ul className="text-sm space-y-1">
                 {briefing.deadlines.map((deadline, index) => (
-                  <li key={index}>• {deadline}</li>
+                  <li key={index} className="font-medium">• {deadline}</li>
                 ))}
               </ul>
             </div>
           </motion.div>
         )}
 
-        {/* Recommendations */}
+        {/* Strategic Recommendations */}
         {briefing.recommendations && briefing.recommendations.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="flex gap-3 p-3 rounded-lg bg-muted/50"
+            className="flex gap-3 p-4 rounded-lg bg-muted/50 border border-border"
           >
             <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-semibold text-sm mb-2">Recommendations</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <h4 className="font-bold text-base mb-2">Strategic moves to consider:</h4>
+              <ul className="text-sm space-y-1">
                 {briefing.recommendations.map((recommendation, index) => (
                   <li key={index}>• {recommendation}</li>
                 ))}
@@ -191,18 +201,18 @@ export function DailyBriefing() {
           </motion.div>
         )}
 
-        {/* Suggested Courses */}
+        {/* Learning Opportunities */}
         {briefing.courses_suggested && briefing.courses_suggested.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex gap-3 p-3 rounded-lg bg-muted/50"
+            className="flex gap-3 p-4 rounded-lg bg-muted/50 border border-border"
           >
             <BookOpen className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-semibold text-sm mb-2">Recommended Courses</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <h4 className="font-bold text-base mb-2">Strengthen your skills:</h4>
+              <ul className="text-sm space-y-1">
                 {briefing.courses_suggested.map((course, index) => (
                   <li key={index}>• {course}</li>
                 ))}
@@ -210,6 +220,13 @@ export function DailyBriefing() {
             </div>
           </motion.div>
         )}
+
+        {/* Footer message */}
+        <div className="pt-2 border-t border-border">
+          <p className="text-sm text-muted-foreground italic">
+            I'm monitoring your operations. I'll alert you if anything urgent comes up.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

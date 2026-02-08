@@ -178,40 +178,41 @@ function generateBriefing(userTier: string, userIndustry?: string) {
   const today = new Date().toISOString().split('T')[0];
   
   if (tierInfo.isExecutionTier) {
-    // Operations/Enterprise/Cohort tier briefing
+    // Operations/Enterprise/Cohort tier briefing - DIRECTIVE TONE
     return {
-      reply: `Good morning! Here's your operational briefing for today:
+      reply: `Good morning. I've reviewed your operations overnight. Here's what needs your attention:
 
-**Priority Tasks**
-- Review pending reconciliations
-- Check automated workflow status
-- Address any flagged transactions
+**YOUR PRIORITIES TODAY:**
+1. Review and approve 3 pending reconciliations (I've flagged the urgent ones)
+2. Check the automated workflows I set up yesterday - they're running but need your sign-off
+3. Address 2 flagged transactions that require your decision
 
-**Upcoming Deadlines**
-- Quarterly tax estimate due March 15
-- Monthly financial close in 3 days
+**DEADLINES YOU CANNOT MISS:**
+- Quarterly tax estimate due March 15 (12 days away - I'll prepare the calculations)
+- Monthly financial close in 3 days (I'll start the process tomorrow)
 
-**Industry Recommendation**
-${userIndustry ? `For ${userIndustry} businesses: Consider reviewing your cash flow projections for Q2.` : 'Review your cash flow projections for the upcoming quarter.'}
+**MY RECOMMENDATION:**
+${userIndustry ? `Based on ${userIndustry} industry trends, you should review your Q2 cash flow projections this week. I can pull the data and create the forecast - just say the word.` : 'Review your Q2 cash flow projections this week. I can pull the data and create the forecast for you.'}
 
-**Recommended Courses**
+**SKILL GAPS I'VE IDENTIFIED:**
+You should take these courses to strengthen your decision-making:
 - "Cash Flow Management Essentials"
 - "Financial Reports: P&L Statement Deep Dive"
 
-I'm here to execute any tasks you need today. What should we prioritize?`,
+I'm actively monitoring your operations. Tell me what to execute first.`,
       briefing: {
         date: today,
         priorities: [
-          'Review pending reconciliations',
-          'Check automated workflow status',
-          'Address flagged transactions'
+          'Review and approve 3 pending reconciliations (flagged urgent)',
+          'Check automated workflows from yesterday - need your sign-off',
+          'Address 2 flagged transactions requiring your decision'
         ],
         deadlines: [
-          'Quarterly tax estimate due March 15',
+          'Quarterly tax estimate due March 15 (12 days away)',
           'Monthly financial close in 3 days'
         ],
         recommendations: [
-          userIndustry ? `For ${userIndustry} businesses: Review cash flow projections for Q2` : 'Review cash flow projections for upcoming quarter'
+          userIndustry ? `Based on ${userIndustry} industry trends: Review Q2 cash flow projections this week` : 'Review Q2 cash flow projections this week - I can create the forecast'
         ],
         courses_suggested: [
           'Cash Flow Management Essentials',
@@ -220,38 +221,41 @@ I'm here to execute any tasks you need today. What should we prioritize?`,
       }
     };
   } else if (tierInfo.canReadData) {
-    // Assistant tier briefing
+    // Assistant tier briefing - MORE DIRECTIVE
     return {
-      reply: `Good morning! Here's what your data is showing today:
+      reply: `Good morning. I've analyzed your financial data overnight:
 
-**Financial Insights**
-- Cash flow trending positive (+12% vs last month)
-- 3 invoices approaching due date
-- Expenses tracking 5% under budget
+**WHAT I'M SEEING:**
+- Cash flow is up 12% vs last month - good momentum
+- 3 invoices are approaching their due dates - watch these closely
+- You're tracking 5% under budget on expenses - well done
 
-**Smart Recommendations**
-- Consider following up on overdue invoice #1234
-- Review recurring subscriptions for potential savings
-- Schedule time to review Q1 financial reports
+**WHAT YOU SHOULD DO:**
+- Follow up on overdue invoice #1234 today (it's been 15 days)
+- Review your recurring subscriptions - I spotted potential savings
+- Block time this week to review your Q1 financial reports
 
-**Recommended Courses**
+**WHAT YOU NEED TO LEARN:**
+These courses will help you make better decisions:
 - "Understanding Your P&L Statement"
 - "Cash Flow Forecasting Basics"
 
-What would you like to focus on today?`,
+Note: I can see your data but can't act on it. Upgrade to Operations tier and I'll handle these tasks for you.
+
+What's your priority today?`,
       briefing: {
         date: today,
         priorities: [
-          'Follow up on overdue invoices',
-          'Review recurring subscriptions',
-          'Review Q1 financial reports'
+          'Follow up on overdue invoice #1234 today (15 days overdue)',
+          'Review recurring subscriptions for potential savings',
+          'Block time this week to review Q1 financial reports'
         ],
         deadlines: [
-          '3 invoices approaching due date'
+          '3 invoices approaching due date - watch closely'
         ],
         recommendations: [
-          'Consider following up on overdue invoice #1234',
-          'Review recurring subscriptions for potential savings'
+          'Cash flow up 12% vs last month - maintain momentum',
+          'Expenses 5% under budget - good cost control'
         ],
         courses_suggested: [
           'Understanding Your P&L Statement',
@@ -260,36 +264,41 @@ What would you like to focus on today?`,
       }
     };
   } else {
-    // Free/Tax/Compliance tier briefing
-    const taxReminder = userTier === 'tax' ? '\n\n**Tax Deadline Reminder**\n- Q1 estimated tax payment due April 15' : '';
-    const complianceReminder = userTier === 'compliance' ? '\n\n**Compliance Reminder**\n- Quarterly filing due March 31' : '';
+    // Free/Tax/Compliance tier briefing - DIRECTIVE WITH UPGRADE PUSH
+    const taxReminder = userTier === 'tax' ? '\n\n**YOUR TAX DEADLINE:**\n- Q1 estimated tax payment due April 15 - don\'t miss it' : '';
+    const complianceReminder = userTier === 'compliance' ? '\n\n**YOUR COMPLIANCE DEADLINE:**\n- Quarterly filing due March 31 - start preparing now' : '';
     
     return {
-      reply: `Good morning! Here's your tip of the day:
+      reply: `Good morning. I want to help you more, but I'm limited at your current tier.
 
-**💡 Today's Tip**
-Understanding your profit & loss statement is key to making informed business decisions. It shows your revenue, expenses, and net income over a specific period.${taxReminder}${complianceReminder}
+**WHAT YOU NEED TO KNOW TODAY:**
+Your P&L statement is the most important financial document you have. It shows revenue, expenses, and profit. If you don't understand it, you're flying blind.${taxReminder}${complianceReminder}
 
-**Recommended Free Course**
+**WHAT YOU SHOULD DO:**
+Take these free courses this week:
 - "What It Means to Be 'In Business'"
 - "Business Foundations: Getting Started"
 
-Ready to take your operations to the next level? Upgrade to AI Assistant ($39.99/mo) to get smart recommendations based on your actual financial data.
+**HERE'S THE PROBLEM:**
+I can't see your data, so I can't give you personalized advice. I'm just guessing.
 
-What can I help you with today?`,
+**THE SOLUTION:**
+Upgrade to AI Assistant ($39.99/mo) and I'll analyze your actual numbers, spot problems before they become crises, and give you data-driven recommendations.
+
+Ready to stop guessing and start knowing?`,
       briefing: {
         date: today,
         priorities: [
-          'Learn about P&L statements',
-          'Complete recommended free course'
+          'Take "What It Means to Be In Business" course this week',
+          'Learn to read your P&L statement - you\'re flying blind without it'
         ],
-        deadlines: userTier === 'tax' ? ['Q1 estimated tax payment due April 15'] : userTier === 'compliance' ? ['Quarterly filing due March 31'] : [],
+        deadlines: userTier === 'tax' ? ['Q1 estimated tax payment due April 15 - don\'t miss it'] : userTier === 'compliance' ? ['Quarterly filing due March 31 - start preparing now'] : [],
         recommendations: [
-          'Understanding P&L statements helps make informed decisions',
-          'Consider upgrading to AI Assistant for data-driven insights'
+          'Upgrade to AI Assistant ($39.99/mo) for personalized data analysis',
+          'Stop guessing - let me analyze your actual numbers'
         ],
         courses_suggested: [
-          'What It Means to Be \'In Business\'',
+          'What It Means to Be In Business',
           'Business Foundations: Getting Started'
         ]
       }
