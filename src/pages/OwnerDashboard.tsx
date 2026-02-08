@@ -94,8 +94,8 @@ export default function OwnerDashboard() {
           contact_name,
           created_at,
           organization_id,
-          organizations (name),
-          accounts (tier_id)
+          selected_tier,
+          organizations (name)
         `)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -105,7 +105,7 @@ export default function OwnerDashboard() {
         email: u.email,
         created_at: u.created_at,
         organization_name: u.organizations?.name || u.contact_name || "Unknown",
-        tier: u.accounts?.tier_id || "none",
+        tier: u.selected_tier || "free",
       }));
 
       setStats({
