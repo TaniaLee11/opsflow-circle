@@ -99,68 +99,15 @@ export function usePlatformAnalytics() {
   return useQuery({
     queryKey: ["platform-analytics"],
     queryFn: async (): Promise<PlatformAnalytics> => {
-      // Fetch aggregated counts only - no raw data
-      const [profilesRes, conversationsRes, integrationsRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("selected_tier, subscription_tier, subscription_confirmed", { count: "exact" }),
-        supabase
-          .from("conversations")
-          .select("id", { count: "exact" }),
-        supabase
-          .from("integrations")
-          .select("id", { count: "exact" })
-      ]);
-
-      // Get message count separately (via conversations RLS)
-      const { count: messageCount } = await supabase
-        .from("messages")
-        .select("id", { count: "exact" });
-
-      const profiles = profilesRes.data || [];
-      const totalUsers = profiles.length;
-      const activeUsers = profiles.filter(p => p.subscription_confirmed).length;
-      const totalConversations = conversationsRes.count || 0;
-      const totalIntegrations = integrationsRes.count || 0;
-
-      // Build tier breakdown - AGGREGATED COUNTS ONLY
-      const allTierIds: UserTierId[] = Object.keys(USER_TIERS) as UserTierId[];
-      const tierBreakdown: TierAnalytics[] = allTierIds.map(tierId => {
-        const tierProfiles = profiles.filter(
-          p => (p.subscription_tier || p.selected_tier || "free") === tierId
-        );
-        const tierUserCount = tierProfiles.length;
-        const tierActiveUsers = tierProfiles.filter(p => p.subscription_confirmed).length;
-        const tierMrr = tierActiveUsers * (TIER_PRICES[tierId] || 0);
-        const activationRate = tierUserCount > 0 
-          ? Math.round((tierActiveUsers / tierUserCount) * 100) 
-          : 0;
-
-        return {
-          tierId,
-          tierName: USER_TIERS[tierId]?.displayName || tierId,
-          userCount: tierUserCount,
-          activeUsers: tierActiveUsers,
-          mrr: tierMrr,
-          conversationCount: 0, // Would need tier-specific rollups
-          messageCount: 0,
-          integrationCount: 0,
-          activationRate,
-          engagementScore: 0, // Calculated from rollups
-        };
-      });
-
-      const totalMrr = tierBreakdown.reduce((sum, t) => sum + t.mrr, 0);
-
-      return {
-        totalUsers,
-        activeUsers,
-        totalMrr,
-        totalConversations,
-        totalMessages: messageCount || 0,
-        totalIntegrations,
-        tierBreakdown,
-      };
+      // Call edge function with service_role permissions
+      const { data, error } = await supabase.functions.invoke("get-platform-analytics");
+      
+      if (error) {
+        console.error("Analytics fetch error:", error);
+        throw error;
+      }
+      
+      return data as PlatformAnalytics;
     },
     staleTime: 30000,
     refetchInterval: 60000,
