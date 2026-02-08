@@ -45,7 +45,6 @@ import FreeCourse from "./pages/FreeCourse";
 import BusinessHealthCheck from "./pages/BusinessHealthCheck";
 import ManagedPartners from "./pages/ManagedPartners";
 import Communications from "./pages/Communications";
-import OwnerDashboard from "./pages/OwnerDashboard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { TicketingWidget } from "@/components/TicketingWidget";
 
@@ -96,7 +95,6 @@ const App = () => (
                     <Route path="/select-tier" element={<TierSelection />} />
                     <Route path="/select-product" element={<ProductSelection />} />
                     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                    <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
                     <Route path="/portal/:tierId" element={<AnalyticsPortal />} />
                     <Route path="/analytics/:tierId" element={<AnalyticsPortal />} />
                     <Route path="/vopsy" element={<ProtectedRoute><VOPSy /></ProtectedRoute>} />
