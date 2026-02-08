@@ -25,7 +25,7 @@ export interface DailyBriefing {
 }
 
 export function useVOPSyDailyBriefing() {
-  const { user, currentTier } = useAuth();
+  const { user, subscriptionStatus } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<BriefingMetrics | null>(null);
   const [briefing, setBriefing] = useState<DailyBriefing | null>(null);
@@ -49,7 +49,7 @@ export function useVOPSyDailyBriefing() {
             role: 'user',
             content: 'Generate my daily briefing',
           }],
-          user_tier: currentTier || 'free',
+          user_tier: subscriptionStatus?.tier || 'free',
           user_id: user.id,
           briefing_mode: true,
         },
@@ -124,7 +124,7 @@ export function useVOPSyDailyBriefing() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, currentTier]);
+  }, [user?.id, subscriptionStatus?.tier]);
 
   // Auto-fetch on mount
   useEffect(() => {
