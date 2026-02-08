@@ -25,6 +25,7 @@ const TIER_ORDER: UserTierId[] = [
   "ai_advisory",
   "ai_tax",
   "ai_compliance",
+  "cohort",
 ];
 
 export function TierMetrics() {
