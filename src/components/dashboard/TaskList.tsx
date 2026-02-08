@@ -63,7 +63,7 @@ export function TaskList() {
         const projectIds = tasksData?.filter(t => t.project_id).map(t => t.project_id) || [];
         let projectsMap: Record<string, string> = {};
 
-        if (projectIds.length > 0) {
+        if ((projectIds?.length || 0) > 0) {
           const { data: projectsData } = await supabase
             .from("projects")
             .select("id, name")
@@ -114,7 +114,7 @@ export function TaskList() {
     );
   }
 
-  if (tasks.length === 0) {
+  if ((tasks?.length || 0) === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}

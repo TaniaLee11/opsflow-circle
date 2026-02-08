@@ -72,7 +72,7 @@ export function DashboardAlerts() {
     }
 
     // Integration health alerts
-    if (metrics.integrationsNeedingAttention.length > 0) {
+    if ((metrics.integrationsNeedingAttention?.length || 0) > 0) {
       alerts.push({
         id: 'integrations',
         type: 'info',
@@ -84,7 +84,7 @@ export function DashboardAlerts() {
     }
 
     // Upcoming deadline alert (if no warnings)
-    if (alerts.length === 0 && metrics.upcomingDeadlines.length > 0) {
+    if (alerts.length === 0 && (metrics.upcomingDeadlines?.length || 0) > 0) {
       const nextDeadline = metrics.upcomingDeadlines[0];
       const daysUntil = Math.ceil(
         (new Date(nextDeadline.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
@@ -106,7 +106,7 @@ export function DashboardAlerts() {
   // Show max 2 alerts
   const displayAlerts = alerts.slice(0, 2);
 
-  if (displayAlerts.length === 0) {
+  if ((displayAlerts?.length || 0) === 0) {
     return null;
   }
 

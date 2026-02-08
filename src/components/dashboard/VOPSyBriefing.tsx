@@ -102,7 +102,7 @@ export function VOPSyBriefing() {
           </p>
 
           {/* Dynamic Alerts */}
-          {briefing.alerts.length > 0 && (
+          {(briefing.alerts?.length || 0) > 0 && (
             <div className="space-y-2 mb-3 sm:mb-4">
               {briefing.alerts.map((alert, index) => (
                 <div
