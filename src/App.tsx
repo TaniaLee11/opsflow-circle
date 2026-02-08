@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UserTierProvider } from "@/contexts/UserTierContext";
 import { ClientViewProvider } from "@/contexts/ClientViewContext";
+import { ChatProvider } from "@/contexts/ChatContext";
 import { ClientViewBanner } from "@/components/client-view/ClientViewBanner";
 import { SiteChatWidget } from "@/components/chat/SiteChatWidget";
 import Landing from "./pages/Landing";
@@ -68,6 +69,7 @@ const App = () => (
         <AuthProvider>
           <UserTierProvider>
             <ClientViewProvider>
+              <ChatProvider>
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
@@ -113,6 +115,7 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
+              </ChatProvider>
               </TooltipProvider>
             </ClientViewProvider>
           </UserTierProvider>

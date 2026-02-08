@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useChat } from "@/contexts/ChatContext";
 
 interface Message {
   id: string;
@@ -30,7 +31,7 @@ const WELCOME_MESSAGE: Message = {
 };
 
 export function SiteChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, closeChat, toggleChat } = useChat();
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +78,7 @@ export function SiteChatWidget() {
       conversationHistory.push({ role: "user", content: content.trim() });
 
       // Use the public chat endpoint (Role C - no auth required)
-      const { data, error } = await supabase.functions.invoke("vopsy-public-chat", {
+      const { data, error } = await supabase.functions.invoke("vopsy-chat", {
         body: {
           messages: conversationHistory,
         },
@@ -88,7 +89,7 @@ export function SiteChatWidget() {
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: data?.message || "I apologize, but I'm having trouble responding right now. Please try again or visit our contact page.",
+        content: data?.reply || "I apologize, but I'm having trouble responding right now. Please try again or visit our contact page.",
         timestamp: new Date(),
       };
 

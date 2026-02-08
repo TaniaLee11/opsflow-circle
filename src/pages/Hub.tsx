@@ -35,6 +35,7 @@ import { VOPSyMascot } from "@/components/brand/VOPSyMascot";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useChat } from "@/contexts/ChatContext";
 
 const audiences = [
   {
@@ -151,6 +152,7 @@ const vopsyDemoPrompts = [
 ];
 
 export default function Hub() {
+  const { openChat } = useChat();
   const navigate = useNavigate();
   const { isAuthenticated, isOwner, user, login, signup, isLoading: authLoading } = useAuth();
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -502,7 +504,7 @@ export default function Hub() {
             <div className="text-center">
               <Button 
                 size="lg" 
-                onClick={() => navigate("/vopsy")} 
+                onClick={openChat} 
                 className="glow-primary text-lg px-8 h-14"
               >
                 <Bot className="w-5 h-5 mr-2" />

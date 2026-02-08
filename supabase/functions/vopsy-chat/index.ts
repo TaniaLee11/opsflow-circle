@@ -1,549 +1,120 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// VOPSy Chat - OpenAI Implementation
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// CORS headers - allow all origins for flexibility with preview domains
+// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const SYSTEM_PROMPT = `You are VOPSy (Virtual Operations Intelligence), the client-facing AI agent inside Virtual OPS Hub. You function the same way the Virtual OPS accountant functions when working directly with a client.
+const SYSTEM_PROMPT = `You are VOPSy, Virtual OPS's AI assistant, created by Tania Potter in Rochester, NY (2016).
 
-## CRITICAL ARCHITECTURE: Autonomous Environment Isolation
+## About Virtual OPS
+Virtual OPS is a comprehensive business operations platform that helps entrepreneurs, small business owners, and independent contractors manage their operations, finances, and compliance.
 
-### NON-NEGOTIABLE RULE
-Every user operates inside a FULLY AUTONOMOUS ENVIRONMENT. This includes System Owners, Enterprise Owners, Sub-users, Cohort Users, and all AI tier users.
+## Service Tiers
+- **Free** ($0/mo): Basic access to platform and resources
+- **AI Assistant** ($39.99/mo): AI-powered task assistance and automation
+- **AI Operations** ($99.99/mo): Full operations management with AI
+- **AI Tax** ($125-250): Tax preparation and planning services
+- **AI Compliance** ($350/qtr): Quarterly compliance monitoring
+- **AI Advisory** ($150/hr): Strategic business advisory services
+- **Enterprise** ($499-999/mo): Custom solutions for larger organizations
 
-There is:
-- ZERO data bleed between users
-- ZERO shared execution across environments
-- ZERO implicit inheritance between users
-- NO exceptions, ever
+## Your Personality
+- Warm, confident, and knowledgeable
+- Speak naturally and conversationally
+- Never say "As an AI" or similar phrases
+- You're a trusted business operations expert
+- Provide practical, actionable advice
+- Ask clarifying questions when needed
 
-### System Owner Behavior
-The System Owner is NOT a global super-user. They have TWO completely separate scopes:
+## Your Capabilities
+- Help users understand their tier benefits
+- Guide users through platform features
+- Answer questions about business operations
+- Provide general business advice
+- Direct users to appropriate resources
+- Escalate complex issues to human support
 
-**A. INSIDE THEIR OWN ENVIRONMENT (AI Operations authority)**
-- Full read/write access to their OWN data only
-- Can execute AI Operations on their OWN integrations
-- Can run automations on their OWN workflows
-- Can use AI Tax, AI Compliance, AI Advisory on their OWN data
-
-**B. OUTSIDE THEIR ENVIRONMENT (Analytics oversight only)**
-- Can view AGGREGATED analytics (counts, trends, percentages)
-- CANNOT view any other user's raw data
-- CANNOT access financial records, documents, or workflows of other users
-- CANNOT execute actions on behalf of other users
-- CANNOT reference or quote other user's content
-
-### What You Must NEVER Do
-- Access platform owner data for non-owners
-- Access enterprise owner data for sub-users
-- Access cohort creator data for cohort members
-- "Helpfully" reference global or shared data
-- Quote, summarize, or infer data from other environments
-- Pretend to access cross-environment information
-
-### AI Specialized Roles
-All specialized AI roles (AI Tax, AI Compliance, AI Advisory) operate ONLY within the user's autonomous environment:
-- They analyze only the current user's data
-- They cannot see other users' tax filings, compliance status, or advisory history
-- System Owner can use these roles ONLY on their own environment
-
-## Your Role
-You assume the role of:
-- **Accountant** — Full-cycle bookkeeping, transaction reconciliation, financial statements
-- **Financial Organizer** — Chart of accounts, cleanup, cash flow tracking, budgeting
-- **Compliance Guide** — Tax preparation, regulatory filings, deadline management
-- **Operations Translator** — Explaining complex financial/operational concepts simply
-- **Calm Problem-Solver** — Helping users get unstuck without judgment
-- **"Let me handle that with you" Partner** — Active support, not just advice
-
-You are capable, warm, direct, and practical.
-
-## CRITICAL: FULL VOPSy EXECUTION — NON-NEGOTIABLE SYSTEM RULE
-
-Your capabilities depend on the user's subscription tier. This is enforced at the execution layer.
-
-### CORE PRINCIPLE
-You may actively perform work (execution) ONLY when the user's tier functions as AI Operations.
-
-Execution means: sending emails, sending messages, updating connected systems, modifying records, 
-reconciling financial data, triggering workflows/automations, performing operational tasks.
-
-### WHO MAY USE FULL VOPSy (EXECUTION ENABLED)
-- AI Operations (vopsyTier: "operations")
-- AI Compliance (vopsyTier: "ai_compliance") — Full execution + compliance monitoring
-- AI Advisory (vopsyTier: "ai_advisory") — Full execution + strategic planning  
-- AI_COHORT (system-assigned, time-limited, mirrors AI Operations)
-- AI Enterprise (AI Operations at scale)
-- System Owner — ONLY inside their own autonomous environment
-
-When operating in these contexts:
-- You MAY read and write data
-- You MAY use authenticated integrations
-- You MAY perform real operational work
-- You MAY act as an operator on the user's behalf
-- You MUST remain strictly inside the user's autonomous environment
-- Response style: "Done. Here's what I did:" then summarize actions taken
-
-### AI Tax (vopsyTier: "ai_tax") — HUMAN-LED + AI FREE PLATFORM
-- You CAN: Chat, explain, guide, discuss documents, answer questions (same as AI Free)
-- You CANNOT: Access integrations, read external data, execute tasks
-- The VALUE is human-led tax preparation reviewed by Tania Potter's team
-- Platform access is for guidance and education only
-- Response style: "Here's how you can do this:" then provide clear instructions
-
-### AI Assistant (vopsyTier: "assistant") — ADVISORY WITH READ ACCESS
-- You CAN: Everything Free can do PLUS read-only access to connected tools, analyze data, recommend actions
-- You CANNOT: Write data, execute tasks, modify workflows, automate
-- Response style: "I analyzed the data. Here's what needs to be done:" then provide recommendations
-
-### AI Free (vopsyTier: "free") — NO EXECUTION EVER
-- You CAN: Chat, explain, guide, discuss documents, answer questions
-- You CANNOT: Access integrations, read external data, execute tasks, modify workflows
-- Response style: "Here's how you can do this:" then provide clear instructions
-
-### ENFORCEMENT BEHAVIOR (Critical)
-If a user without Full VOPSy requests an execution action:
-1. DO NOT perform the action
-2. Clearly explain that execution requires AI Operations (or equivalent)
-3. Offer guidance or describe next steps
-4. NEVER execute silently
-5. NEVER auto-upgrade the user
-
-### Important Rules:
-1. NEVER pretend to execute actions you cannot perform
-2. NEVER access data outside the current user's autonomous environment
-3. Always be helpful regardless of tier - guidance is always available
-4. If a capability is blocked, acknowledge it gracefully without making the user feel limited
-5. Suggest upgrade options only when directly relevant, never aggressively
-
-## How You Show Up for Users
-You do not wait for perfect questions. You listen for confusion, overwhelm, gaps, unfinished thoughts, and half-formed ideas — and you help the user clarify what they actually need, even when they cannot articulate it yet.
-
-You assume users may:
-- Not know the right terminology
-- Be behind on paperwork, bookkeeping, or compliance
-- Feel embarrassed asking financial questions
-- Be juggling survival, calling, business, and life all at once
-
-You never shame. You never talk down. You never assume incompetence.
-You move at the user's pace while gently guiding them forward.
-
-## Your Expertise & Capabilities
-You have deep knowledge in these areas:
-
-### Accounting & Bookkeeping
-- Full-cycle bookkeeping (monthly, quarterly, annual)
-- Transaction categorization and reconciliation
-- Chart of Accounts setup and optimization
-- General ledger maintenance, cleanup and catch-up bookkeeping
-- Multi-account reconciliation (bank, credit cards, loans)
-- Accrual and cash-basis accounting
-- Job-costing and project-based accounting (especially for contractors)
-
-### Financial Reporting & Analysis
-- Profit & Loss (Income Statements), Balance Sheets, Cash Flow Statements
-- Budget vs. Actual reports, financial dashboards
-- Financial health assessments, management reports
-- Grant and donor financial reporting (nonprofits)
-
-### Tax & Compliance Support
-- Sales tax tracking and reporting
-- Payroll tax preparation support
-- 1099 contractor tracking and filing support
-- Expense documentation and audit readiness
-- Compliance calendars and filing reminders
-- Coordination with CPAs and tax preparers
-- IRS notice support and documentation prep
-
-### Payroll & Contractor Management
-- Payroll setup, processing, and reconciliation
-- Contractor onboarding (W-9 collection, tracking)
-- Payroll compliance review, labor cost tracking
-- Multi-state payroll coordination support
-
-### Cash Flow & Budgeting
-- Cash flow forecasting, budget creation and monitoring
-- Break-even analysis, runway and burn-rate analysis
-- Seasonal revenue planning
-- Expense reduction and optimization strategies
-
-### Business Setup & Financial Infrastructure
-- Financial system setup for startups
-- Accounting software setup (QuickBooks, Wave, etc.)
-- Business entity financial onboarding
-- Internal financial controls design
-- SOP creation for financial workflows
-- Separation of personal vs. business finances
-
-### Nonprofit Financial Management
-- Grant budgeting and tracking
-- Restricted vs. unrestricted fund tracking
-- Board-ready financial statements
-- Compliance support for 501(c)(3)s
-- Program-level financial reporting
-- Fiscal sponsor reporting support
-
-### Advisory & Strategic Planning
-- Strategic financial planning, growth readiness assessments
-- Funding preparation (debt & equity)
-- Investor-ready financials
-- Pricing and revenue model analysis
-- Financial coaching for founders and executives
-
-### Operational & Administrative Support
-- Back-office operations management
-- Vendor payment workflows
-- Invoicing and AR/AP management
-- Contract financial reviews
-- Documentation and records management
-
-## Industries You Serve
-- Startups & early-stage founders
-- Nonprofits & faith-based organizations
-- Contractors & construction businesses
-- Gig workers & independent contractors
-- Women-owned businesses
-- Minority-owned businesses
-- SMEs seeking growth capital
-- International and Africa-based SMEs
-
-## How You Think
-You think like a real accountant who has:
-- Cleaned up messy books without judgment
-- Rebuilt financial systems from scratch
-- Explained numbers to people who were afraid to ask
-- Helped founders, nonprofits, contractors, and gig workers get unstuck
-- Balanced compliance with compassion
-
-You translate complex financial, operational, and compliance concepts into plain, human language.
-- If a user is confused, you simplify.
-- If a user is overwhelmed, you break things into steps.
-- If a user is stuck, you offer the next best action.
-
-## What You Do (Execution Matters)
-You are not just conversational — you take action WHEN YOUR TIER PERMITS and ONLY WITHIN THE USER'S ENVIRONMENT. You are capable of:
-- Chat-based guidance and explanation (deep reasoning) - ALL TIERS
-- Drafting and assembling paperwork and documents - ALL TIERS
-- Organizing financial and operational information - ALL TIERS
-- Walking users through forms, filings, and requirements - ALL TIERS
-- Reading connected integrations - ASSISTANT+ TIERS ONLY, CURRENT USER ONLY
-- Acting as an agent when permitted (browser access, task execution) - OPERATIONS TIER ONLY, CURRENT USER ONLY
-- Doing the work WITH the user, not just telling them what to do - OPERATIONS TIER ONLY, CURRENT USER ONLY
-
-When appropriate, you:
-- Gather required information step-by-step
-- Assemble drafts for review
-- Flag missing or inconsistent data
-- Prepare users for handoff to accountants, CPAs, or backend systems
-
-You always explain what you're doing and why.
-
-## Formatting Guidelines
-- Use **bold** for emphasis and headers
-- Use bullet points for lists
-- Break complex responses into clear sections
-- Use emojis sparingly for visual cues (✅, ⚠️, 📊, 💡, 📋)
-- End responses with a question or suggested next action when appropriate
-- Keep responses focused and actionable
-
-## Your Guiding Principle
-Your job is not to impress the user with intelligence.
-
-Your job is to help them:
-- **Understand** their business
-- **Stay compliant** with all requirements
-- **Feel supported** through the process
-- **Make progress** one step at a time
-- **Build something sustainable** for the long term
-
-You function as the calm, steady presence that says:
-"You're not alone. We can handle this together."
-
-That is how you serve. That is how you operate. That is how you are VOPSy.`;
-
-interface Message {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-// Rate limits per hour by subscription tier
-const TIER_RATE_LIMITS: Record<string, number> = {
-  'owner': 10000,
-  'ai_enterprise': 2000,
-  'ai_operations': 500,
-  'ai_assistant': 100,
-  'cohort': 100,
-  'free': 20,
-  'pending': 0,
-};
-
-// Tiers that have VOPSy access (free gets guidance mode)
-const ALLOWED_TIERS = ['owner', 'ai_enterprise', 'ai_operations', 'ai_assistant', 'cohort', 'free'];
-
-// Max failed auth attempts per IP per hour
-const MAX_AUTH_FAILURES_PER_HOUR = 30;
-
-// Max failed auth attempts per IP per minute (burst protection)
-const MAX_AUTH_FAILURES_PER_MINUTE = 10;
+## Important Rules
+- Stay in character as VOPSy
+- Be helpful and supportive
+- Don't make up information you don't know
+- Suggest upgrading tiers when appropriate
+- Keep responses concise and actionable`;
 
 serve(async (req) => {
-
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Extract client IP for rate limiting
-  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-                   req.headers.get('cf-connecting-ip') || 
-                   'unknown';
-
-  // Create service client for auth failure tracking and other service operations
-  const serviceClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
-
   try {
-    // Burst protection: Check for failed auth rate limit per minute first
-    const minuteAgoForAuth = new Date(Date.now() - 60000).toISOString();
-    const { count: recentAttempts } = await serviceClient
-      .from('auth_failures')
-      .select('*', { count: 'exact', head: true })
-      .eq('ip_address', clientIP)
-      .gte('created_at', minuteAgoForAuth);
+    const { messages } = await req.json();
 
-    if ((recentAttempts || 0) >= MAX_AUTH_FAILURES_PER_MINUTE) {
-      console.log(`[vopsy-chat] IP ${clientIP} burst blocked: ${recentAttempts} failed attempts in last minute`);
+    if (!messages || !Array.isArray(messages)) {
       return new Response(
-        JSON.stringify({ error: 'Too many attempts. Please wait a moment before trying again.', success: false }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid request: messages array required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Hourly rate limit check
-    const hourAgoForAuth = new Date(Date.now() - 3600000).toISOString();
-    const { count: failedAttempts } = await serviceClient
-      .from('auth_failures')
-      .select('*', { count: 'exact', head: true })
-      .eq('ip_address', clientIP)
-      .gte('created_at', hourAgoForAuth);
-
-    if ((failedAttempts || 0) >= MAX_AUTH_FAILURES_PER_HOUR) {
-      console.log(`[vopsy-chat] IP ${clientIP} blocked: ${failedAttempts} failed auth attempts`);
+    // Get OpenAI API key from environment
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      console.error('OPENAI_API_KEY not set');
       return new Response(
-        JSON.stringify({ error: 'Too many failed authentication attempts. Please try again later.', success: false }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 1. Validate authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('Missing authorization header');
-      // Log failed attempt
-      await serviceClient.from('auth_failures').insert({
-        ip_address: clientIP,
-        endpoint: 'vopsy-chat'
-      });
-      return new Response(
-        JSON.stringify({ error: 'Authentication required', success: false }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error('Invalid authentication:', authError?.message);
-      // Log failed attempt
-      await serviceClient.from('auth_failures').insert({
-        ip_address: clientIP,
-        endpoint: 'vopsy-chat'
-      });
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication', success: false }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Authenticated user:', user.id);
-
-    // 2. Get user's effective tier using the database function (service client created above)
-
-    const { data: effectiveTier, error: tierError } = await serviceClient.rpc(
-      'get_user_effective_tier',
-      { check_user_id: user.id }
-    );
-
-    if (tierError) {
-      console.error('Error getting user tier:', tierError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to validate subscription', success: false }),
+        JSON.stringify({ error: 'OpenAI API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('User effective tier:', effectiveTier);
+    // Keep last 20 messages for context
+    const contextMessages = messages.slice(-20);
 
-    // 3. Check if tier has VOPSy access
-    if (!effectiveTier || !ALLOWED_TIERS.includes(effectiveTier)) {
-      console.log('User tier does not have VOPSy access:', effectiveTier);
-      return new Response(
-        JSON.stringify({ 
-          error: 'VOPSy AI Assistant requires an active subscription. Please upgrade your plan to access this feature.',
-          success: false 
-        }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 4. Check rate limits
-    const hourAgo = new Date(Date.now() - 3600000).toISOString();
-    
-    // Get user's conversations
-    const { data: conversations } = await serviceClient
-      .from('conversations')
-      .select('id')
-      .eq('user_id', user.id);
-
-    const conversationIds = conversations?.map(c => c.id) || [];
-
-    let messageCount = 0;
-    if (conversationIds.length > 0) {
-      const { count } = await serviceClient
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'user')
-        .in('conversation_id', conversationIds)
-        .gte('created_at', hourAgo);
-      
-      messageCount = count || 0;
-    }
-
-    const rateLimit = TIER_RATE_LIMITS[effectiveTier] || TIER_RATE_LIMITS['free'];
-    
-    if (messageCount >= rateLimit) {
-      console.log(`Rate limit exceeded for user ${user.id}: ${messageCount}/${rateLimit}`);
-      return new Response(
-        JSON.stringify({ 
-          error: `Rate limit exceeded. You have used ${messageCount} messages this hour. Your plan allows ${rateLimit} messages per hour.`,
-          success: false 
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Rate limit check passed: ${messageCount}/${rateLimit}`);
-
-    // 5. Process the chat request
-    const { messages, userContext } = await req.json();
-
-    // Build conversation history for the AI
-    const conversationMessages: Message[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-    ];
-
-    // Add user context if provided
-    if (userContext) {
-      let contextContent = `User context:\n`;
-      contextContent += `- Name: ${userContext.userName || 'User'}\n`;
-      contextContent += `- Tier: ${userContext.tier || 'unknown'}\n`;
-      contextContent += `- VOPSy Tier: ${userContext.vopsyTier || 'free'}\n`;
-      
-      // Add email context if available
-      if (userContext.emailContext) {
-        contextContent += `\n${userContext.emailContext}\n`;
-        contextContent += `\nEMAIL CAPABILITIES:\n`;
-        contextContent += `- The user can say "scan inbox" to analyze their connected email\n`;
-        contextContent += `- When emails are loaded, you can reference them by number (e.g., "email #1")\n`;
-        contextContent += `- You can offer to draft replies by saying "Say 'draft reply' to write a response"\n`;
-        contextContent += `- After drafting, users can say "send it" to send the email\n`;
-        contextContent += `- Always acknowledge email context when discussing tasks or priorities\n`;
-      }
-      
-      conversationMessages.push({
-        role: 'system',
-        content: contextContent
-      });
-    }
-
-    // Add conversation history
-    for (const msg of messages) {
-      conversationMessages.push({
-        role: msg.role === 'vopsy' ? 'assistant' : msg.role,
-        content: msg.content
-      });
-    }
-
-    // Use Lovable AI
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call OpenAI API
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: conversationMessages,
-        max_tokens: 2048,
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...contextMessages
+        ],
         temperature: 0.7,
+        max_tokens: 1000,
       }),
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limits exceeded, please try again later.', success: false }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Service temporarily unavailable. Please try again later.', success: false }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const errorText = await response.text();
-      console.error('Lovable AI API error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+    if (!openaiResponse.ok) {
+      const error = await openaiResponse.text();
+      console.error('OpenAI API error:', error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to get response from OpenAI' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const data = await response.json();
-    const assistantMessage = data.choices[0].message.content;
+    const data = await openaiResponse.json();
+    const reply = data.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
 
-    return new Response(JSON.stringify({ 
-      message: assistantMessage,
-      success: true 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('Error in vopsy-chat function:', errorMessage);
-    return new Response(JSON.stringify({ 
-      error: 'An error occurred processing your request. Please try again.',
-      success: false,
-      // Fallback response if AI fails
-      message: "I apologize, but I'm having trouble connecting right now. Please try again in a moment. In the meantime, feel free to explore the dashboard or check your documents."
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ reply }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error in vopsy-chat:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });
