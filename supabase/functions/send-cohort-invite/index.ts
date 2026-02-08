@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { decryptToken, isEncrypted } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,47 +17,116 @@ function generateInviteCode(): string {
 }
 
 /**
- * Send email via Resend API
+ * Resolve credential - supports env: prefix and encrypted values
  */
-async function sendEmailViaResend(
+async function resolveCredential(value: string | null | undefined): Promise<string> {
+  if (!value) return "";
+  if (value.startsWith("env:")) {
+    const envName = value.replace("env:", "");
+    return Deno.env.get(envName) || "";
+  }
+  if (isEncrypted(value)) {
+    return await decryptToken(value);
+  }
+  return value;
+}
+
+/**
+ * Get OAuth credentials from integration_configs
+ */
+async function getOAuthCredentials(
+  supabase: any,
+  provider: string
+): Promise<{ clientId: string; clientSecret: string } | null> {
+  const { data: config } = await supabase
+    .from("integration_configs")
+    .select("client_id, client_secret")
+    .eq("provider", provider)
+    .maybeSingle();
+
+  if (!config) return null;
+
+  const clientId = await resolveCredential((config as any).client_id);
+  const clientSecret = await resolveCredential((config as any).client_secret);
+
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
+/**
+ * Refresh Google access token
+ */
+async function refreshGoogleToken(
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string
+): Promise<string | null> {
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!response.ok) {
+    console.error("Token refresh failed:", await response.text());
+    return null;
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+/**
+ * Send email via Gmail API
+ */
+async function sendGmailEmail(
+  accessToken: string,
   to: string,
   subject: string,
   htmlBody: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  
-  if (!resendApiKey) {
-    console.error("RESEND_API_KEY not configured");
-    return { success: false, error: "Email service not configured" };
-  }
+  // Build RFC 2822 message
+  const messageParts = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    `Content-Type: text/html; charset=utf-8`,
+    `MIME-Version: 1.0`,
+    "",
+    htmlBody,
+  ];
+  const message = messageParts.join("\r\n");
 
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
+  // Base64url encode
+  const encodedMessage = btoa(message)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const response = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: "Virtual OPS <noreply@virtualopsassist.com>",
-        to: [to],
-        subject: subject,
-        html: htmlBody,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Resend send failed:", errorText);
-      return { success: false, error: errorText };
+      body: JSON.stringify({ raw: encodedMessage }),
     }
+  );
 
-    const result = await response.json();
-    return { success: true, messageId: result.id };
-  } catch (error) {
-    console.error("Email send error:", error);
-    return { success: false, error: String(error) };
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Gmail send failed:", errorText);
+    return { success: false, error: errorText };
   }
+
+  const result = await response.json();
+  return { success: true, messageId: result.id };
 }
 
 serve(async (req) => {
@@ -77,7 +147,7 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Validate JWT
+    // Validate JWT using claims
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -92,20 +162,19 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    const { data: userData, error: userError } = await authClient.auth.getUser(token);
-    if (userError || !userData?.user) {
-      console.error("[send-cohort-invite] Auth error:", userError?.message);
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
 
-    const userId = userData.user.id;
-    const userEmail = userData.user.email;
+    const userId = claimsData.claims.sub;
+    const userEmail = (claimsData.claims as any).email as string | undefined;
     console.log("User authenticated:", { userId, userEmail });
 
-    // Check if user is an owner
+    // Check if user is an owner (use admin client to bypass RLS)
     const { data: ownerRole, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -119,7 +188,7 @@ serve(async (req) => {
       throw new Error("Only owners can send cohort invites");
     }
 
-    // Get user's organization
+    // Get user's Google integration tokens
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("organization_id")
@@ -131,19 +200,53 @@ serve(async (req) => {
       throw new Error("User has no organization");
     }
 
+    const { data: googleIntegration } = await supabaseAdmin
+      .from("integrations")
+      .select("access_token, refresh_token, health")
+      .eq("user_id", userId)
+      .eq("org_id", orgId)
+      .eq("provider", "google")
+      .maybeSingle();
+
+    if (!googleIntegration || !googleIntegration.refresh_token) {
+      throw new Error("Google not connected. Please connect Google from Integrations page.");
+    }
+
+    // Decrypt tokens
+    let refreshToken = googleIntegration.refresh_token;
+    if (isEncrypted(refreshToken)) {
+      refreshToken = await decryptToken(refreshToken);
+    }
+
+    // Get OAuth credentials
+    const credentials = await getOAuthCredentials(supabaseAdmin, "google");
+    if (!credentials) {
+      throw new Error("Google OAuth not configured");
+    }
+
+    // Refresh access token
+    const accessToken = await refreshGoogleToken(
+      refreshToken,
+      credentials.clientId,
+      credentials.clientSecret
+    );
+
+    if (!accessToken) {
+      // Mark integration as needing reauth
+      await supabaseAdmin
+        .from("integrations")
+        .update({ health: "reauth_required" })
+        .eq("user_id", userId)
+        .eq("org_id", orgId)
+        .eq("provider", "google");
+      throw new Error("Google token expired. Please reconnect Google from Integrations page.");
+    }
+
     // Parse request
     const { email, resend } = await req.json();
     
     if (!email || !email.includes("@")) {
       throw new Error("Valid email is required");
-    }
-
-    // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-    const userExists = existingUser?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
-    
-    if (userExists) {
-      throw new Error("User already registered. Cannot send invite to existing users.");
     }
 
     // If resend, delete any existing pending invite for this email
@@ -179,14 +282,14 @@ serve(async (req) => {
     }
 
     // Build the invite link
-    const origin = req.headers.get("origin") || "https://virtualopsassist.com";
+    const origin = req.headers.get("origin") || "https://www.virtualopsassist.com";
     const inviteLink = `${origin}/auth?invite=${inviteCode}`;
 
-    // Send email via Resend
+    // Send email via Gmail
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #333;">You're Invited to the 60-Day AI Cohort!</h1>
-        <p>You've been invited to join an exclusive 60-day AI transformation program.</p>
+        <h1 style="color: #333;">You're Invited to the 90-Day AI Cohort!</h1>
+        <p>You've been invited to join an exclusive 90-day AI transformation program.</p>
         <p>This cohort gives you access to:</p>
         <ul>
           <li>AI-powered operations tools</li>
@@ -209,14 +312,15 @@ serve(async (req) => {
       </div>
     `;
 
-    const emailResult = await sendEmailViaResend(
+    const emailResult = await sendGmailEmail(
+      accessToken,
       email,
-      "You're Invited to the 60-Day AI Cohort!",
+      "You're Invited to the 90-Day AI Cohort!",
       emailHtml
     );
 
     if (!emailResult.success) {
-      console.error("Email send failed:", emailResult.error);
+      console.error("Gmail send failed:", emailResult.error);
       // Still return success since invite was created
       return new Response(
         JSON.stringify({ 
@@ -238,7 +342,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Cohort invite sent to ${email} via Resend, messageId: ${emailResult.messageId}`);
+    console.log(`Cohort invite sent to ${email} via Gmail, messageId: ${emailResult.messageId}`);
 
     return new Response(
       JSON.stringify({ 
