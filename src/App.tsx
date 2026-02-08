@@ -79,7 +79,7 @@ const App = () => (
                   <TicketingWidget />
                   <Routes>
                     <Route path="/" element={<Landing />} />
-                    <Route path="/hub" element={<Hub />} />
+                    <Route path="/hub" element={<ProtectedRoute><Hub /></ProtectedRoute>} />
                     <Route path="/about" element={<About />} />
                     <Route path="/services" element={<Services />} />
                     <Route path="/contact" element={<Contact />} />

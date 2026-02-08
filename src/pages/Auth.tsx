@@ -132,9 +132,9 @@ export default function Auth() {
       return;
     }
 
-    // Users with access go to dashboard
+    // Users with access go to hub
     if (hasAccess) {
-      navigate("/dashboard");
+      navigate("/hub");
       return;
     }
 
