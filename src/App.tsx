@@ -69,8 +69,8 @@ const App = () => (
         <AuthProvider>
           <UserTierProvider>
             <ClientViewProvider>
-              <ChatProvider>
               <TooltipProvider>
+                <ChatProvider>
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
@@ -115,7 +115,7 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
-              </ChatProvider>
+                </ChatProvider>
               </TooltipProvider>
             </ClientViewProvider>
           </UserTierProvider>
