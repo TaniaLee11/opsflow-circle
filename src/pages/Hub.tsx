@@ -166,8 +166,8 @@ export default function Hub() {
   useEffect(() => {
     if (isAuthenticated && user) {
       if (isOwner) {
-        // Owner goes to owner dashboard
-        navigate("/owner");
+        // Owner goes to dashboard
+        navigate("/dashboard");
       } else if (!user.tierSelected) {
         // Sub-users without tier go to onboarding
         navigate("/onboarding");

@@ -75,7 +75,7 @@ export function TicketingWidget() {
             <p><strong>Description:</strong></p>
             <p>${description}</p>
             <hr>
-            <p><small>View all tickets at: https://virtualopsassist.com/owner</small></p>
+            <p><small>View all tickets at: https://virtualopsassist.com/dashboard</small></p>
           `,
         },
       });
