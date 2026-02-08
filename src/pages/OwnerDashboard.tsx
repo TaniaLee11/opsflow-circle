@@ -18,6 +18,7 @@ interface PlatformStats {
   totalOrganizations: number;
   integrationConnections: number;
   systemErrors: number;
+  cohortUsers: number;
 }
 
 interface RecentUser {
@@ -47,6 +48,7 @@ export default function OwnerDashboard() {
     totalOrganizations: 0,
     integrationConnections: 0,
     systemErrors: 0,
+    cohortUsers: 0,
   });
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -85,6 +87,12 @@ export default function OwnerDashboard() {
         .select("*", { count: "exact", head: true })
         .eq("status", "connected");
 
+      // Load cohort users count
+      const { count: cohortUsers } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("selected_tier", "cohort");
+
       // Load recent users
       const { data: recentUsersData } = await supabase
         .from("profiles")
@@ -115,6 +123,7 @@ export default function OwnerDashboard() {
         totalOrganizations: totalOrganizations || 0,
         integrationConnections: integrationConnections || 0,
         systemErrors: 0, // TODO: Implement error tracking
+        cohortUsers: cohortUsers || 0,
       });
 
       setRecentUsers(formattedUsers);
@@ -204,6 +213,19 @@ export default function OwnerDashboard() {
               <div className="text-2xl font-bold">{stats.integrationConnections}</div>
               <p className="text-xs text-muted-foreground">
                 Connected accounts
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">AI Cohort Users</CardTitle>
+              <Users className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">{stats.cohortUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                Invite-only members
               </p>
             </CardContent>
           </Card>
