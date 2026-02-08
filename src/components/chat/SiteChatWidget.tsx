@@ -132,7 +132,7 @@ export function SiteChatWidget() {
             dragConstraints={constraintsRef}
             dragElastic={0.1}
             whileDrag={{ scale: 1.1 }}
-            onClick={() => setIsOpen(true)}
+            onClick={toggleChat}
             className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center group cursor-grab active:cursor-grabbing"
           >
             <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground group-hover:scale-110 transition-transform" />
@@ -177,7 +177,7 @@ export function SiteChatWidget() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setIsOpen(false)}
+                  onClick={closeChat}
                 >
                   <ChevronDown className="w-4 h-4" />
                 </Button>
@@ -185,7 +185,7 @@ export function SiteChatWidget() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setIsOpen(false)}
+                  onClick={closeChat}
                 >
                   <X className="w-4 h-4" />
                 </Button>
