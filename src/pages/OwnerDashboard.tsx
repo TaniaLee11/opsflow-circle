@@ -19,6 +19,7 @@ interface PlatformStats {
   integrationConnections: number;
   systemErrors: number;
   cohortUsers: number;
+  tierDistribution: { tier: string; count: number }[];
 }
 
 interface RecentUser {
@@ -49,6 +50,7 @@ export default function OwnerDashboard() {
     integrationConnections: 0,
     systemErrors: 0,
     cohortUsers: 0,
+    tierDistribution: [],
   });
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -93,6 +95,22 @@ export default function OwnerDashboard() {
         .select("*", { count: "exact", head: true })
         .eq("selected_tier", "cohort");
 
+      // Load tier distribution
+      const { data: tierData } = await supabase
+        .from("profiles")
+        .select("selected_tier");
+      
+      // Group by tier and count
+      const tierCounts: Record<string, number> = {};
+      (tierData || []).forEach((profile: any) => {
+        const tier = profile.selected_tier || "free";
+        tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+      });
+      
+      const tierDistribution = Object.entries(tierCounts)
+        .map(([tier, count]) => ({ tier, count }))
+        .sort((a, b) => b.count - a.count);
+
       // Load recent users
       const { data: recentUsersData } = await supabase
         .from("profiles")
@@ -124,6 +142,7 @@ export default function OwnerDashboard() {
         integrationConnections: integrationConnections || 0,
         systemErrors: 0, // TODO: Implement error tracking
         cohortUsers: cohortUsers || 0,
+        tierDistribution,
       });
 
       setRecentUsers(formattedUsers);
@@ -230,6 +249,24 @@ export default function OwnerDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* User Tiers Distribution Card */}
+        <Card className="col-span-full">
+          <CardHeader>
+            <CardTitle>User Tier Distribution</CardTitle>
+            <CardDescription>Breakdown of users across all subscription tiers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              {stats.tierDistribution.map(({ tier, count }) => (
+                <div key={tier} className="flex flex-col items-center p-4 rounded-lg border border-border bg-secondary/20">
+                  <div className="text-2xl font-bold text-foreground">{count}</div>
+                  <div className="text-xs text-muted-foreground capitalize mt-1">{tier}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tabs for detailed views */}
         <Tabs defaultValue="users" className="space-y-4">
