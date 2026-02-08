@@ -26,7 +26,7 @@ const FAQ_SUGGESTIONS = [
 const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
-  content: "Hi! I'm VOPSy, your Virtual OPS support guide. 👋\n\nI can help you learn about our services, navigate the website, or answer questions about how Virtual OPS can support your business. What can I help you with today?",
+  content: "Hey there! I'm VOPSy, your operations partner at Virtual OPS. 👋\n\nWhether you have a quick question about taxes, compliance, or getting organized — I'm here to help. What's on your mind?",
   timestamp: new Date(),
 };
 
@@ -81,6 +81,7 @@ export function SiteChatWidget() {
       const { data, error } = await supabase.functions.invoke("vopsy-chat", {
         body: {
           messages: conversationHistory,
+          user_tier: "free", // Site chatbot always runs at free tier
         },
       });
 
