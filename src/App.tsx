@@ -22,6 +22,7 @@ import Dashboard from "./pages/Dashboard";
 import AIStudio from "./pages/AIStudio";
 import Academy from "./pages/Academy";
 import FinancialHub from "./pages/FinancialHub";
+import Finance from "./pages/Finance";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
@@ -105,6 +106,7 @@ const App = () => (
                     <Route path="/ai-studio" element={<ProtectedRoute><AIStudio /></ProtectedRoute>} />
                     <Route path="/academy" element={<ProtectedRoute><Academy /></ProtectedRoute>} />
                     <Route path="/financial" element={<ProtectedRoute><FinancialHub /></ProtectedRoute>} />
+                    <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
                     <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                     <Route path="/integrations/callback" element={<IntegrationCallback />} />
                     <Route path="/workflows" element={<ProtectedRoute><Workflows /></ProtectedRoute>} />
