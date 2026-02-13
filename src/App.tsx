@@ -47,6 +47,12 @@ import BusinessHealthCheck from "./pages/BusinessHealthCheck";
 import ManagedPartners from "./pages/ManagedPartners";
 import Communications from "./pages/Communications";
 import Pipeline from "./pages/Pipeline";
+import Marketing from "./pages/departments/Marketing";
+import Sales from "./pages/departments/Sales";
+import Support from "./pages/departments/Support";
+import FinancePage from "./pages/departments/FinancePage";
+import Systems from "./pages/departments/Systems";
+import People from "./pages/departments/People";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { TicketingWidget } from "@/components/TicketingWidget";
@@ -113,6 +119,12 @@ const App = () => (
                     <Route path="/workflows" element={<ProtectedRoute><Workflows /></ProtectedRoute>} />
                     <Route path="/communications" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
                     <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
+                    <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
+                    <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+                    <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+                    <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
+                    <Route path="/systems" element={<ProtectedRoute><Systems /></ProtectedRoute>} />
+                    <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-canceled" element={<PaymentCanceled />} />
