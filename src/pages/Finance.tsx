@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { DollarSign, TrendingUp, AlertCircle, RefreshCw, Link as LinkIcon } from "lucide-react";
+import { DollarSign, TrendingUp, AlertCircle, RefreshCw, Link as LinkIcon, BookOpen, ArrowRight, Lock } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { ModeLabel, getTierMode } from "@/components/hub/ModeLabel";
 
 interface FinancialSummary {
   total_revenue_30d: number;
@@ -44,17 +45,17 @@ export default function Finance() {
   const [stripeConnected, setStripeConnected] = useState(false);
 
   const isOwner = profile?.email === "tania@virtualopsassist.com";
-  const hasFinanceAccess = profile?.selected_tier && !["free", "ai_tax", "ai_compliance"].includes(profile.selected_tier);
+  const userTier = profile?.selected_tier || "free";
+  const tierMode = getTierMode(userTier);
+
+  // Tier access levels
+  const isEducation = tierMode === "education"; // Free, Tax, Compliance
+  const isGuided = tierMode === "guided"; // Assistant
+  const isExecution = tierMode === "execution"; // Operations, Enterprise, Cohort
+  const isLed = tierMode === "led"; // Advisory, Owner
 
   useEffect(() => {
     if (!profileLoading && profile) {
-      // Check tier access
-      if (!hasFinanceAccess) {
-        toast.error("Finance Intelligence is available on AI Assistant and above");
-        navigate("/hub");
-        return;
-      }
-
       loadFinancialData();
     }
   }, [profile, profileLoading]);
@@ -73,7 +74,7 @@ export default function Finance() {
 
       setStripeConnected(!!integration);
 
-      if (integration) {
+      if (integration && !isEducation) {
         // Load financial summary
         const { data: summary } = await supabase
           .from("user_financial_summary")
@@ -151,23 +152,143 @@ export default function Finance() {
     );
   }
 
-  if (!hasFinanceAccess) {
-    return null;
+  // EDUCATION MODE (Free, Tax, Compliance)
+  if (isEducation) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Finance Intelligence</h1>
+            <p className="text-muted-foreground">Learn financial management fundamentals</p>
+          </div>
+          <ModeLabel tier={userTier} />
+        </div>
+
+        <Alert>
+          <BookOpen className="w-4 h-4" />
+          <AlertDescription>
+            You're in <strong>Education Mode</strong>. Learn financial literacy basics and upgrade to connect your accounts.
+          </AlertDescription>
+        </Alert>
+
+        {/* Financial Literacy Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Understanding Your Finances</CardTitle>
+              <CardDescription>Essential financial concepts for business owners</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold">1</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Revenue vs Profit</h4>
+                  <p className="text-sm text-muted-foreground">Learn the difference between top-line revenue and bottom-line profit</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold">2</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Cash Flow Management</h4>
+                  <p className="text-sm text-muted-foreground">Why cash flow is more important than profit for survival</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold">3</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Invoice Management</h4>
+                  <p className="text-sm text-muted-foreground">Best practices for billing clients and tracking payments</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>What You'll Get with an Upgrade</CardTitle>
+              <CardDescription>Connect your financial accounts and get real insights</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border-l-4 border-primary pl-4">
+                <h4 className="font-semibold">🧭 Assistant Tier ($39.99/mo)</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 mt-2">
+                  <li>• Connect Stripe and QuickBooks</li>
+                  <li>• See real-time revenue and expenses</li>
+                  <li>• VOPSy tells you what to do next</li>
+                  <li>• Invoice tracking and alerts</li>
+                </ul>
+              </div>
+              <div className="border-l-4 border-green-500 pl-4">
+                <h4 className="font-semibold">⚡ Operations Tier ($99.99/mo)</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 mt-2">
+                  <li>• Everything in Assistant</li>
+                  <li>• VOPSy sends invoice reminders automatically</li>
+                  <li>• Automated follow-ups on overdue payments</li>
+                  <li>• Proactive financial alerts</li>
+                </ul>
+              </div>
+              <Button onClick={() => navigate("/services")} className="w-full">
+                Upgrade to Connect Your Accounts
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Financial Education Resources */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Free Financial Education</CardTitle>
+            <CardDescription>Start with these courses in the Academy</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button variant="outline" onClick={() => navigate("/academy")} className="h-auto py-4 flex flex-col items-start">
+                <span className="font-semibold">Understanding P&L Statements</span>
+                <span className="text-xs text-muted-foreground mt-1">Stage 3: Understanding Your Numbers</span>
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/academy")} className="h-auto py-4 flex flex-col items-start">
+                <span className="font-semibold">Cash Flow Management</span>
+                <span className="text-xs text-muted-foreground mt-1">Stage 3: Understanding Your Numbers</span>
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/academy")} className="h-auto py-4 flex flex-col items-start">
+                <span className="font-semibold">QuickBooks Basics</span>
+                <span className="text-xs text-muted-foreground mt-1">Stage 2: Getting Organized</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
+  // GUIDED, EXECUTION, LED MODES (Assistant+)
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Finance Intelligence</h1>
-          <p className="text-muted-foreground">Real-time financial insights and analytics</p>
+          <p className="text-muted-foreground">
+            {isGuided && "VOPSy analyzes your data and tells you what to do"}
+            {isExecution && "VOPSy automates financial management for you"}
+            {isLed && "Strategic financial planning with Tania"}
+          </p>
         </div>
-        {stripeConnected && (
-          <Button onClick={syncStripeData} disabled={syncing}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-            Sync Data
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          <ModeLabel tier={userTier} />
+          {stripeConnected && (
+            <Button onClick={syncStripeData} disabled={syncing}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+              Sync Data
+            </Button>
+          )}
+        </div>
       </div>
 
       {!stripeConnected && (
@@ -180,6 +301,74 @@ export default function Finance() {
             </Button>
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* VOPSy Integration Section */}
+      {stripeConnected && financialSummary && (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-2xl">🤖</span>
+              VOPSy Financial Intelligence
+            </CardTitle>
+            <CardDescription>
+              {isGuided && "VOPSy reads your data and provides direction"}
+              {isExecution && "VOPSy takes action on your behalf"}
+              {isLed && "Strategic insights from Tania"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {financialSummary.overdue_invoices > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="w-4 h-4" />
+                <AlertDescription>
+                  <strong>Action Needed:</strong> You have {financialSummary.overdue_invoices} overdue invoice(s) totaling ${financialSummary.overdue_amount.toFixed(2)}.
+                  {isGuided && " VOPSy recommends following up with these customers today."}
+                  {isExecution && (
+                    <Button size="sm" className="ml-2" onClick={() => toast.info("VOPSy is sending automated reminders...")}>
+                      Send Automated Reminders
+                    </Button>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {financialSummary.cash_flow_status === "warning" && (
+              <Alert>
+                <AlertCircle className="w-4 h-4" />
+                <AlertDescription>
+                  <strong>Cash Flow Warning:</strong> Your overdue invoices are impacting cash flow.
+                  {isGuided && " VOPSy suggests prioritizing collections this week."}
+                  {isExecution && " VOPSy has flagged at-risk accounts for automated follow-up."}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isExecution && (
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">🤖 Automation Status</h4>
+                <ul className="space-y-1 text-sm">
+                  <li>✅ Invoice reminders: Active (sends 3 days before due)</li>
+                  <li>✅ Overdue follow-ups: Active (sends 1, 7, 14 days after due)</li>
+                  <li>✅ Low cash flow alerts: Monitoring</li>
+                  <li>✅ Unusual charge detection: Active</li>
+                </ul>
+              </div>
+            )}
+
+            {!isExecution && (
+              <Alert>
+                <Lock className="w-4 h-4" />
+                <AlertDescription>
+                  <strong>Upgrade to Operations</strong> to unlock automated invoice reminders, follow-ups, and proactive alerts.
+                  <Button size="sm" variant="link" onClick={() => navigate("/services")}>
+                    Learn More
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {stripeConnected && financialSummary && (
