@@ -75,12 +75,12 @@ const getFileIcon = (type: string) => {
   }
 };
 
-// Templates for new business owners
+// Templates for new consultants, contractors, and nonprofit leaders
 const templates = [
   {
     id: "t1",
     name: "Business Plan Template",
-    description: "Comprehensive business plan for startups and small businesses",
+    description: "Comprehensive business plan for growing organizations and consulting firms, contracting businesses, and nonprofits",
     category: "Planning",
     downloads: 1240,
   },
@@ -658,7 +658,7 @@ function VaultContent() {
                   <div>
                     <h3 className="font-medium">First-Year Business Templates</h3>
                     <p className="text-sm text-muted-foreground">
-                      Professional templates to help you get your business started right
+                      Professional templates to help you get your practice or organization started right
                     </p>
                   </div>
                 </CardContent>

@@ -202,7 +202,7 @@ export default function Hub() {
     <>
       <Helmet>
         <title>The Hub | Virtual OPS Assist - Your Operations Command Center</title>
-        <meta name="description" content="One place to manage compliance, finances, systems, and support—without overwhelm. The Virtual OPS Hub brings clarity to business operations for entrepreneurs and nonprofits." />
+        <meta name="description" content="One place to manage compliance, finances, systems, and support—without overwhelm. The Virtual OPS Hub brings clarity to business operations for independent professionals and nonprofits." />
         <link rel="canonical" href="https://virtualopsassist.com/hub" />
       </Helmet>
 

@@ -64,15 +64,15 @@ const operatingIdentities: { id: UserIdentityType; label: string; description: s
     icon: Zap
   },
   {
-    id: "solopreneur",
-    label: "Solopreneur",
+    id: "independent consultant",
+    label: "Independent consultant",
     description: "Building and growing a business solo, wearing multiple hats",
     icon: Rocket
   },
   {
-    id: "founder",
-    label: "Founder",
-    description: "Leading an organization, scaling operations, and building a team",
+    id: "nonprofit_leader",
+    label: "Nonprofit Leader",
+    description: "Leading a mission-driven organization, managing programs, and expanding impact",
     icon: TrendingUp
   }
 ];
@@ -571,7 +571,7 @@ export default function Onboarding() {
                         id="orgName"
                         value={profile.organizationName}
                         onChange={(e) => setProfile({ ...profile, organizationName: e.target.value })}
-                        placeholder="Your company or organization"
+                        placeholder="Your practice, business, or organization or organization"
                         className="h-12"
                       />
                     </div>

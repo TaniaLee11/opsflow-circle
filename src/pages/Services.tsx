@@ -52,7 +52,7 @@ const serviceCategories = [
     icon: TrendingUp,
     title: "Financial Reporting & Analysis",
     tagline: "Know where you stand—always.",
-    description: "Clear, actionable reports that tell the story of your business finances.",
+    description: "Clear, actionable reports that tell the story of your practice or organization finances.",
     features: [
       "Profit & Loss (Income Statements)",
       "Balance Sheets & Cash Flow Statements",
@@ -110,9 +110,9 @@ const serviceCategories = [
     icon: Cog,
     title: "Business Setup & Financial Infrastructure",
     tagline: "Build it right from the start.",
-    description: "Financial foundations for startups and growing businesses.",
+    description: "Financial foundations for growing organizations and growing businesses.",
     features: [
-      "Financial system setup for startups",
+      "Financial system setup for growing organizations",
       "Accounting software setup (QuickBooks, Wave, etc.)",
       "Business entity financial onboarding",
       "Internal financial controls design",
@@ -171,7 +171,7 @@ const serviceCategories = [
       "Financial literacy training for founders",
       "Budgeting & cash-flow workshops",
       "Nonprofit finance training",
-      "Entrepreneur bootcamp instruction",
+      "Independent professional bootcamp instruction",
       "One-on-one financial coaching",
       "Group financial trainings & workshops"
     ]
@@ -338,10 +338,10 @@ const tiers = [
 ];
 
 const industriesServed = [
-  "Startups & early-stage founders",
+  "Growing organizations & early-stage founders",
   "Nonprofits & faith-based organizations",
   "Contractors & construction businesses",
-  "Gig workers & independent contractors",
+  "Independent contractors & independent contractors",
   "Women-owned businesses",
   "Minority-owned businesses",
   "SMEs seeking growth capital",
@@ -369,8 +369,8 @@ export default function Services() {
     <>
       <Helmet>
         <title>Services | Virtual OPS - Small Business Accounting & CFO Services</title>
-        <meta name="description" content="Small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, and CFO services. Based in Rochester, NY — serving clients nationwide. Virtual bookkeeping and outsourced CFO solutions." />
-        <meta name="keywords" content="small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, CFO services for small business, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services" />
+        <meta name="description" content="Consulting firm, contracting business, or nonprofit accounting services, bookkeeping for independent professionals, nonprofit accounting, and CFO services. Based in Rochester, NY — serving clients nationwide. Virtual bookkeeping and outsourced CFO solutions." />
+        <meta name="keywords" content="consulting firm, contracting business, or nonprofit accounting services, bookkeeping for independent professionals, nonprofit accounting, CFO services for consulting firm, contracting business, or nonprofit, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services" />
         <link rel="canonical" href="https://virtualopsassist.com/services" />
       </Helmet>
 

@@ -6,12 +6,12 @@ import { useAuth } from "./AuthContext";
 // ============================================
 // Controls: Language, Tone, Examples, Scenarios, Marketing alignment
 // Does NOT control: Access, Permissions, Tools, Services
-export type UserIdentityType = "independent_operator" | "solopreneur" | "founder";
+export type UserIdentityType = "independent_operator" | "independent consultant" | "nonprofit_leader";
 
 export const USER_IDENTITY_LABELS: Record<UserIdentityType, string> = {
   independent_operator: "Independent Operator",
-  solopreneur: "Solopreneur",
-  founder: "Founder"
+  independent consultant: "Independent consultant",
+  nonprofit_leader: "Nonprofit Leader"
 };
 
 // ============================================
@@ -69,7 +69,7 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     displayName: "AI Free",
     price: null,
     description: "VOPSy the Educator — Learn concepts and best practices",
-    whoItsFor: "Solopreneurs, founders, and entrepreneurs who want to learn business operations without automation or integrations.",
+    whoItsFor: "Independent consultants, founders, and independent professionals who want to learn business operations without automation or integrations.",
     capabilities: [
       "VOPSy recommends courses from Academy",
       "Educational content and learning paths",
@@ -80,7 +80,7 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     ],
     limitations: [
       "Cannot connect integrations",
-      "Cannot access your business data",
+      "Cannot access your practice or organization data",
       "Cannot take actions on your behalf",
       "Education only — you do the work"
     ],
@@ -99,7 +99,7 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     displayName: "AI Assistant",
     price: 34.99,
     description: "VOPSy the Connector — Connect your tools and see your data",
-    whoItsFor: "Solopreneurs and founders who want to see all their business data in one place with AI insights.",
+    whoItsFor: "Independent consultants and founders who want to see all their business data in one place with AI insights.",
     capabilities: [
       "Everything in AI Free, PLUS:",
       "Connect unlimited integrations (Gmail, QuickBooks, Stripe, etc.)",
@@ -414,7 +414,7 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
   const [environment, setEnvironment] = useState<EnvironmentType>("cohort");
   
   // User Identity Type (language/tone only)
-  const [userIdentity, setUserIdentity] = useState<UserIdentityType>("founder");
+  const [userIdentity, setUserIdentity] = useState<UserIdentityType>("independent consultant");
   
   const [cohortConfig, setCohortConfig] = useState<CohortConfig | null>({
     isActive: true,
