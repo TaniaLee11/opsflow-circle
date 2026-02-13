@@ -204,7 +204,7 @@ const integrations: Integration[] = [
   {
     id: "zoho-crm",
     name: "Zoho CRM",
-    description: "Cost-effective CRM for solopreneurs and small businesses",
+    description: "Cost-effective CRM for consultants, contractors, and small businesses",
     icon: "https://www.zoho.com/favicon.ico",
     category: "crm",
     status: "disconnected",

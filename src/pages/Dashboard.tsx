@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TaskList } from "@/components/dashboard/TaskList";
-import { TeamActivity } from "@/components/dashboard/TeamActivity";
+
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { TierSelector } from "@/components/tier/TierSelector";
@@ -177,7 +177,7 @@ function DashboardContent() {
             {/* Right Column */}
             <div className="space-y-4 sm:space-y-6">
               <QuickActions />
-              <TeamActivity />
+
             </div>
           </div>
         </div>

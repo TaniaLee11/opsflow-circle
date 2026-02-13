@@ -58,21 +58,21 @@ const organizationTypes: OrganizationType[] = [
 
 const operatingIdentities: { id: UserIdentityType; label: string; description: string; icon: typeof Rocket }[] = [
   {
-    id: "independent_operator",
-    label: "Independent Operator",
-    description: "Running operations, managing clients, and handling day-to-day workflows",
+    id: "consultant",
+    label: "Consultant",
+    description: "Providing expertise and strategic guidance to clients",
     icon: Zap
   },
   {
-    id: "solopreneur",
-    label: "Solopreneur",
-    description: "Building and growing a business solo, wearing multiple hats",
+    id: "contractor",
+    label: "Contractor",
+    description: "Delivering specialized services and managing client projects",
     icon: Rocket
   },
   {
-    id: "founder",
-    label: "Founder",
-    description: "Leading an organization, scaling operations, and building a team",
+    id: "nonprofit_leader",
+    label: "Nonprofit Leader",
+    description: "Leading mission-driven organizations and managing programs",
     icon: TrendingUp
   }
 ];
