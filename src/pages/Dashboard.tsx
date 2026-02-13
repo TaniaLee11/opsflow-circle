@@ -47,7 +47,7 @@ function DashboardContent() {
   const isMobile = useIsMobile();
   const { metrics } = useVOPSyDailyBriefing();
 
-  const userMessages = userTypeMessages[user?.userType || "independent professional"];
+  const userMessages = userTypeMessages[user?.userType || "independent consultant"];
 
   return (
     <div className="min-h-screen bg-background">
