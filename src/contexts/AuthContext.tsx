@@ -29,7 +29,7 @@ import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
 export type UserRole = "owner" | "admin" | "operator" | "user";
 
-export type UserType = "gig_worker" | "independent professional" | "nonprofit";
+export type UserType = "gig_worker" | "independent consultant" | "nonprofit";
 
 export type AccessType = "owner" | "cohort" | "free" | "subscription" | "one_time" | "confirmed" | "none" | "pending";
 
