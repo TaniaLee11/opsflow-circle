@@ -59,7 +59,7 @@ const taxPackages = [
       "Quarterly estimate guidance",
       "Business expense review"
     ],
-    ideal: "Independent contractors, consultants, and contracting businesses",
+    ideal: "Freelancers, gig workers, side hustles",
     popular: true
   },
   {
@@ -409,7 +409,7 @@ export default function TaxServices() {
                 "I went from dreading tax season to actually feeling prepared. They made our first S Corp filing feel effortless."
               </blockquote>
               <p className="text-muted-foreground">
-                — Sarah K., Tech Growing organization Founder
+                — Sarah K., Tech Startup Founder
               </p>
             </motion.div>
           </div>

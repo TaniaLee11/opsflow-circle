@@ -28,10 +28,10 @@ import { cn } from "@/lib/utils";
 
 const userTypeMessages = {
   gig_worker: {
-    greeting: "Let's keep your practice healthy",
+    greeting: "Let's keep your hustle healthy",
     focus: "Cash Flow & Tax Prep"
   },
-  "independent consultant": {
+  entrepreneur: {
     greeting: "Here's your operations snapshot",
     focus: "Growth & Profitability"
   },
@@ -47,7 +47,7 @@ function DashboardContent() {
   const isMobile = useIsMobile();
   const { metrics } = useVOPSyDailyBriefing();
 
-  const userMessages = userTypeMessages[user?.userType || "independent consultant"];
+  const userMessages = userTypeMessages[user?.userType || "entrepreneur"];
 
   return (
     <div className="min-h-screen bg-background">

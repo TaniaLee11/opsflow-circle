@@ -30,7 +30,7 @@ interface PromptConfig {
   category: string;
   prompt: string;
   enabled: boolean;
-  userTypes: ("gig_worker" | "independent professional" | "nonprofit")[];
+  userTypes: ("gig_worker" | "entrepreneur" | "nonprofit")[];
 }
 
 const defaultPrompts: PromptConfig[] = [
@@ -49,7 +49,7 @@ When explaining metrics:
 
 Tone: Calm, competent, empowering. Never condescending.`,
     enabled: true,
-    userTypes: ["gig_worker", "independent professional", "nonprofit"]
+    userTypes: ["gig_worker", "entrepreneur", "nonprofit"]
   },
   {
     id: "compliance_alerts",
@@ -69,7 +69,7 @@ Priority levels:
 - IMPORTANT: Within 30 days
 - REMINDER: Within 60 days`,
     enabled: true,
-    userTypes: ["gig_worker", "independent professional", "nonprofit"]
+    userTypes: ["gig_worker", "entrepreneur", "nonprofit"]
   },
   {
     id: "dashboard_summary",
@@ -84,7 +84,7 @@ Priority levels:
 
 Keep summaries under 150 words. Lead with the most important insight.`,
     enabled: true,
-    userTypes: ["gig_worker", "independent professional", "nonprofit"]
+    userTypes: ["gig_worker", "entrepreneur", "nonprofit"]
   },
   {
     id: "autoresponder",
@@ -99,13 +99,13 @@ Keep summaries under 150 words. Lead with the most important insight.`,
 
 Never make commitments on behalf of the user. Use phrases like "I'll make sure [Name] sees this" rather than promising specific actions.`,
     enabled: true,
-    userTypes: ["independent professional", "nonprofit"]
+    userTypes: ["entrepreneur", "nonprofit"]
   }
 ];
 
 const userTypeConfig = {
   gig_worker: { label: "Gig Worker", icon: User, color: "text-info" },
-  "independent consultant": { label: "Independent consultant", icon: Building2, color: "text-primary" },
+  entrepreneur: { label: "Entrepreneur", icon: Building2, color: "text-primary" },
   nonprofit: { label: "Nonprofit", icon: Heart, color: "text-success" }
 };
 

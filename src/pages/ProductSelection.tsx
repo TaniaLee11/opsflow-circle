@@ -57,7 +57,7 @@ const PRODUCT_OPTIONS: Record<string, ProductOption[]> = {
       id: "personal_business_tax",
       priceId: "price_1Sk588J3R9oDKFd47tkpsRsM",
       name: "Personal + Business Tax",
-      description: "Combined personal and consulting firm, contracting business, or nonprofit tax preparation",
+      description: "Combined personal and small business tax preparation",
       price: 175,
       priceLabel: "$175",
       icon: <Briefcase className="w-6 h-6" />,

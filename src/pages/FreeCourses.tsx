@@ -34,7 +34,7 @@ const platformHighlights = [
   {
     icon: Bot,
     title: "VOPSy AI Assistant",
-    description: "24/7 AI-powered guidance for all your practice or organization questions"
+    description: "24/7 AI-powered guidance for all your business questions"
   },
   {
     icon: Target,
@@ -82,7 +82,7 @@ export default function FreeCourses() {
         <title>Free Business Courses | Virtual OPS Hub</title>
         <meta 
           name="description" 
-          content="Learn business fundamentals for free. Start with our most popular courses on starting, running, and growing your practice or organization. No sign-up required." 
+          content="Learn business fundamentals for free. Start with our most popular courses on starting, running, and growing your business. No sign-up required." 
         />
         <meta name="keywords" content="free business courses, learn bookkeeping, start a business, business fundamentals, LLC formation, sole proprietorship" />
         <meta property="og:title" content="Free Business Courses | Virtual OPS Hub" />
@@ -123,7 +123,7 @@ export default function FreeCourses() {
               </h1>
               
               <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-                Start your practice or organization journey with our most popular introductory courses. 
+                Start your business journey with our most popular introductory courses. 
                 No sign-up required—just click and learn.
               </p>
 
@@ -161,7 +161,7 @@ export default function FreeCourses() {
                 Featured Free Courses
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                These courses cover the essential foundations every consultant, contractor, or nonprofit leader needs. 
+                These courses cover the essential foundations every business owner needs. 
                 Complete them at your own pace—your progress will be here when you return.
               </p>
             </motion.div>
@@ -291,7 +291,7 @@ export default function FreeCourses() {
                 These Are Just the Beginning
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Love these free courses? The full Virtual OPS Hub gives you access to everything you need to run your practice or organization with confidence.
+                Love these free courses? The full Virtual OPS Hub gives you access to everything you need to run your business with confidence.
               </p>
             </motion.div>
 

@@ -46,7 +46,6 @@ import FreeCourse from "./pages/FreeCourse";
 import BusinessHealthCheck from "./pages/BusinessHealthCheck";
 import ManagedPartners from "./pages/ManagedPartners";
 import Communications from "./pages/Communications";
-import Pipeline from "./pages/Pipeline";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { TicketingWidget } from "@/components/TicketingWidget";
@@ -112,7 +111,6 @@ const App = () => (
                     <Route path="/integrations/callback" element={<IntegrationCallback />} />
                     <Route path="/workflows" element={<ProtectedRoute><Workflows /></ProtectedRoute>} />
                     <Route path="/communications" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
-                    <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-canceled" element={<PaymentCanceled />} />

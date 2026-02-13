@@ -314,7 +314,7 @@ export function AICourseGenerator({ isOpen, onClose }: AICourseGeneratorProps) {
                       id="topic"
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
-                      placeholder="e.g., How to start a consulting firm, contracting business, or nonprofit, Introduction to digital marketing..."
+                      placeholder="e.g., How to start a small business, Introduction to digital marketing..."
                       className="mt-1 text-lg py-6"
                     />
                   </div>
@@ -325,7 +325,7 @@ export function AICourseGenerator({ isOpen, onClose }: AICourseGeneratorProps) {
                       id="audience"
                       value={targetAudience}
                       onChange={(e) => setTargetAudience(e.target.value)}
-                      placeholder="e.g., Consultants, contractors, and nonprofit leaders, Marketing professionals..."
+                      placeholder="e.g., Small business owners, Marketing professionals..."
                       className="mt-1"
                     />
                   </div>

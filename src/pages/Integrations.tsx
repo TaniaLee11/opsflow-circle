@@ -109,7 +109,7 @@ const integrations: Integration[] = [
   {
     id: "wave",
     name: "Wave Accounting",
-    description: "Free accounting and invoicing for consulting firms, contracting businesses, and nonprofits",
+    description: "Free accounting and invoicing for small businesses",
     icon: "https://www.waveapps.com/favicon.ico",
     category: "finance",
     status: "disconnected",
@@ -138,7 +138,7 @@ const integrations: Integration[] = [
   {
     id: "xero",
     name: "Xero",
-    description: "Cloud-based accounting software for consulting firms, contracting businesses, and nonprofits",
+    description: "Cloud-based accounting software for small businesses",
     icon: "https://www.xero.com/favicon.ico",
     category: "finance",
     status: "disconnected",
@@ -204,7 +204,7 @@ const integrations: Integration[] = [
   {
     id: "zoho-crm",
     name: "Zoho CRM",
-    description: "Cost-effective CRM for independent consultants and consulting firms, contracting businesses, and nonprofits",
+    description: "Cost-effective CRM for solopreneurs and small businesses",
     icon: "https://www.zoho.com/favicon.ico",
     category: "crm",
     status: "disconnected",
@@ -428,7 +428,7 @@ const integrations: Integration[] = [
   {
     id: "freshbooks",
     name: "FreshBooks",
-    description: "Accounting software for consulting firms, contracting businesses, and nonprofits",
+    description: "Accounting software for small businesses",
     icon: "https://www.freshbooks.com/favicon.ico",
     category: "finance",
     status: "disconnected",

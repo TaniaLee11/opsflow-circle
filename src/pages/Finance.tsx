@@ -177,7 +177,7 @@ export default function Finance() {
           <Card>
             <CardHeader>
               <CardTitle>Understanding Your Finances</CardTitle>
-              <CardDescription>Essential financial concepts for consultants, contractors, and nonprofit leaders</CardDescription>
+              <CardDescription>Essential financial concepts for business owners</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-start gap-3">

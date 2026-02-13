@@ -83,7 +83,7 @@ const taxSlides = [
     description: "Multi-member LLCs and S Corps file here. Our clients appreciate that we handle the complexity so they can focus on running their business.",
     testimonial: {
       quote: "They made our first S Corp filing feel effortless.",
-      author: "Sarah K., Tech Growing organization Founder"
+      author: "Sarah K., Tech Startup Founder"
     },
     cta: "Let's Get You Filed",
     ctaAction: "signup"
@@ -117,7 +117,7 @@ const taxSlides = [
     deadline: "April 15, 2026",
     extension: "October 15, 2026",
     headline: "Personal Taxes, Professional Care",
-    description: "Whether you're a independent contractor, consultant, or have a consulting practice, your Schedule C gets the same attention we give to our biggest clients.",
+    description: "Whether you're a freelancer, consultant, or have a side hustle, your Schedule C gets the same attention we give to our biggest clients.",
     note: "Schedule C doesn't change your filing deadline—plan accordingly!",
     testimonial: {
       quote: "I went from dreading tax season to actually feeling prepared.",
@@ -208,7 +208,7 @@ export default function TaxSeason2026() {
         <meta name="twitter:image" content="https://virtualopsassist.com/og-tax-2026.png" />
         
         {/* SEO Keywords - Long-tail targeting */}
-        <meta name="keywords" content="2026 tax deadlines, when are business taxes due 2026, S Corp filing deadline March 2026, C Corp tax deadline April 2026, nonprofit Form 990 deadline, tax extension deadlines 2026, consulting firm, contracting business, or nonprofit tax preparation, partnership tax filing" />
+        <meta name="keywords" content="2026 tax deadlines, when are business taxes due 2026, S Corp filing deadline March 2026, C Corp tax deadline April 2026, nonprofit Form 990 deadline, tax extension deadlines 2026, small business tax preparation, partnership tax filing" />
         <link rel="canonical" href="https://virtualopsassist.com/tax-season-2026" />
         
         {/* Article-specific schema */}
@@ -424,7 +424,7 @@ export default function TaxSeason2026() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Users className="w-4 h-4" />
-                              <span>Built for independent professionals, nonprofits, and founders who value peace of mind.</span>
+                              <span>Built for entrepreneurs, nonprofits, and founders who value peace of mind.</span>
                             </div>
                           </div>
                         )}

@@ -104,9 +104,9 @@ export default function Landing() {
     <>
       <Helmet>
         <title>Virtual OPS | Accounting, Bookkeeping & CFO Services for Small Business</title>
-        <meta name="description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory for independent professionals and nonprofits. 500+ organizations served. Based in Rochester, NY — serving clients nationwide. Book a free call today." />
+        <meta name="description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory for entrepreneurs and nonprofits. 500+ organizations served. Based in Rochester, NY — serving clients nationwide. Book a free call today." />
         <meta property="og:title" content="Virtual OPS | Small Business Accounting & CFO Services" />
-        <meta property="og:description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory for independent professionals and nonprofits. 500+ organizations served. Book a free call today." />
+        <meta property="og:description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory for entrepreneurs and nonprofits. 500+ organizations served. Book a free call today." />
         <meta property="og:image" content="https://virtualopsassist.com/og-home.png" />
         <meta property="og:url" content="https://virtualopsassist.com/" />
         <meta property="og:type" content="website" />
@@ -115,7 +115,7 @@ export default function Landing() {
         <meta name="twitter:title" content="Virtual OPS | Small Business Accounting & CFO Services" />
         <meta name="twitter:description" content="Full-cycle bookkeeping, tax prep, compliance, and CFO advisory. 500+ organizations served." />
         <meta name="twitter:image" content="https://virtualopsassist.com/og-home.png" />
-        <meta name="keywords" content="consulting firm, contracting business, or nonprofit accounting services, bookkeeping for independent professionals, nonprofit accounting, CFO services for consulting firm, contracting business, or nonprofit, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services, operations support" />
+        <meta name="keywords" content="small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, CFO services for small business, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services, operations support" />
         <link rel="canonical" href="https://virtualopsassist.com/" />
       </Helmet>
     <div className="min-h-screen bg-background overflow-hidden">
@@ -239,10 +239,10 @@ export default function Landing() {
               
               <div className="space-y-4 text-sm sm:text-base text-muted-foreground">
                 <p>
-                  Virtual OPS Assist was founded in 2016 with a simple mission: help consultants, contractors, and nonprofit leaders 
+                  Virtual OPS Assist was founded in 2016 with a simple mission: help business owners 
                   reclaim their time by taking the operational chaos off their plates. What started as 
                   boutique bookkeeping and admin support has evolved into a full-service operations partner 
-                  for independent professionals, nonprofits, and growing businesses.
+                  for entrepreneurs, nonprofits, and growing businesses.
                 </p>
                 <p>
                   Over the years, we have served 500+ organizations—from solo founders to multi-entity 
@@ -288,7 +288,7 @@ export default function Landing() {
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       VOPSy is your always-on operations partner. Get instant answers about cash flow, 
-                      tax deadlines, compliance requirements, and more. VOPSy learns your practice or organization and 
+                      tax deadlines, compliance requirements, and more. VOPSy learns your business and 
                       helps you make informed decisions—24/7, no waiting for callbacks.
                     </p>
                   </div>
@@ -486,7 +486,7 @@ export default function Landing() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
             {[
               { 
-                title: "Solo & Growing organization", 
+                title: "Solo & Startup", 
                 price: "Free – $34.99/mo", 
                 features: ["AI-powered guidance", "Financial templates", "Compliance calendar", "VOPSy assistant"],
                 cta: "Get Started Free",
@@ -574,12 +574,12 @@ export default function Landing() {
               },
               {
                 quote: "Tania and her team handle our bookkeeping and compliance so seamlessly. It's like having a CFO on call without the full-time cost.",
-                author: "Tech Growing organization Founder",
+                author: "Tech Startup Founder",
                 role: "SaaS Company"
               },
               {
-                quote: "The platform is intuitive, but what really sets them apart is the human support. They actually understand consulting firm, contracting business, or nonprofit challenges.",
-                author: "Solo Independent professional",
+                quote: "The platform is intuitive, but what really sets them apart is the human support. They actually understand small business challenges.",
+                author: "Solo Entrepreneur",
                 role: "Consulting Practice"
               }
             ].map((testimonial, index) => (
