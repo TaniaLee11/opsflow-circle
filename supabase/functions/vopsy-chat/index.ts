@@ -1,6 +1,7 @@
 // VOPSy Chat - Tier-Aware OpenAI Implementation
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getComplianceContext, buildComplianceSystemPrompt, formatComplianceResponse } from './compliance-context.ts';
 
 // CORS headers
 const corsHeaders = {
@@ -313,7 +314,13 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, user_tier = 'free', user_industry, briefing_mode = false } = await req.json();
+    const { messages, user_tier = 'free', user_industry, briefing_mode = false, user_id } = await req.json();
+
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     // Handle briefing mode
     if (briefing_mode) {
@@ -345,8 +352,21 @@ serve(async (req) => {
     // Keep last 20 messages for context
     const contextMessages = messages.slice(-20);
 
-    // Get tier-specific system prompt
-    const systemPrompt = getSystemPrompt(user_tier, user_industry);
+    // Get compliance context if user_id provided
+    let complianceContext = null;
+    let systemPrompt = getSystemPrompt(user_tier, user_industry);
+    
+    if (user_id) {
+      try {
+        complianceContext = await getComplianceContext(supabaseClient, user_id);
+        // Enhance system prompt with compliance intelligence
+        const compliancePrompt = buildComplianceSystemPrompt(complianceContext, user_tier);
+        systemPrompt = systemPrompt + '\n\n' + compliancePrompt;
+      } catch (error) {
+        console.error('Error loading compliance context:', error);
+        // Continue without compliance context
+      }
+    }
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -376,7 +396,12 @@ serve(async (req) => {
     }
 
     const data = await openaiResponse.json();
-    const reply = data.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
+    let reply = data.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
+    
+    // Format response with compliance context if available
+    if (complianceContext) {
+      reply = formatComplianceResponse(messages[messages.length - 1]?.content || '', complianceContext, reply);
+    }
 
     return new Response(
       JSON.stringify({ reply }),
