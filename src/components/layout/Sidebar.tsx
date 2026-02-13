@@ -44,13 +44,13 @@ const navItems: NavItem[] = [
   { icon: GraduationCap, label: "Academy", href: "/academy" },
   
   // Operations section
-  { icon: Send, label: "Communications", href: "/communications", category: "Operations" },
-  { icon: FolderKanban, label: "Workflows", href: "/workflows", category: "Operations" },
-  { icon: FolderLock, label: "Vault", href: "/vault", category: "Operations" },
-  { icon: Sparkles, label: "Studio", href: "/studio", category: "Operations" },
-  { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Operations" },
+  { icon: Send, label: "Communication", href: "/communications", category: "Operations" },
+  { icon: FolderKanban, label: "Productivity", href: "/workflows", category: "Operations" },
+  { icon: Wallet, label: "Finance Hub", href: "/financial", category: "Operations" },
   { icon: GitBranch, label: "Pipeline", href: "/pipeline", category: "Operations" },
   { icon: Workflow, label: "Automations", href: "/integrations", category: "Operations" },
+  { icon: Sparkles, label: "Studio", href: "/studio", category: "Operations" },
+  { icon: FolderLock, label: "Vault", href: "/vault", category: "Operations" },
 ];
 
 export function Sidebar() {
