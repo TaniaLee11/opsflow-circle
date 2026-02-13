@@ -115,7 +115,7 @@ export function VOPSyAgent() {
 
       // Call the VOPSy chat edge function for non-email queries
       const conversationHistory = messages.map(m => ({
-        role: m.role,
+        role: m.role === 'vopsy' ? 'assistant' : 'user',
         content: m.content
       }));
       conversationHistory.push({ role: 'user', content: messageText });
