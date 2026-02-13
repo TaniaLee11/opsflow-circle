@@ -424,7 +424,7 @@ export default function TaxSeason2026() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Users className="w-4 h-4" />
-                              <span>Built for entrepreneurs, nonprofits, and founders who value peace of mind.</span>
+                              <span>Built for consultants, nonprofits, and founders who value peace of mind.</span>
                             </div>
                           </div>
                         )}

@@ -29,7 +29,7 @@ import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
 export type UserRole = "owner" | "admin" | "operator" | "user";
 
-export type UserType = "gig_worker" | "entrepreneur" | "nonprofit";
+export type UserType = "contractor" | "consultant" | "nonprofit";
 
 export type AccessType = "owner" | "cohort" | "free" | "subscription" | "one_time" | "confirmed" | "none" | "pending";
 
@@ -94,7 +94,7 @@ function buildUserFallback(supabaseUser: SupabaseUser): User {
     name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "User",
     organization: undefined,
     role: "user", // Default role, will be overwritten by backend data
-    userType: "entrepreneur",
+    userType: "consultant",
     tierSelected: profileData.tierSelected || false,
     selectedTier: profileData.selectedTier || null,
   };

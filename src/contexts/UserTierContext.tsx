@@ -69,7 +69,7 @@ export const USER_TIERS: Record<UserTierId, UserTier> = {
     displayName: "AI Free",
     price: null,
     description: "VOPSy the Educator — Learn concepts and best practices",
-    whoItsFor: "Solopreneurs, founders, and entrepreneurs who want to learn business operations without automation or integrations.",
+    whoItsFor: "Solopreneurs, founders, and consultants who want to learn business operations without automation or integrations.",
     capabilities: [
       "VOPSy recommends courses from Academy",
       "Educational content and learning paths",

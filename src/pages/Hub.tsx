@@ -54,7 +54,7 @@ const audiences = [
   },
   {
     icon: Users,
-    title: "Contractors & Gig Workers",
+    title: "Contractors & Contractors",
     pain: "Inconsistent income, tax surprises, and no clear financial picture.",
     solution: "Simple systems that grow with you, no matter how income flows.",
     outcome: "Stay organized without feeling like you need an MBA."
@@ -202,7 +202,7 @@ export default function Hub() {
     <>
       <Helmet>
         <title>The Hub | Virtual OPS Assist - Your Operations Command Center</title>
-        <meta name="description" content="One place to manage compliance, finances, systems, and support—without overwhelm. The Virtual OPS Hub brings clarity to business operations for entrepreneurs and nonprofits." />
+        <meta name="description" content="One place to manage compliance, finances, systems, and support—without overwhelm. The Virtual OPS Hub brings clarity to business operations for consultants and nonprofits." />
         <link rel="canonical" href="https://virtualopsassist.com/hub" />
       </Helmet>
 

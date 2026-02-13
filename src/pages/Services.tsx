@@ -171,7 +171,7 @@ const serviceCategories = [
       "Financial literacy training for founders",
       "Budgeting & cash-flow workshops",
       "Nonprofit finance training",
-      "Entrepreneur bootcamp instruction",
+      "Consultant bootcamp instruction",
       "One-on-one financial coaching",
       "Group financial trainings & workshops"
     ]
@@ -369,8 +369,8 @@ export default function Services() {
     <>
       <Helmet>
         <title>Services | Virtual OPS - Small Business Accounting & CFO Services</title>
-        <meta name="description" content="Small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, and CFO services. Based in Rochester, NY — serving clients nationwide. Virtual bookkeeping and outsourced CFO solutions." />
-        <meta name="keywords" content="small business accounting services, bookkeeping for entrepreneurs, nonprofit accounting, CFO services for small business, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services" />
+        <meta name="description" content="Small business accounting services, bookkeeping for consultants, nonprofit accounting, and CFO services. Based in Rochester, NY — serving clients nationwide. Virtual bookkeeping and outsourced CFO solutions." />
+        <meta name="keywords" content="small business accounting services, bookkeeping for consultants, nonprofit accounting, CFO services for small business, business tax preparation, virtual bookkeeping, outsourced CFO, compliance services" />
         <link rel="canonical" href="https://virtualopsassist.com/services" />
       </Helmet>
 
