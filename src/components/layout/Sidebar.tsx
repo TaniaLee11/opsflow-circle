@@ -16,7 +16,8 @@ import {
   Sparkles,
   FolderLock,
   Menu,
-  X
+  X,
+  GitBranch
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ const navItems: NavItem[] = [
   { icon: FolderLock, label: "Vault", href: "/vault", category: "Operations" },
   { icon: Sparkles, label: "Studio", href: "/studio", category: "Operations" },
   { icon: Wallet, label: "Financial Hub", href: "/financial", category: "Operations" },
+  { icon: GitBranch, label: "Pipeline", href: "/pipeline", category: "Operations" },
   { icon: Workflow, label: "Automations", href: "/integrations", category: "Operations" },
 ];
 
