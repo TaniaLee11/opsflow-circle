@@ -190,7 +190,7 @@ export function useVOPSyChat() {
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'vopsy',
-        content: data.message || "I'm having trouble responding right now. Please try again.",
+        content: data.reply || data.message || "I'm having trouble responding right now. Please try again.",
         timestamp: new Date(),
         // Add upgrade nudge if capability was blocked
         showUpgradeNudge: capabilityCheck.blocked,
