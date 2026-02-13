@@ -157,7 +157,7 @@ export function VOPSyAgent() {
       const vopsyResponse: Message = {
         id: crypto.randomUUID(),
         role: "vopsy",
-        content: data.message || "I apologize, but I couldn't process that request. Please try again.",
+        content: data.reply || data.message || "I apologize, but I couldn't process that request. Please try again.",
         timestamp: new Date()
       };
 
