@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DollarSign, TrendingUp, AlertCircle, RefreshCw, Link as LinkIcon, BookOpen, ArrowRight, Lock } from "lucide-react";
-import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserTier } from "@/contexts/UserTierContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,15 +38,15 @@ interface PlatformMetrics {
 
 export default function Finance() {
   const navigate = useNavigate();
-  const { profile, loading: profileLoading } = useProfile();
+  const { user, isOwner, isLoading: authLoading } = useAuth();
+  const { currentTier } = useUserTier();
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
   const [platformMetrics, setPlatformMetrics] = useState<PlatformMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [stripeConnected, setStripeConnected] = useState(false);
 
-  const isOwner = profile?.email === "tania@virtualopsassist.com";
-  const userTier = profile?.selected_tier || "free";
+  const userTier = currentTier || "free";
   const tierMode = getTierMode(userTier);
 
   // Tier access levels
@@ -55,10 +56,10 @@ export default function Finance() {
   const isLed = tierMode === "led"; // Advisory, Owner
 
   useEffect(() => {
-    if (!profileLoading && profile) {
+    if (!authLoading && user) {
       loadFinancialData();
     }
-  }, [profile, profileLoading]);
+  }, [user, authLoading]);
 
   const loadFinancialData = async () => {
     try {
@@ -144,7 +145,7 @@ export default function Finance() {
     navigate("/integrations");
   };
 
-  if (profileLoading || loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
