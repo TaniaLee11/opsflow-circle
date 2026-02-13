@@ -105,7 +105,7 @@ Never make commitments on behalf of the user. Use phrases like "I'll make sure [
 
 const userTypeConfig = {
   gig_worker: { label: "Gig Worker", icon: User, color: "text-info" },
-  independent professional: { label: "Independent professional", icon: Building2, color: "text-primary" },
+  "independent consultant": { label: "Independent consultant", icon: Building2, color: "text-primary" },
   nonprofit: { label: "Nonprofit", icon: Heart, color: "text-success" }
 };
 

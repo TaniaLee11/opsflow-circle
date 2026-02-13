@@ -10,7 +10,7 @@ export type UserIdentityType = "independent_operator" | "independent consultant"
 
 export const USER_IDENTITY_LABELS: Record<UserIdentityType, string> = {
   independent_operator: "Independent Operator",
-  independent consultant: "Independent consultant",
+  "independent consultant": "Independent consultant",
   nonprofit_leader: "Nonprofit Leader"
 };
 

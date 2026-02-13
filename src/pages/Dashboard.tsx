@@ -31,7 +31,7 @@ const userTypeMessages = {
     greeting: "Let's keep your practice healthy",
     focus: "Cash Flow & Tax Prep"
   },
-  independent professional: {
+  "independent consultant": {
     greeting: "Here's your operations snapshot",
     focus: "Growth & Profitability"
   },
