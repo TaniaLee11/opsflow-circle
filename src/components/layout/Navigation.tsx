@@ -138,13 +138,13 @@ export function Navigation() {
     <aside className="hidden md:flex md:w-64 h-screen overflow-y-auto flex-shrink-0 border-r border-border bg-background fixed left-0 top-0 z-40">
       <nav className="flex flex-col gap-2 p-4 w-full pb-20">
       {/* Top Level */}
-      <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+      <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
         Dashboard
       </Link>
-      <Link to="/vopsy" className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+      <Link to="/vopsy" className="flex items-center gap-2 px-3 py-2 rounded text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
         VOPSy
       </Link>
-      <Link to="/academy" className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+      <Link to="/academy" className="flex items-center gap-2 px-3 py-2 rounded text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
         Academy
       </Link>
 
@@ -155,7 +155,7 @@ export function Navigation() {
           <div key={dept.id}>
             <button
               onClick={() => toggleDept(dept.id)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100"
+              className="w-full flex items-center justify-between px-3 py-2 rounded text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               <span className="flex items-center gap-2">
                 <dept.icon className="w-4 h-4" />
@@ -173,7 +173,7 @@ export function Navigation() {
                   <Link
                     key={page.href}
                     to={page.href}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm rounded hover:bg-gray-100"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     <page.icon className="w-3.5 h-3.5" />
                     {page.label}
@@ -192,7 +192,7 @@ export function Navigation() {
           <Link
             key={page.href}
             to={page.href}
-            className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100"
+            className="flex items-center gap-2 px-3 py-2 rounded text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <page.icon className="w-4 h-4" />
             {page.label}
