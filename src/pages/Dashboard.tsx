@@ -50,17 +50,14 @@ function DashboardContent() {
   const userMessages = userTypeMessages[user?.userType || "consultant"];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen bg-background">
       {/* Cohort Banner - shows for cohort users */}
       <CohortBanner />
       
       <Navigation />
       
         {/* Main Content */}
-        <main className={cn(
-          "min-h-screen transition-all duration-300",
-          isMobile ? "pt-14" : "md:ml-64"
-        )}>
+        <main className="flex-1 overflow-y-auto">
         {/* Header */}
         <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">

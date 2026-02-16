@@ -1107,8 +1107,8 @@ ${result.document.downloadUrl ? `**[Download Now](${result.document.downloadUrl}
 
   return (
     <AccessGate>
-      <div className="min-h-screen flex bg-background">
-        <Navigation />
+      <div className="flex h-screen flex bg-background">
+      <Navigation />
         
         <main className="flex-1 lg:ml-64 flex flex-col h-screen pt-14 lg:pt-0">
           {/* Header */}

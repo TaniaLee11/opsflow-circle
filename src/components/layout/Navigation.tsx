@@ -135,7 +135,8 @@ export function Navigation() {
   };
 
   return (
-    <nav className="flex flex-col gap-2 p-4">
+    <aside className="hidden md:flex md:w-64 h-screen overflow-y-auto flex-shrink-0 border-r border-border bg-background fixed left-0 top-0 z-40">
+      <nav className="flex flex-col gap-2 p-4 w-full pb-20">
       {/* Top Level */}
       <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
         Dashboard
@@ -198,6 +199,7 @@ export function Navigation() {
           </Link>
         ))}
       </div>
-    </nav>
+      </nav>
+    </aside>
   );
 }

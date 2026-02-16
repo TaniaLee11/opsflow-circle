@@ -5,7 +5,7 @@ export default function Marketing() {
   return (
     <div className="flex min-h-screen">
       <Navigation />
-      <main className="flex-1 md:ml-64">
+      <main className="flex-1 overflow-y-auto">
         <MarketingDashboard />
       </main>
     </div>

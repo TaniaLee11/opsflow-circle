@@ -314,8 +314,8 @@ export default function Studio() {
 
   return (
     <AccessGate>
-      <div className="min-h-screen bg-background">
-        <Navigation />
+      <div className="flex h-screen bg-background">
+      <Navigation />
         
         <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
           {/* Header */}

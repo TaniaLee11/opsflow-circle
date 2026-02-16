@@ -5,7 +5,7 @@ export default function FinancePage() {
   return (
     <div className="flex min-h-screen">
       <Navigation />
-      <main className="flex-1 md:ml-64">
+      <main className="flex-1 overflow-y-auto">
         <FinanceDashboard />
       </main>
     </div>

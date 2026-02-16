@@ -735,8 +735,8 @@ export default function Integrations() {
 
   return (
     <AccessGate>
-      <div className="min-h-screen flex bg-background">
-        <Navigation />
+      <div className="flex h-screen flex bg-background">
+      <Navigation />
         
         <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 pt-14 lg:pt-8">
           <motion.div

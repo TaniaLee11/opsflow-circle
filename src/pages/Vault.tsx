@@ -230,10 +230,10 @@ function VaultContent() {
   };
 
   return (
-    <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
+    <div className={cn("flex h-screen bg-background", isReadOnly && "pt-10")}>
       <Navigation />
       
-      <main className="lg:pl-64 min-h-screen pt-14 lg:pt-0">
+      <main className="flex-1 overflow-y-auto">
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 sm:mb-8">

@@ -43,7 +43,7 @@ export default function Settings() {
   const filteredTabs = tabs.filter(tab => !tab.adminOnly || isAdmin);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen bg-background">
       <Navigation />
       
       <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">

@@ -164,7 +164,7 @@ The response would follow these guidelines:
   const categories = [...new Set(prompts.map(p => p.category))];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen bg-background">
       <Navigation />
       
       <main className="ml-64 min-h-screen">

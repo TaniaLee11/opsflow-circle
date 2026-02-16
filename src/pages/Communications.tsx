@@ -1008,7 +1008,7 @@ export default function Communications() {
       <div className="flex min-h-screen bg-background">
         <Navigation />
         
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto pt-14 md:pt-0 md:ml-64">
+        <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <motion.div

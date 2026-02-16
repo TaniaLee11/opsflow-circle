@@ -5,7 +5,7 @@ export default function Systems() {
   return (
     <div className="flex min-h-screen">
       <Navigation />
-      <main className="flex-1 md:ml-64">
+      <main className="flex-1 overflow-y-auto">
         <SystemsDashboard />
       </main>
     </div>
