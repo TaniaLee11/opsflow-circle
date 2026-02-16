@@ -125,7 +125,7 @@ const toolsPages: NavPage[] = [
   { icon: FileText, label: "Vault", href: "/vault" },
 ];
 
-export default function Navigation() {
+export function Navigation() {
   const [expandedDepts, setExpandedDepts] = useState<string[]>([]);
 
   const toggleDept = (id: string) => {
