@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Navigation } from "@/components/layout/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { 
@@ -293,7 +293,7 @@ export default function FinancialHub() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar />
+      <Navigation />
       
       <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
         {/* Header */}

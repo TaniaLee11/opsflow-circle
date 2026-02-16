@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Navigation } from "@/components/layout/Navigation";
 import { usePlatformBilling } from "@/hooks/usePlatformBilling";
 import { FinancialExportButton } from "@/components/financial/FinancialExportButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -93,7 +93,7 @@ export default function OwnerBilling() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar />
+      <Navigation />
       
       <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
         {/* Header */}

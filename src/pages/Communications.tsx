@@ -28,7 +28,7 @@ import {
   Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Navigation } from "@/components/layout/Navigation";
 import { AccessGate } from "@/components/access/AccessGate";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1006,7 +1006,7 @@ export default function Communications() {
       </Helmet>
 
       <div className="flex min-h-screen bg-background">
-        <AppSidebar />
+        <Navigation />
         
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto pt-14 md:pt-0 md:ml-64">
           <div className="max-w-7xl mx-auto space-y-6">

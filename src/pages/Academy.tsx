@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Navigation } from "@/components/layout/Navigation";
 import { AccessGate } from "@/components/access/AccessGate";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClientView } from "@/contexts/ClientViewContext";
@@ -92,7 +92,7 @@ function AcademyContent() {
 
   return (
     <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
-      <AppSidebar />
+      <Navigation />
       
       <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
         {/* Header */}

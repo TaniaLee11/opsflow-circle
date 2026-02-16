@@ -21,7 +21,7 @@ import {
   Presentation
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Navigation } from "@/components/layout/Navigation";
 import { AccessGate } from "@/components/access/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1108,7 +1108,7 @@ ${result.document.downloadUrl ? `**[Download Now](${result.document.downloadUrl}
   return (
     <AccessGate>
       <div className="min-h-screen flex bg-background">
-        <AppSidebar />
+        <Navigation />
         
         <main className="flex-1 lg:ml-64 flex flex-col h-screen pt-14 lg:pt-0">
           {/* Header */}

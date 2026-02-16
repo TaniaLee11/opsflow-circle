@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Navigation } from "@/components/layout/Navigation";
 import { AccessGate } from "@/components/access/AccessGate";
 import { VOPSyAgent } from "@/components/vopsy/VOPSyAgent";
 import { ProjectTasksPanel } from "@/components/workflows/ProjectTasksPanel";
@@ -429,7 +429,7 @@ function WorkflowsContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar />
+      <Navigation />
       
       <main className="md:ml-64 min-h-screen pt-14 md:pt-0">
         {/* Header */}

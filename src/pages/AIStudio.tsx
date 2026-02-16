@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Navigation } from "@/components/layout/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { 
@@ -165,7 +165,7 @@ The response would follow these guidelines:
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar />
+      <Navigation />
       
       <main className="ml-64 min-h-screen">
         {/* Header */}
