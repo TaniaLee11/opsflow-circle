@@ -27,49 +27,28 @@ import {
   // Page icons - Marketing
   Sparkles,
   Target,
-  Workflow as WorkflowIcon,
   FileText,
-  Send,
-  UserPlus,
   // Page icons - Sales
   GitBranch,
   Building2,
   Handshake,
   FileSignature,
   FileCheck,
-  UserCheck,
   // Page icons - Support
   Inbox,
-  HelpCircle,
   Ticket,
-  BarChart3,
-  Radio,
-  MessageSquare,
-  ClipboardList,
-  Heart,
   // Page icons - Finance
   Wallet,
-  Landmark,
-  TrendingUp as TrendingUpAlt,
   Receipt,
-  Waves,
   Calculator,
-  CreditCard,
-  PiggyBank,
-  Gift,
+  BarChart3,
+  Waves,
   // Page icons - Systems
   Zap,
   Plug,
-  Code,
-  Webhook,
-  Bot,
-  ScrollText,
   // Page icons - People
   UserCog,
-  Banknote,
   ShieldCheck,
-  FilePlus,
-  ClipboardCheck,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -105,12 +84,9 @@ const departments: Department[] = [
     tooltip: "Attract and grow your audience.",
     dashboardHref: "/marketing",
     pages: [
+      { icon: FileText, label: "Social Media", href: "/social" },
+      { icon: Target, label: "Campaigns", href: "/campaigns" },
       { icon: Sparkles, label: "Studio", href: "/studio" },
-      { icon: Target, label: "Campaign Builder", href: "/campaigns" },
-      { icon: WorkflowIcon, label: "Funnels", href: "/funnels" },
-      { icon: FileText, label: "Content Planner", href: "/content" },
-      { icon: Send, label: "Broadcast Communications", href: "/communications" },
-      { icon: UserPlus, label: "Lead Management", href: "/leads" },
     ],
   },
   {
@@ -125,7 +101,6 @@ const departments: Department[] = [
       { icon: Handshake, label: "Deals", href: "/deals" },
       { icon: FileSignature, label: "Proposals", href: "/proposals" },
       { icon: FileCheck, label: "Contracts", href: "/contracts" },
-      { icon: UserCheck, label: "Client Onboarding", href: "/client-onboarding" },
     ],
   },
   {
@@ -136,13 +111,7 @@ const departments: Department[] = [
     dashboardHref: "/support",
     pages: [
       { icon: Inbox, label: "Inbox", href: "/inbox" },
-      { icon: HelpCircle, label: "Help Desk", href: "/help-desk" },
-      { icon: Ticket, label: "Ticketing", href: "/ticketing" },
-      { icon: BarChart3, label: "HGO Dashboard", href: "/hgo" },
-      { icon: Radio, label: "Inbound Campaigns", href: "/inbound-campaigns" },
-      { icon: MessageSquare, label: "Outbound Follow-up", href: "/outbound-followup" },
-      { icon: ClipboardList, label: "Surveys", href: "/surveys" },
-      { icon: Heart, label: "Retention Workflows", href: "/retention" },
+      { icon: Ticket, label: "Tickets", href: "/tickets" },
     ],
   },
   {
@@ -152,15 +121,10 @@ const departments: Department[] = [
     tooltip: "Track and manage business finances.",
     dashboardHref: "/finance",
     pages: [
-      { icon: Wallet, label: "Finance Hub", href: "/financial" },
-      { icon: Landmark, label: "Banking", href: "/banking" },
-      { icon: TrendingUpAlt, label: "Revenue Tracker", href: "/revenue" },
-      { icon: Receipt, label: "Expense Tracking", href: "/expenses" },
-      { icon: Waves, label: "Cash Flow", href: "/cashflow" },
+      { icon: Receipt, label: "Reconciliation", href: "/reconciliation" },
       { icon: Calculator, label: "Tax Organizer", href: "/tax" },
-      { icon: CreditCard, label: "Invoicing", href: "/invoicing" },
-      { icon: PiggyBank, label: "Funding Readiness", href: "/funding" },
-      { icon: Gift, label: "Donation Tracking", href: "/donations" },
+      { icon: BarChart3, label: "Reports & Analytics", href: "/reports" },
+      { icon: Waves, label: "Cash Flow", href: "/cashflow" },
     ],
   },
   {
@@ -170,12 +134,8 @@ const departments: Department[] = [
     tooltip: "Automate and connect your tools.",
     dashboardHref: "/systems",
     pages: [
-      { icon: Zap, label: "Workflow Builder", href: "/workflows" },
       { icon: Plug, label: "Integrations", href: "/integrations" },
-      { icon: Code, label: "API Connections", href: "/api-connections" },
-      { icon: Webhook, label: "Webhooks", href: "/webhooks" },
-      { icon: Bot, label: "AI Process Triggers", href: "/ai-triggers" },
-      { icon: ScrollText, label: "System Logs", href: "/system-logs" },
+      { icon: Zap, label: "Workflows", href: "/workflows" },
     ],
   },
   {
@@ -186,10 +146,7 @@ const departments: Department[] = [
     dashboardHref: "/people",
     pages: [
       { icon: UserCog, label: "Contractors", href: "/contractors" },
-      { icon: Banknote, label: "Payroll", href: "/payroll" },
       { icon: ShieldCheck, label: "Roles & Permissions", href: "/roles" },
-      { icon: FilePlus, label: "Onboarding Documents", href: "/onboarding-docs" },
-      { icon: ClipboardCheck, label: "HR Compliance", href: "/hr-compliance" },
     ],
   },
 ];
@@ -305,68 +262,62 @@ export function Sidebar() {
             Departments
           </p>
           
-          <TooltipProvider>
+          <div className="space-y-0.5 mt-2">
             {departments.map((dept) => {
               const isExpanded = expandedDepartments.includes(dept.id);
-              const isDeptActive = dept.pages.some(page => location.pathname === page.href) || 
-                                   location.pathname === dept.dashboardHref;
+              const isDeptActive = location.pathname === dept.dashboardHref;
               
               return (
-                <div key={dept.id} className="mb-1">
-                  {/* Department Header */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => toggleDepartment(dept.id)}
-                        className={cn(
-                          "w-full flex items-center gap-2 sm:gap-3 px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 group",
-                          isDeptActive
-                            ? "bg-primary/5 text-primary"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <dept.icon className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isDeptActive && "text-primary")} />
-                        <span className="flex-1 text-left text-xs sm:text-sm font-medium">{dept.label}</span>
-                        {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>{dept.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                <div key={dept.id}>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => toggleDepartment(dept.id)}
+                          className={cn(
+                            "w-full flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg transition-all duration-200 group",
+                            isDeptActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )}
+                        >
+                          <dept.icon className="w-4 h-4 shrink-0" />
+                          <span className="text-xs sm:text-sm font-medium flex-1 text-left">{dept.label}</span>
+                          {isExpanded ? (
+                            <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 shrink-0 transition-transform" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 shrink-0 transition-transform" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="hidden lg:block">
+                        <p>{dept.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
                   {/* Department Pages */}
                   {isExpanded && (
-                    <div className="ml-4 sm:ml-6 mt-1 space-y-0.5">
+                    <div className="ml-4 sm:ml-6 mt-1 space-y-0.5 border-l border-border/50 pl-2 sm:pl-3">
                       {dept.pages.map((page) => {
-                        const isActive = location.pathname === page.href;
-                        const canAccess = (!page.ownerOnly || isOwner) && (!page.adminOnly || isAdmin);
+                        if (page.ownerOnly && !isOwner) return null;
+                        if (page.adminOnly && !isAdmin && !isOwner) return null;
                         
-                        if (!canAccess) return null;
-
+                        const isPageActive = location.pathname === page.href;
+                        
                         return (
                           <button
                             key={page.href}
                             onClick={() => handleNavigation(page.href)}
                             className={cn(
-                              "w-full flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 group relative",
-                              isActive 
-                                ? "bg-primary/10 text-primary" 
-                                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              "w-full flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 text-left group",
+                              isPageActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                             )}
                           >
-                            {isActive && (
-                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-full" />
-                            )}
-                            <page.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0", isActive && "text-primary")} />
-                            <span className="flex-1 text-left text-[11px] sm:text-xs">{page.label}</span>
-                            {page.adminOnly && (
-                              <Shield className="w-3 h-3 text-primary/60" />
-                            )}
+                            <page.icon className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                            <span className="text-xs sm:text-sm">{page.label}</span>
                           </button>
                         );
                       })}
@@ -375,126 +326,94 @@ export function Sidebar() {
                 </div>
               );
             })}
-          </TooltipProvider>
+          </div>
         </div>
 
         {/* Divider */}
         <div className="h-px bg-border my-3 sm:my-4" />
 
         {/* Tools Section */}
-        <div className="mb-3 sm:mb-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className="px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-help">
-                Tools
-              </p>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Shared workspace utilities.</p>
-            </TooltipContent>
-          </Tooltip>
+        <div>
+          <p className="px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Tools
+          </p>
           
-          {toolsPages.map((tool) => {
-            const isActive = location.pathname === tool.href;
-            return (
-              <button
-                key={tool.href}
-                onClick={() => handleNavigation(tool.href)}
-                className={cn(
-                  "w-full flex items-center gap-2 sm:gap-3 px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 group relative",
-                  isActive 
-                    ? "bg-primary/10 text-primary" 
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 sm:h-6 bg-primary rounded-r-full" />
-                )}
-                <tool.icon className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isActive && "text-primary")} />
-                <span className="flex-1 text-left text-xs sm:text-sm font-medium">{tool.label}</span>
-              </button>
-            );
-          })}
+          <div className="space-y-0.5 mt-2">
+            {toolsPages.map((tool) => {
+              const isActive = location.pathname === tool.href;
+              
+              return (
+                <button
+                  key={tool.href}
+                  onClick={() => handleNavigation(tool.href)}
+                  className={cn(
+                    "w-full flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg transition-all duration-200 group",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <tool.icon className="w-4 h-4 shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium">{tool.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
-      {/* User Section */}
-      <div className="p-3 sm:p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center text-primary-foreground font-medium text-xs sm:text-sm">
-              {user?.name?.split(" ").map(n => n[0]).join("").slice(0, 2) || "U"}
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-success rounded-full border-2 border-sidebar" />
-            {isOwner && (
-              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-primary rounded-full flex items-center justify-center">
-                <Crown className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-primary-foreground" />
-              </div>
-            )}
-          </div>
+      {/* User Profile */}
+      <div className="px-3 sm:px-4 py-3 sm:py-4 border-t border-sidebar-border">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <p className="text-xs sm:text-sm font-medium text-foreground truncate">{user?.name || "User"}</p>
-              {isOwner && (
-                <span className="px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-bold rounded bg-primary/20 text-primary">
-                  OWNER
-                </span>
-              )}
-              {!isOwner && isAdmin && (
-                <span className="px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-bold rounded bg-info/20 text-info">
-                  ADMIN
-                </span>
+            <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+              {user?.name || "User"}
+            </p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+              {user?.email}
+            </p>
+          </div>
+          {(isOwner || isAdmin) && (
+            <div className="shrink-0">
+              {isOwner ? (
+                <Crown className="w-4 h-4 text-yellow-500" />
+              ) : (
+                <Shield className="w-4 h-4 text-blue-500" />
               )}
             </div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{user?.organization || user?.email}</p>
-          </div>
-          <div className="flex gap-1">
-            <button className="p-1.5 sm:p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-            </button>
-            <button 
-              onClick={handleLogout}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-            </button>
-          </div>
+          )}
         </div>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Log out</span>
+        </button>
       </div>
     </div>
   );
 
-  // Mobile Sidebar (Sheet)
-  if (isMobile) {
-    return (
-      <>
-        {/* Mobile Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border h-14 flex items-center px-4 md:hidden">
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-                <Menu className="w-5 h-5 text-foreground" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72 bg-sidebar border-r border-sidebar-border">
-              <SidebarContent isMobileView />
-            </SheetContent>
-          </Sheet>
-          <div className="flex items-center gap-2 ml-3">
-            <img src={vopsLogo} alt="Virtual OPS" className="h-8 w-auto" />
-            <span className="font-semibold text-foreground">Virtual OPS Hub</span>
-          </div>
-        </header>
-      </>
-    );
-  }
-
-  // Desktop Sidebar
   return (
-    <aside
-      className={cn("fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border z-50 flex-col hidden md:flex")}
-    >
-      <SidebarContent />
-    </aside>
+    <>
+      {/* Mobile Menu Button */}
+      {isMobile && (
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <button className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-background border border-border shadow-lg lg:hidden">
+              <Menu className="w-5 h-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px]">
+            <SidebarContent isMobileView={true} />
+          </SheetContent>
+        </Sheet>
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 xl:w-72 bg-sidebar border-r border-sidebar-border flex-col h-screen sticky top-0">
+        <SidebarContent />
+      </aside>
+    </>
   );
 }

@@ -1,352 +1,299 @@
-import { Sidebar } from "@/components/layout/Sidebar";
-import { useAuth } from "@/contexts/AuthContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { Plus, Grip, ExternalLink, Calendar, DollarSign, User, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { Workflow, Plus, ExternalLink, RefreshCw, CheckCircle2, AlertCircle, DollarSign, Users, TrendingUp } from "lucide-react";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
-interface GHLOpportunity {
+// Deal sources
+type DealSource = "ghl" | "dotloop" | "manual";
+
+interface Deal {
   id: string;
-  name: string;
-  pipelineId: string;
-  pipelineStageId: string;
-  status: string;
-  contactId: string;
-  monetaryValue: number;
-  assignedTo?: string;
-  createdAt: string;
-  updatedAt: string;
+  title: string;
+  value: number;
+  contact: string;
+  expectedClose: string;
+  source: DealSource;
+  stage: string;
+  daysInStage: number;
 }
 
-interface GHLContact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  companyName?: string;
-}
+const SOURCE_COLORS: Record<DealSource, string> = {
+  ghl: "bg-blue-100 text-blue-700 border-blue-200",
+  dotloop: "bg-purple-100 text-purple-700 border-purple-200",
+  manual: "bg-gray-100 text-gray-700 border-gray-200",
+};
 
-interface PipelineData {
-  opportunities: GHLOpportunity[];
-  contacts: GHLContact[];
-  setupRequired: boolean;
-  setupInstructions?: {
-    step1: string;
-    step2: string;
-    step3: string;
-  };
-  syncedAt?: string;
-}
+const SOURCE_LABELS: Record<DealSource, string> = {
+  ghl: "GoHighLevel",
+  dotloop: "dotloop",
+  manual: "Manual",
+};
 
 export default function Pipeline() {
-  const { user } = useAuth();
-  const isMobile = useIsMobile();
-  const [pipelineData, setPipelineData] = useState<PipelineData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  // Mock data - will be replaced with real GHL + dotloop + manual deal data
+  const [deals] = useState<Deal[]>([
+    {
+      id: "1",
+      title: "Tax Prep Services - Smith Family",
+      value: 1200,
+      contact: "John Smith",
+      expectedClose: "2026-03-15",
+      source: "ghl",
+      stage: "Lead",
+      daysInStage: 3,
+    },
+    {
+      id: "2",
+      title: "Real Estate Transaction - 123 Main St",
+      value: 8500,
+      contact: "Sarah Johnson",
+      expectedClose: "2026-04-01",
+      source: "dotloop",
+      stage: "Qualified",
+      daysInStage: 7,
+    },
+    {
+      id: "3",
+      title: "Bookkeeping Services - ABC Corp",
+      value: 2400,
+      contact: "Mike Davis",
+      expectedClose: "2026-03-20",
+      source: "manual",
+      stage: "Proposal",
+      daysInStage: 12,
+    },
+  ]);
 
-  useEffect(() => {
-    fetchPipelineData();
-  }, []);
+  const stages = [
+    { id: "lead", name: "Lead", color: "bg-gray-100" },
+    { id: "qualified", name: "Qualified", color: "bg-blue-100" },
+    { id: "proposal", name: "Proposal", color: "bg-yellow-100" },
+    { id: "negotiation", name: "Negotiation", color: "bg-orange-100" },
+    { id: "closed-won", name: "Closed Won", color: "bg-green-100" },
+    { id: "closed-lost", name: "Closed Lost", color: "bg-red-100" },
+  ];
 
-  const fetchPipelineData = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.functions.invoke('ghl-sync-pipeline');
-      
-      if (error) {
-        console.error('Error fetching pipeline data:', error);
-        setPipelineData({
-          opportunities: [],
-          contacts: [],
-          setupRequired: true,
-        });
-      } else {
-        setPipelineData(data);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setPipelineData({
-        opportunities: [],
-        contacts: [],
-        setupRequired: true,
-      });
-    } finally {
-      setLoading(false);
-    }
+  const getDealsByStage = (stageName: string) => {
+    return deals.filter((d) => d.stage.toLowerCase() === stageName.toLowerCase());
   };
 
-  const handleSync = async () => {
-    try {
-      setSyncing(true);
-      await fetchPipelineData();
-    } finally {
-      setSyncing(false);
-    }
-  };
+  const totalPipelineValue = deals
+    .filter((d) => !d.stage.toLowerCase().includes("closed"))
+    .reduce((sum, d) => sum + d.value, 0);
 
-  const totalValue = pipelineData?.opportunities.reduce((sum, opp) => sum + (opp.monetaryValue || 0), 0) || 0;
-  const activeDeals = pipelineData?.opportunities.filter(opp => opp.status === 'open').length || 0;
+  const staleDeals = deals.filter((d) => d.daysInStage > 14);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className={cn(
-        "min-h-screen transition-all duration-300",
-        isMobile ? "pt-14" : "md:ml-64"
-      )}>
-        <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-            <div>
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground flex items-center gap-2">
-                  <Workflow className="w-6 h-6" />
-                  Pipeline Management
-                </h1>
-              </motion.div>
-              <motion.p 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-xs sm:text-sm text-muted-foreground mt-0.5"
-              >
-                Powered by GoHighLevel CRM
-              </motion.p>
-            </div>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Pipeline</h1>
+          <p className="text-muted-foreground mt-1">
+            Track deals from lead to close across all sources
+          </p>
+        </div>
+        <Button>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Deal
+        </Button>
+      </div>
 
-            {!pipelineData?.setupRequired && (
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2"
-              >
-                <button 
-                  onClick={handleSync}
-                  disabled={syncing}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-sm font-medium disabled:opacity-50"
-                >
-                  <RefreshCw className={cn("w-4 h-4", syncing && "animate-spin")} />
-                  Sync Pipeline
-                </button>
-              </motion.div>
-            )}
-          </div>
-        </header>
+      {/* Pipeline Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Active Deals
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{deals.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">In pipeline</p>
+          </CardContent>
+        </Card>
 
-        <div className="p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {loading ? (
-              <div className="bg-card border border-border rounded-lg p-8 text-center">
-                <RefreshCw className="w-16 h-16 mx-auto text-muted-foreground mb-4 animate-spin" />
-                <p className="text-muted-foreground">Loading pipeline...</p>
-              </div>
-            ) : pipelineData?.setupRequired ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-card border border-border rounded-lg p-8"
-              >
-                <div className="max-w-2xl mx-auto text-center">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Workflow className="w-10 h-10 text-primary" />
-                  </div>
-                  
-                  <h2 className="text-2xl font-bold mb-3">GoHighLevel Integration Setup Required</h2>
-                  <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                    Complete the Private Integration setup in GoHighLevel to sync your pipeline data with Virtual OPS Hub.
-                  </p>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Pipeline Value
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">${totalPipelineValue.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">Total potential</p>
+          </CardContent>
+        </Card>
 
-                  {pipelineData.setupInstructions && (
-                    <div className="bg-muted/50 rounded-lg p-6 mb-6 text-left">
-                      <h3 className="font-semibold mb-4 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-primary" />
-                        Setup Instructions
-                      </h3>
-                      <ol className="space-y-3 text-sm">
-                        <li className="flex gap-3">
-                          <span className="font-bold text-primary">1.</span>
-                          <span>{pipelineData.setupInstructions.step1}</span>
-                        </li>
-                        <li className="flex gap-3">
-                          <span className="font-bold text-primary">2.</span>
-                          <span>{pipelineData.setupInstructions.step2}</span>
-                        </li>
-                        <li className="flex gap-3">
-                          <span className="font-bold text-primary">3.</span>
-                          <span>{pipelineData.setupInstructions.step3}</span>
-                        </li>
-                      </ol>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Avg Deal Size
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">
+              ${deals.length > 0 ? Math.round(totalPipelineValue / deals.length).toLocaleString() : 0}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Per deal</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Needs Attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-orange-600">{staleDeals.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Stale deals (14+ days)</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Stale Deals Alert */}
+      {staleDeals.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-orange-600" />
+              {staleDeals.length} {staleDeals.length === 1 ? "deal" : "deals"} need attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              These deals haven't moved in 14+ days. Consider reaching out or moving them forward.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Kanban Board */}
+      <div className="overflow-x-auto">
+        <div className="flex gap-4 min-w-max pb-4">
+          {stages.map((stage) => {
+            const stageDeals = getDealsByStage(stage.name);
+            const stageValue = stageDeals.reduce((sum, d) => sum + d.value, 0);
+
+            return (
+              <div key={stage.id} className="w-80 flex-shrink-0">
+                <Card className={cn("h-full", stage.color)}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold">
+                        {stage.name}
+                      </CardTitle>
+                      <Badge variant="secondary">{stageDeals.length}</Badge>
                     </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-left">
-                    <div className="p-4 rounded-lg bg-muted/50">
-                      <CheckCircle2 className="w-6 h-6 text-primary mb-2" />
-                      <h3 className="font-semibold mb-1">Pipeline Sync</h3>
-                      <p className="text-sm text-muted-foreground">
-                        View and manage all your deals in one place
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-muted/50">
-                      <CheckCircle2 className="w-6 h-6 text-primary mb-2" />
-                      <h3 className="font-semibold mb-1">Contact Management</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Access customer data and communication history
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-muted/50">
-                      <CheckCircle2 className="w-6 h-6 text-primary mb-2" />
-                      <h3 className="font-semibold mb-1">AI Automation</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Let VOPSy automate follow-ups and workflows
-                      </p>
-                    </div>
-                  </div>
-
-                  <a 
-                    href="https://app.gohighlevel.com/v2/location/xVT2gzHtEAYCuwmWgAbG/settings/private-integrations"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
-                  >
-                    Open GoHighLevel Settings
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-
-                  <p className="text-xs text-muted-foreground mt-4">
-                    After completing setup, refresh this page to sync your pipeline
-                  </p>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-card border border-border rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-muted-foreground">Active Deals</h3>
-                      <TrendingUp className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="text-3xl font-bold">{activeDeals}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {pipelineData?.opportunities.length || 0} total opportunities
+                    <p className="text-xs text-muted-foreground">
+                      ${stageValue.toLocaleString()}
                     </p>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-muted-foreground">Pipeline Value</h3>
-                      <DollarSign className="w-5 h-5 text-green-500" />
-                    </div>
-                    <p className="text-3xl font-bold">${totalValue.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Total opportunity value
-                    </p>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-muted-foreground">Contacts</h3>
-                      <Users className="w-5 h-5 text-blue-500" />
-                    </div>
-                    <p className="text-3xl font-bold">{pipelineData?.contacts.length || 0}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Synced from GoHighLevel
-                    </p>
-                  </div>
-                </div>
-
-                {/* Connection Status */}
-                <div className="bg-card border border-border rounded-lg p-6 mb-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">GoHighLevel Connected</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Last synced: {pipelineData?.syncedAt ? new Date(pipelineData.syncedAt).toLocaleString() : 'Just now'}
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={handleSync}
-                      disabled={syncing}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors text-sm font-medium disabled:opacity-50"
-                    >
-                      <RefreshCw className={cn("w-4 h-4", syncing && "animate-spin")} />
-                      Sync Now
-                    </button>
-                  </div>
-                </div>
-
-                {/* Opportunities List */}
-                {pipelineData?.opportunities && pipelineData.opportunities.length > 0 ? (
-                  <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-border">
-                      <h2 className="text-lg font-semibold">Opportunities</h2>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {pipelineData.opportunities.map((opp) => {
-                        const contact = pipelineData.contacts.find(c => c.id === opp.contactId);
-                        return (
-                          <div key={opp.id} className="px-6 py-4 hover:bg-muted/50 transition-colors">
-                            <div className="flex items-start justify-between">
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {stageDeals.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No deals in this stage
+                      </p>
+                    ) : (
+                      stageDeals.map((deal) => (
+                        <Card
+                          key={deal.id}
+                          className="cursor-pointer hover:shadow-md transition-shadow bg-white"
+                        >
+                          <CardContent className="p-4 space-y-3">
+                            {/* Deal Header */}
+                            <div className="flex items-start justify-between gap-2">
                               <div className="flex-1">
-                                <h3 className="font-semibold mb-1">{opp.name}</h3>
-                                {contact && (
-                                  <p className="text-sm text-muted-foreground mb-2">
-                                    {contact.firstName} {contact.lastName}
-                                    {contact.companyName && ` • ${contact.companyName}`}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <span className={cn(
-                                      "w-2 h-2 rounded-full",
-                                      opp.status === 'open' ? "bg-green-500" : "bg-gray-400"
-                                    )} />
-                                    {opp.status}
-                                  </span>
-                                  <span>Updated: {new Date(opp.updatedAt).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-green-600">
-                                  ${opp.monetaryValue?.toLocaleString() || 0}
+                                <h4 className="font-semibold text-sm leading-tight">
+                                  {deal.title}
+                                </h4>
+                                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                  <User className="w-3 h-3" />
+                                  {deal.contact}
                                 </p>
                               </div>
+                              <Grip className="w-4 h-4 text-muted-foreground flex-shrink-0 cursor-grab" />
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-card border border-border rounded-lg p-8 text-center">
-                    <Workflow className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-bold mb-2">No Opportunities Found</h2>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      Your pipeline is empty. Create opportunities in GoHighLevel to see them here.
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </div>
+
+                            {/* Deal Value */}
+                            <div className="flex items-center gap-1 text-green-600 font-semibold">
+                              <DollarSign className="w-4 h-4" />
+                              {deal.value.toLocaleString()}
+                            </div>
+
+                            {/* Expected Close */}
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Calendar className="w-3 h-3" />
+                              Close: {new Date(deal.expectedClose).toLocaleDateString()}
+                            </div>
+
+                            {/* Source Badge */}
+                            <div className="flex items-center justify-between">
+                              <Badge
+                                variant="outline"
+                                className={cn("text-xs", SOURCE_COLORS[deal.source])}
+                              >
+                                {SOURCE_LABELS[deal.source]}
+                              </Badge>
+                              {deal.daysInStage > 14 && (
+                                <Badge variant="outline" className="text-xs border-orange-300 text-orange-700">
+                                  {deal.daysInStage}d
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2 pt-2">
+                              <Button size="sm" variant="outline" className="flex-1">
+                                View
+                              </Button>
+                              <Button size="sm" variant="ghost" className="px-2">
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })}
         </div>
-      </main>
+      </div>
+
+      {/* Integration Status */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-base">Deal Sources</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Badge className={SOURCE_COLORS.ghl}>GoHighLevel</Badge>
+              <span className="text-muted-foreground">
+                Synced opportunities and contacts
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className={SOURCE_COLORS.dotloop}>dotloop</Badge>
+              <span className="text-muted-foreground">
+                Real estate transactions via Production Sync
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className={SOURCE_COLORS.manual}>Manual</Badge>
+              <span className="text-muted-foreground">
+                Deals created directly in Hub
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
