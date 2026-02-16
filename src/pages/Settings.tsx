@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTier, USER_TIERS, UserTierId } from "@/contexts/UserTierContext";
 import { Navigate } from "react-router-dom";
@@ -44,7 +44,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar />
+      <AppSidebar />
       
       <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
         <header className="sticky top-0 lg:top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border px-4 sm:px-6 lg:px-8 py-3 sm:py-4">

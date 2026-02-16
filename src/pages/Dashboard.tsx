@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/layout/Sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TaskList } from "@/components/dashboard/TaskList";
 
@@ -54,7 +54,7 @@ function DashboardContent() {
       {/* Cohort Banner - shows for cohort users */}
       <CohortBanner />
       
-      <Sidebar />
+      <AppSidebar />
       
         {/* Main Content */}
         <main className={cn(

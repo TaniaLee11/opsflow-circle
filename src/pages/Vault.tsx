@@ -26,7 +26,7 @@ import {
   Loader2,
   Cloud
 } from "lucide-react";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AccessGate } from "@/components/access/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -231,7 +231,7 @@ function VaultContent() {
 
   return (
     <div className={cn("min-h-screen bg-background", isReadOnly && "pt-10")}>
-      <Sidebar />
+      <AppSidebar />
       
       <main className="lg:pl-64 min-h-screen pt-14 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">

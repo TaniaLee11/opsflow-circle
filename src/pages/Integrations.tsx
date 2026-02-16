@@ -14,7 +14,7 @@ import {
   AlertCircle,
   Plus
 } from "lucide-react";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AccessGate } from "@/components/access/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -736,7 +736,7 @@ export default function Integrations() {
   return (
     <AccessGate>
       <div className="min-h-screen flex bg-background">
-        <Sidebar />
+        <AppSidebar />
         
         <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 pt-14 lg:pt-8">
           <motion.div

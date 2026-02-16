@@ -82,19 +82,23 @@ const departments: Department[] = [
     id: "marketing",
     icon: Megaphone,
     label: "Marketing",
-    tooltip: "Attract and grow your audience.",
+    tooltip: "Attraction and outbound growth",
     dashboardHref: "/marketing",
     pages: [
       { icon: FileText, label: "Social Media", href: "/social" },
       { icon: Target, label: "Campaigns", href: "/campaigns" },
       { icon: Sparkles, label: "Studio", href: "/studio" },
+      { icon: TrendingUp, label: "Funnels", href: "/funnels" },
+      { icon: Bell, label: "Broadcast", href: "/broadcast" },
+      { icon: Users, label: "Lead Capture", href: "/leads" },
+      { icon: Calendar, label: "Content Planner", href: "/content-planner" },
     ],
   },
   {
     id: "sales",
     icon: TrendingUp,
     label: "Sales",
-    tooltip: "Convert leads into revenue.",
+    tooltip: "Conversion and revenue closure",
     dashboardHref: "/sales",
     pages: [
       { icon: GitBranch, label: "Pipeline", href: "/pipeline" },
@@ -102,52 +106,68 @@ const departments: Department[] = [
       { icon: Handshake, label: "Deals", href: "/deals" },
       { icon: FileSignature, label: "Proposals", href: "/proposals" },
       { icon: FileCheck, label: "Contracts", href: "/contracts" },
+      { icon: UserCog, label: "Client Onboarding", href: "/onboarding-workflows" },
     ],
   },
   {
     id: "support",
     icon: Headset,
     label: "Support",
-    tooltip: "Manage client relationships and service.",
+    tooltip: "Post-sale relationship management",
     dashboardHref: "/support",
     pages: [
-      { icon: Inbox, label: "Inbox", href: "/inbox" },
+      { icon: Inbox, label: "Inbox", href: "/communications" },
       { icon: Ticket, label: "Tickets", href: "/tickets" },
+      { icon: Headset, label: "Help Desk", href: "/helpdesk" },
+      { icon: TrendingUp, label: "Inbound Campaigns", href: "/inbound" },
+      { icon: Bell, label: "Outbound Follow-up", href: "/outbound" },
+      { icon: FileText, label: "Surveys", href: "/surveys" },
+      { icon: Sparkles, label: "Retention Workflows", href: "/retention" },
     ],
   },
   {
     id: "finance",
     icon: DollarSign,
     label: "Finance",
-    tooltip: "Track and manage business finances.",
+    tooltip: "Financial visibility and money management",
     dashboardHref: "/finance",
     pages: [
       { icon: Receipt, label: "Reconciliation", href: "/reconciliation" },
       { icon: Calculator, label: "Tax Organizer", href: "/tax" },
       { icon: BarChart3, label: "Reports & Analytics", href: "/reports" },
       { icon: Waves, label: "Cash Flow", href: "/cashflow" },
+      { icon: Building2, label: "Banking", href: "/banking" },
+      { icon: TrendingUp, label: "Funding Readiness", href: "/funding" },
+      { icon: Sparkles, label: "Donation/Grant Tracking", href: "/grants" },
     ],
   },
   {
     id: "systems",
     icon: Settings,
     label: "Systems",
-    tooltip: "Automate and connect your tools.",
+    tooltip: "Automation and infrastructure",
     dashboardHref: "/systems",
     pages: [
       { icon: Plug, label: "Integrations", href: "/integrations" },
       { icon: Zap, label: "Workflows", href: "/workflows" },
+      { icon: Settings, label: "API Connections", href: "/api" },
+      { icon: Zap, label: "Webhooks", href: "/webhooks" },
+      { icon: Sparkles, label: "AI Process Triggers", href: "/ai-triggers" },
+      { icon: FileText, label: "System Logs", href: "/logs" },
     ],
   },
   {
     id: "people",
     icon: Users,
     label: "People",
-    tooltip: "Manage your team and roles.",
+    tooltip: "Internal team management",
     dashboardHref: "/people",
     pages: [
       { icon: UserCog, label: "Contractors", href: "/contractors" },
       { icon: ShieldCheck, label: "Roles & Permissions", href: "/roles" },
+      { icon: DollarSign, label: "Payroll", href: "/payroll" },
+      { icon: FileCheck, label: "Onboarding Documents", href: "/onboarding-docs" },
+      { icon: Shield, label: "HR Compliance", href: "/hr-compliance" },
     ],
   },
 ];
@@ -406,14 +426,14 @@ export function Sidebar() {
             </button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px]">
-            <SidebarContent isMobileView={true} />
+            <AppSidebarContent isMobileView={true} />
           </SheetContent>
         </Sheet>
       )}
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-64 xl:w-72 bg-sidebar border-r border-sidebar-border flex-col h-screen sticky top-0">
-        <SidebarContent />
+        <AppSidebarContent />
       </aside>
     </>
   );

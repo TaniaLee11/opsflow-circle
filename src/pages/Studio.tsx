@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AccessGate } from "@/components/access/AccessGate";
 import { 
   Image, 
@@ -315,7 +315,7 @@ export default function Studio() {
   return (
     <AccessGate>
       <div className="min-h-screen bg-background">
-        <Sidebar />
+        <AppSidebar />
         
         <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
           {/* Header */}
