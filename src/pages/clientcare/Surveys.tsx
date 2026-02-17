@@ -28,7 +28,7 @@ export default function Surveys() {
   
   // Mock user context - in production, get from auth
   const userContext = {
-    name: 'Tanya',
+    name: 'Tania',
     stage: 'foundations' as const,
     tier: 'free' as const,
     industry: 'owner' as const,

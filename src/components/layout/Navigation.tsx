@@ -111,6 +111,7 @@ export function Navigation() {
       position: 'fixed',
       left: 0,
       top: 0,
+      zIndex: 50,
       overflowY: 'auto',
     }}>
       {/* Logo */}
@@ -119,7 +120,7 @@ export function Navigation() {
           VIRTUAL OPS HUB
         </div>
         <div style={{ color: C.text3, fontSize: 10, marginTop: 2 }}>
-          Human-Led AI Operating System
+          Your AI Business Partner
         </div>
       </div>
 
