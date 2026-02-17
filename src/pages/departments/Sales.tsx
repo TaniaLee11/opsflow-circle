@@ -1,58 +1,108 @@
 import { useNavigate } from "react-router-dom";
-import { TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { C, departmentColors } from "@/components/shared/theme";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { MetricCard } from "@/components/shared/MetricCard";
+import { Navigation } from "@/components/layout/Navigation";
 
-export default function SalesDashboard() {
+export default function Sales() {
   const navigate = useNavigate();
 
-  // All metrics start at zero - no fake data
-  const metrics = [
-    { label: "Active Items", value: 0, change: 0 },
-    { label: "This Month", value: "$0", change: 0 },
-    { label: "Completion Rate", value: "0%", change: 0 },
-    { label: "Pending", value: 0, change: 0 },
-  ];
-
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Sales</h1>
-        <p className="text-muted-foreground mt-1">
-          Sales department overview
-        </p>
-      </div>
+    <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
+      <Navigation />
+      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
+        <PageHeader
+          title="Sales"
+          desc="Conversion and revenue closure"
+        />
 
-      {/* Metrics - all zero */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric, index) => (
-          <Card key={index}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {metric.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metric.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Data will populate as integrations connect
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        {/* Metrics */}
+        <div style={ { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 } }>
+          <MetricCard label="Pipeline Value" value="—" />
+          <MetricCard label="Win Rate" value="—" />
+          <MetricCard label="Active Deals" value="—" />
+          <MetricCard label="Avg Deal Size" value="—" />
+        </div>
 
-      {/* Quick Actions - buttons navigate to correct pages */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Quick action buttons will appear here based on your sales workflows.
-          </p>
-        </CardContent>
-      </Card>
+        {/* Quick Actions */}
+        <div style={ { marginBottom: 24 } }>
+          <div style={ { color: C.text1, fontSize: 16, fontWeight: 700, marginBottom: 12 } }>Quick Actions</div>
+          <div style={ { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 } }>
+            <button
+              onClick={() => navigate("/pipeline")}
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                padding: 16,
+                color: C.text1,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              📊 Pipeline
+            </button>
+            <button
+              onClick={() => navigate("/crm")}
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                padding: 16,
+                color: C.text1,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              👥 CRM
+            </button>
+            <button
+              onClick={() => navigate("/proposals")}
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                padding: 16,
+                color: C.text1,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              📄 Proposals
+            </button>
+            <button
+              onClick={() => navigate("/contracts")}
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                padding: 16,
+                color: C.text1,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              📝 Contracts
+            </button>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div>
+          <div style={ { color: C.text1, fontSize: 16, fontWeight: 700, marginBottom: 12 } }>Recent Activity</div>
+          <div style={ { background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, padding: 24, textAlign: "center" } }>
+            <div style={ { color: C.text3, fontSize: 13 } }>No recent activity</div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
