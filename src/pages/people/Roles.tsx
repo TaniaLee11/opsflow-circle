@@ -1,9 +1,11 @@
-import { Plus, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Shield, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
-export default function Roles() {
-  const hasRoles = true;
+export default function RolesPermissions() {
+  const handleCreateRole = () => {
+    // TODO: Implement create role
+    console.log("Create Role clicked");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -11,27 +13,29 @@ export default function Roles() {
         <div>
           <h1 className="text-3xl font-bold">Roles & Permissions</h1>
           <p className="text-muted-foreground mt-1">
-            Configure team member access and permissions
+            Define roles and permissions for your team
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
+        <button
+          onClick={handleCreateRole}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
           Create Role
-        </Button>
+        </button>
       </div>
 
-      {hasRoles ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Role Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Set up roles to control what team members can access. Default roles: Owner, Manager, Team Member, Contractor.
-            </p>
-          </CardContent>
-        </Card>
-      ) : null}
+      <EmptyState
+        icon={Shield}
+        title="No roles & permissions yet"
+        description="Define roles and permissions for your team"
+        actions={[
+          {
+            label: "Create Role",
+            onClick: handleCreateRole,
+          },
+        ]}
+      />
     </div>
   );
 }

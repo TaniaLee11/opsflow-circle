@@ -1,10 +1,19 @@
-import { Plus, Building2, Phone, Mail, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Users, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 export default function CRM() {
-  const hasContacts = false;
+  const navigate = useNavigate();
+
+  const handleAddContact = () => {
+    // TODO: Open contact creation modal
+    console.log("Add contact clicked");
+  };
+
+  const handleConnectIntegration = () => {
+    navigate("/integrations?category=crm");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -12,30 +21,34 @@ export default function CRM() {
         <div>
           <h1 className="text-3xl font-bold">CRM</h1>
           <p className="text-muted-foreground mt-1">
-            Manage contacts, companies, and relationships
+            All your contacts in one place
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
+        <button
+          onClick={handleAddContact}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
           Add Contact
-        </Button>
+        </button>
       </div>
 
-      {!hasContacts ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Building2 className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Contacts Yet</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
-              Add your first contact to start building your CRM database. Contacts sync from GoHighLevel, Google Contacts, and Gmail.
-            </p>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Contact
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+      <EmptyState
+        icon={Users}
+        title="No contacts yet"
+        description="Add your first contact or connect an integration to sync existing contacts from GoHighLevel, Google, or Gmail."
+        actions={[
+          {
+            label: "Add Contact",
+            onClick: handleAddContact,
+          },
+          {
+            label: "Connect Integration",
+            onClick: handleConnectIntegration,
+            variant: "outline",
+          },
+        ]}
+      />
     </div>
   );
 }

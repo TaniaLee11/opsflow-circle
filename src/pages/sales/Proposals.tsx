@@ -1,9 +1,11 @@
-import { Plus, FileSignature } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { FileText, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function Proposals() {
-  const hasProposals = false;
+  const handleCreateProposal = () => {
+    // TODO: Open proposal builder
+    console.log("Create proposal clicked");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -11,30 +13,29 @@ export default function Proposals() {
         <div>
           <h1 className="text-3xl font-bold">Proposals</h1>
           <p className="text-muted-foreground mt-1">
-            Create and track proposals sent to prospects
+            Create and send professional proposals
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
+        <button
+          onClick={handleCreateProposal}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
           Create Proposal
-        </Button>
+        </button>
       </div>
 
-      {!hasProposals ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <FileSignature className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Proposals</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
-              Create professional proposals to send to your prospects.
-            </p>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Proposal
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+      <EmptyState
+        icon={FileText}
+        title="No proposals yet"
+        description="Create your first proposal to send to potential clients."
+        actions={[
+          {
+            label: "Create Proposal",
+            onClick: handleCreateProposal,
+          },
+        ]}
+      />
     </div>
   );
 }

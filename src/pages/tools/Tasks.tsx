@@ -1,9 +1,11 @@
-import { Plus, CheckSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CheckSquare, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function Tasks() {
-  const hasTasks = false;
+  const handleCreateTask = () => {
+    // TODO: Implement create task
+    console.log("Create Task clicked");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -11,30 +13,29 @@ export default function Tasks() {
         <div>
           <h1 className="text-3xl font-bold">Tasks</h1>
           <p className="text-muted-foreground mt-1">
-            Manage tasks and to-dos across your organization
+            Track tasks and to-dos
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
+        <button
+          onClick={handleCreateTask}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
           Create Task
-        </Button>
+        </button>
       </div>
 
-      {!hasTasks ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <CheckSquare className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Tasks</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
-              Create tasks to stay organized and track what needs to be done.
-            </p>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Task
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+      <EmptyState
+        icon={CheckSquare}
+        title="No tasks yet"
+        description="Track tasks and to-dos"
+        actions={[
+          {
+            label: "Create Task",
+            onClick: handleCreateTask,
+          },
+        ]}
+      />
     </div>
   );
 }

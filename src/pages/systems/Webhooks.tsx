@@ -1,26 +1,80 @@
-import { Webhook, Plus } from 'lucide-react';
+import { useState } from "react";
+import { Webhook, Plus, Copy, Trash2, Power } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/EmptyState";
+import { useToast } from "@/hooks/use-toast";
+
+interface WebhookConfig {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  active: boolean;
+  createdAt: string;
+}
 
 export default function Webhooks() {
-  return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Webhook className="w-7 h-7 text-cyan-400" />
-            Webhooks
-          </h1>
-          <p className="text-gray-400 mt-1">Systems tool - Full implementation coming soon</p>
+  const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
+  const { toast } = useToast();
+
+  const handleCreateWebhook = () => {
+    toast({
+      title: "Create Webhook",
+      description: "Webhook creation form coming soon",
+    });
+  };
+
+  if (webhooks.length === 0) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Webhooks</h1>
+            <p className="text-muted-foreground mt-1">
+              Send real-time data to external services
+            </p>
+          </div>
+          <Button onClick={handleCreateWebhook}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Webhook
+          </Button>
         </div>
-        <button className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Create New
-        </button>
+
+        <EmptyState
+          icon={Webhook}
+          title="No webhooks configured"
+          description="Create your first webhook to send real-time data to external services when events occur in your platform."
+          actions={[
+            {
+              label: "Create Webhook",
+              onClick: handleCreateWebhook,
+            },
+          ]}
+        />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Available Events</CardTitle>
+            <CardDescription>
+              Webhooks can be triggered by the following events:
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>• <code className="bg-muted px-2 py-1 rounded">contact.created</code> - New contact added to CRM</li>
+              <li>• <code className="bg-muted px-2 py-1 rounded">deal.updated</code> - Deal stage or value changed</li>
+              <li>• <code className="bg-muted px-2 py-1 rounded">deal.closed</code> - Deal marked as won or lost</li>
+              <li>• <code className="bg-muted px-2 py-1 rounded">invoice.paid</code> - Invoice payment received</li>
+              <li>• <code className="bg-muted px-2 py-1 rounded">task.completed</code> - Task marked as complete</li>
+              <li>• <code className="bg-muted px-2 py-1 rounded">integration.synced</code> - Integration sync completed</li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-12 text-center">
-        <Webhook className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-white mb-2">Page Under Construction</h3>
-        <p className="text-gray-400">This page is being built. Check back soon!</p>
-      </div>
-    </div>
-  );
+    );
+  }
+
+  return <div>Webhooks list view</div>;
 }

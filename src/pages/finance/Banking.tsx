@@ -1,32 +1,34 @@
-import { Building2, Plus } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { Building2 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function Banking() {
+  const navigate = useNavigate();
+
+  const handleConnectBank = () => {
+    navigate("/integrations?category=banking");
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Building2 className="w-7 h-7 text-yellow-400" />
-            Banking
-          </h1>
-          <p className="text-gray-400 mt-1">Connect and monitor your business bank accounts</p>
-        </div>
-        <button className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Connect Account
-        </button>
-      </div>
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-12 text-center">
-        <Building2 className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-white mb-2">No Bank Accounts Connected</h3>
-        <p className="text-gray-400 mb-6 max-w-md mx-auto">
-          Connect your business bank accounts to see balances, transactions, and cash flow in real-time.
+    <div className="container mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Banking</h1>
+        <p className="text-muted-foreground mt-1">
+          View account balances and transactions
         </p>
-        <button className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg inline-flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Connect Bank Account
-        </button>
       </div>
+
+      <EmptyState
+        icon={Building2}
+        title="Connect your bank accounts"
+        description="Connect your business bank accounts to see balances and transactions in real-time."
+        actions={[
+          {
+            label: "Connect Bank Account",
+            onClick: handleConnectBank,
+          },
+        ]}
+      />
     </div>
   );
 }

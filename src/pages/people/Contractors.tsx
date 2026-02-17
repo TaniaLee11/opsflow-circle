@@ -1,9 +1,11 @@
-import { Plus, UserCog } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Users, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function Contractors() {
-  const hasContractors = false;
+  const handleAddContractor = () => {
+    // TODO: Implement add contractor
+    console.log("Add Contractor clicked");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -11,30 +13,29 @@ export default function Contractors() {
         <div>
           <h1 className="text-3xl font-bold">Contractors</h1>
           <p className="text-muted-foreground mt-1">
-            Manage contractor relationships and documents
+            Manage independent contractors and 1099 workers
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
+        <button
+          onClick={handleAddContractor}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
           Add Contractor
-        </Button>
+        </button>
       </div>
 
-      {!hasContractors ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <UserCog className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Contractors</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
-              Add contractors to track their information, rates, and documents.
-            </p>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Contractor
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+      <EmptyState
+        icon={Users}
+        title="No contractors yet"
+        description="Manage independent contractors and 1099 workers"
+        actions={[
+          {
+            label: "Add Contractor",
+            onClick: handleAddContractor,
+          },
+        ]}
+      />
     </div>
   );
 }

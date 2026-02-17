@@ -1,26 +1,41 @@
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function HelpDesk() {
+  const handleCreateArticle = () => {
+    // TODO: Implement create article
+    console.log("Create Article clicked");
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-7 h-7 text-green-400" />
-            HelpDesk
-          </h1>
-          <p className="text-gray-400 mt-1">Support tool - Full implementation coming soon</p>
+          <h1 className="text-3xl font-bold">Help Desk</h1>
+          <p className="text-muted-foreground mt-1">
+            Build your knowledge base and help articles
+          </p>
         </div>
-        <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2">
+        <button
+          onClick={handleCreateArticle}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
           <Plus className="w-4 h-4" />
-          Create New
+          Create Article
         </button>
       </div>
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-12 text-center">
-        <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-white mb-2">Page Under Construction</h3>
-        <p className="text-gray-400">This page is being built. Check back soon!</p>
-      </div>
+
+      <EmptyState
+        icon={BookOpen}
+        title="No help desk yet"
+        description="Build your knowledge base and help articles"
+        actions={[
+          {
+            label: "Create Article",
+            onClick: handleCreateArticle,
+          },
+        ]}
+      />
     </div>
   );
 }

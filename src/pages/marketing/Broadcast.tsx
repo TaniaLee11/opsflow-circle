@@ -1,26 +1,41 @@
-import { Mail, Plus } from 'lucide-react';
+import { Radio, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function Broadcast() {
+  const handleCreateBroadcast = () => {
+    // TODO: Open broadcast creation modal
+    console.log("Create broadcast clicked");
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Mail className="w-7 h-7 text-purple-400" />
-            Broadcast
-          </h1>
-          <p className="text-gray-400 mt-1">Marketing tool - Full implementation coming soon</p>
+          <h1 className="text-3xl font-bold">Broadcast</h1>
+          <p className="text-muted-foreground mt-1">
+            Send mass communications to your audience
+          </p>
         </div>
-        <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2">
+        <button
+          onClick={handleCreateBroadcast}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
           <Plus className="w-4 h-4" />
-          Create New
+          New Broadcast
         </button>
       </div>
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-12 text-center">
-        <Mail className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-white mb-2">Page Under Construction</h3>
-        <p className="text-gray-400">This page is being built. Check back soon!</p>
-      </div>
+
+      <EmptyState
+        icon={Radio}
+        title="No broadcasts yet"
+        description="Compose your first broadcast to communicate with your entire audience at once."
+        actions={[
+          {
+            label: "Create Broadcast",
+            onClick: handleCreateBroadcast
+          },
+        ]}
+      />
     </div>
   );
 }

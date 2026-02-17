@@ -1,32 +1,41 @@
-import { CheckCircle, Plus } from 'lucide-react';
+import { UserCheck, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function ClientOnboarding() {
+  const handleCreateTemplate = () => {
+    // TODO: Open onboarding template builder
+    console.log("Create template clicked");
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <CheckCircle className="w-7 h-7 text-blue-400" />
-            Client Onboarding
-          </h1>
-          <p className="text-gray-400 mt-1">Onboard every client the same professional way</p>
+          <h1 className="text-3xl font-bold">Client Onboarding</h1>
+          <p className="text-muted-foreground mt-1">
+            Streamline your client onboarding process
+          </p>
         </div>
-        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Start Onboarding
-        </button>
-      </div>
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-12 text-center">
-        <CheckCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-white mb-2">No Onboarding Workflows Yet</h3>
-        <p className="text-gray-400 mb-6 max-w-md mx-auto">
-          Onboard every client the same professional way. Create an onboarding template to get started.
-        </p>
-        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg inline-flex items-center gap-2">
+        <button
+          onClick={handleCreateTemplate}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
           <Plus className="w-4 h-4" />
           Create Template
         </button>
       </div>
+
+      <EmptyState
+        icon={UserCheck}
+        title="No onboarding templates yet"
+        description="Create an onboarding template to ensure consistent client experiences."
+        actions={[
+          {
+            label: "Create Template",
+            onClick: handleCreateTemplate,
+          },
+        ]}
+      />
     </div>
   );
 }

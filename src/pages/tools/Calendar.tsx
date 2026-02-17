@@ -1,9 +1,11 @@
-import { Plus, Calendar as CalendarIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function Calendar() {
-  const hasEvents = false;
+  const handleCreateEvent = () => {
+    // TODO: Implement create event
+    console.log("Create Event clicked");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -11,30 +13,29 @@ export default function Calendar() {
         <div>
           <h1 className="text-3xl font-bold">Calendar</h1>
           <p className="text-muted-foreground mt-1">
-            View events, deadlines, and tasks across all departments
+            Schedule and manage events
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Event
-        </Button>
+        <button
+          onClick={handleCreateEvent}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
+          Create Event
+        </button>
       </div>
 
-      {!hasEvents ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <CalendarIcon className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Events Scheduled</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
-              Your calendar shows events, deadlines, and tasks from all departments.
-            </p>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Event
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+      <EmptyState
+        icon={Calendar}
+        title="No calendar yet"
+        description="Schedule and manage events"
+        actions={[
+          {
+            label: "Create Event",
+            onClick: handleCreateEvent,
+          },
+        ]}
+      />
     </div>
   );
 }
