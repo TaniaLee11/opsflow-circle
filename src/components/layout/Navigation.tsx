@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { 
   LayoutDashboard, Bot, GraduationCap, 
   Megaphone, Users, DollarSign, Settings, UsersRound,
-  Calendar, CheckSquare, FolderLock, ChevronDown, Lock
+  Calendar, CheckSquare, FolderLock, ChevronDown, Lock, HelpCircle
 } from 'lucide-react';
 
 const C = {
@@ -112,10 +112,13 @@ export function Navigation() {
       left: 0,
       top: 0,
       zIndex: 50,
-      overflowY: 'auto',
     }}>
       {/* Logo */}
-      <div style={{ padding: '20px 16px', borderBottom: `1px solid ${C.border}` }}>
+      <div style={{ 
+        padding: '20px 16px', 
+        borderBottom: `1px solid ${C.border}`,
+        flexShrink: 0,
+      }}>
         <div style={{ color: C.text1, fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
           VIRTUAL OPS HUB
         </div>
@@ -124,8 +127,13 @@ export function Navigation() {
         </div>
       </div>
 
-      {/* Top-level pages */}
-      <nav style={{ flex: 1, padding: '16px 0' }}>
+      {/* Scrollable navigation area */}
+      <nav style={{ 
+        flex: 1, 
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        padding: '16px 0',
+      }}>
         <NavLink 
           icon={LayoutDashboard} 
           label="Dashboard" 
@@ -225,7 +233,49 @@ export function Navigation() {
             )}
           </div>
         ))}
+
+        {/* Add some bottom padding for scroll space */}
+        <div style={{ height: 80 }} />
       </nav>
+
+      {/* Support button at bottom */}
+      <div style={{ 
+        borderTop: `1px solid ${C.border}`,
+        padding: '12px',
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => window.open('https://help.manus.im', '_blank')}
+          style={{
+            width: '100%',
+            background: 'transparent',
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            padding: '10px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            cursor: 'pointer',
+            color: C.text2,
+            fontSize: 13,
+            fontWeight: 500,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = C.accentSoft;
+            e.currentTarget.style.borderColor = C.accent;
+            e.currentTarget.style.color = C.accent;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = C.border;
+            e.currentTarget.style.color = C.text2;
+          }}
+        >
+          <HelpCircle size={16} />
+          <span>Support</span>
+        </button>
+      </div>
     </aside>
   );
 }
