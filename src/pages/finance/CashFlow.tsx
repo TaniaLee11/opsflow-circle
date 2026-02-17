@@ -1,34 +1,67 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp } from "lucide-react";
-import { EmptyState } from "@/components/EmptyState";
+import { C, departmentColors } from "@/components/shared/theme";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { CreateModal } from "@/components/shared/CreateModal";
+import { FormField } from "@/components/shared/FormField";
+import { Toast, useToast } from "@/components/shared/Toast";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Navigation } from "@/components/layout/Navigation";
 
 export default function CashFlow() {
   const navigate = useNavigate();
+  const [items, setItems] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: "", description: "" });
+  const { toast, showToast } = useToast();
 
-  const handleConnectAccounting = () => {
-    navigate("/integrations?category=accounting");
+  const handleCreate = () => {
+    setItems([...items, { ...formData, id: Date.now() }]);
+    showToast("Cash Flow created");
+    setIsModalOpen(false);
+    setFormData({ name: "", description: "" });
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Cash Flow</h1>
-        <p className="text-muted-foreground mt-1">
-          Monitor and forecast your cash flow
-        </p>
-      </div>
+    <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
+      <Navigation />
+      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
+        <PageHeader
+          breadcrumb="Finance → Cash Flow"
+          title="Cash Flow"
+          desc="Monitor cash inflows and outflows"
+          actionLabel="Create"
+          actionColor={departmentColors.finance}
+          onAction={() => setIsModalOpen(true)}
+        />
 
-      <EmptyState
-        icon={TrendingUp}
-        title="Connect your accounting software"
-        description="Connect your accounting tools to see cash flow projections and trends."
-        actions={[
-          {
-            label: "Connect Accounting Software",
-            onClick: handleConnectAccounting,
-          },
-        ]}
-      />
+        {items.length === 0 && (
+          <EmptyState
+            icon="💵"
+            title="No cash flow data"
+            description="Get started by creating your first item."
+            actionLabel="Create"
+            onAction={() => setIsModalOpen(true)}
+          />
+        )}
+
+        {items.length > 0 && (
+          <div style={ { background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" } }>
+            {items.map((item, i) => (
+              <div key={item.id} style={ { padding: "14px 16px", borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" } }>
+                <div style={ { color: C.text1, fontSize: 14, fontWeight: 600 } }>{item.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <CreateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Cash Flow" onSave={handleCreate} saveColor={departmentColors.finance}>
+          <FormField label="Name" type="text" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} />
+          <FormField label="Description" type="textarea" value={formData.description} onChange={(v) => setFormData({...formData, description: v})} />
+        </CreateModal>
+
+        <Toast message={toast.message} isVisible={toast.isVisible} />
+      </main>
     </div>
   );
 }

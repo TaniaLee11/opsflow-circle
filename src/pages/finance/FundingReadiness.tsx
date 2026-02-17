@@ -1,22 +1,67 @@
-import { Award } from "lucide-react";
-import { EmptyState } from "@/components/EmptyState";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { C, departmentColors } from "@/components/shared/theme";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { CreateModal } from "@/components/shared/CreateModal";
+import { FormField } from "@/components/shared/FormField";
+import { Toast, useToast } from "@/components/shared/Toast";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Navigation } from "@/components/layout/Navigation";
 
 export default function FundingReadiness() {
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Funding Readiness</h1>
-        <p className="text-muted-foreground mt-1">
-          Assess your readiness for funding
-        </p>
-      </div>
+  const navigate = useNavigate();
+  const [items, setItems] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: "", description: "" });
+  const { toast, showToast } = useToast();
 
-      <EmptyState
-        icon={Award}
-        title="Complete your financial setup"
-        description="Connect your accounting software and complete your financial setup to get your funding readiness score."
-        actions={[]}
-      />
+  const handleCreate = () => {
+    setItems([...items, { ...formData, id: Date.now() }]);
+    showToast("Funding Readiness created");
+    setIsModalOpen(false);
+    setFormData({ name: "", description: "" });
+  };
+
+  return (
+    <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
+      <Navigation />
+      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
+        <PageHeader
+          breadcrumb="Finance → Funding Readiness"
+          title="Funding Readiness"
+          desc="Prepare for fundraising and investor readiness"
+          actionLabel="Create"
+          actionColor={departmentColors.finance}
+          onAction={() => setIsModalOpen(true)}
+        />
+
+        {items.length === 0 && (
+          <EmptyState
+            icon="🚀"
+            title="No funding checklist"
+            description="Get started by creating your first item."
+            actionLabel="Create"
+            onAction={() => setIsModalOpen(true)}
+          />
+        )}
+
+        {items.length > 0 && (
+          <div style={ { background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" } }>
+            {items.map((item, i) => (
+              <div key={item.id} style={ { padding: "14px 16px", borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" } }>
+                <div style={ { color: C.text1, fontSize: 14, fontWeight: 600 } }>{item.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <CreateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Funding Readiness" onSave={handleCreate} saveColor={departmentColors.finance}>
+          <FormField label="Name" type="text" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} />
+          <FormField label="Description" type="textarea" value={formData.description} onChange={(v) => setFormData({...formData, description: v})} />
+        </CreateModal>
+
+        <Toast message={toast.message} isVisible={toast.isVisible} />
+      </main>
     </div>
   );
 }

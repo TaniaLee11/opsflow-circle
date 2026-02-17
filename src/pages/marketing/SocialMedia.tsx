@@ -1,73 +1,67 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Instagram, Linkedin, Facebook, Twitter } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/EmptyState";
+import { C, departmentColors } from "@/components/shared/theme";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { CreateModal } from "@/components/shared/CreateModal";
+import { FormField } from "@/components/shared/FormField";
+import { Toast, useToast } from "@/components/shared/Toast";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Navigation } from "@/components/layout/Navigation";
 
 export default function SocialMedia() {
   const navigate = useNavigate();
+  const [items, setItems] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: "", description: "" });
+  const { toast, showToast } = useToast();
 
-  // All platforms start as not connected - no fake data
-  const platforms = [
-    { name: "LinkedIn", icon: Linkedin, color: "text-blue-600" },
-    { name: "Instagram", icon: Instagram, color: "text-pink-600" },
-    { name: "Facebook", icon: Facebook, color: "text-blue-500" },
-    { name: "X (Twitter)", icon: Twitter, color: "text-sky-500" },
-  ];
-
-  const handleConnectPlatform = () => {
-    // Navigate to integrations page filtered to social media
-    navigate("/integrations?category=social");
+  const handleCreate = () => {
+    setItems([...items, { ...formData, id: Date.now() }]);
+    showToast("Social Media created");
+    setIsModalOpen(false);
+    setFormData({ name: "", description: "" });
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Social Media</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your social media presence across all platforms
-        </p>
-      </div>
+    <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
+      <Navigation />
+      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
+        <PageHeader
+          breadcrumb="Marketing → Social Media"
+          title="Social Media"
+          desc="Manage social media presence"
+          actionLabel="Create"
+          actionColor={departmentColors.marketing}
+          onAction={() => setIsModalOpen(true)}
+        />
 
-      {/* Platform Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {platforms.map((platform) => (
-          <Card key={platform.name}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <platform.icon className={`w-5 h-5 ${platform.color}`} />
-                <Badge variant="outline" className="text-xs">Not Connected</Badge>
+        {items.length === 0 && (
+          <EmptyState
+            icon="📱"
+            title="No posts scheduled"
+            description="Get started by creating your first item."
+            actionLabel="Create"
+            onAction={() => setIsModalOpen(true)}
+          />
+        )}
+
+        {items.length > 0 && (
+          <div style={ { background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" } }>
+            {items.map((item, i) => (
+              <div key={item.id} style={ { padding: "14px 16px", borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" } }>
+                <div style={ { color: C.text1, fontSize: 14, fontWeight: 600 } }>{item.name}</div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm font-medium mb-2">{platform.name}</p>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="w-full"
-                onClick={handleConnectPlatform}
-              >
-                Connect
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))}
+          </div>
+        )}
 
-      {/* Empty State */}
-      <EmptyState
-        icon={Instagram}
-        title="Connect your social media accounts"
-        description="Link your social media platforms to schedule posts, track engagement, and manage your content calendar all in one place."
-        actions={[
-          {
-            label: "Connect Social Account",
-            onClick: handleConnectPlatform,
-          },
-        ]}
-      />
+        <CreateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Social Media" onSave={handleCreate} saveColor={departmentColors.marketing}>
+          <FormField label="Name" type="text" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} />
+          <FormField label="Description" type="textarea" value={formData.description} onChange={(v) => setFormData({...formData, description: v})} />
+        </CreateModal>
+
+        <Toast message={toast.message} isVisible={toast.isVisible} />
+      </main>
     </div>
   );
 }

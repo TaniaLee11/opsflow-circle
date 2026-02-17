@@ -1,41 +1,67 @@
-import { Users, Plus } from "lucide-react";
-import { EmptyState } from "@/components/EmptyState";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { C, departmentColors } from "@/components/shared/theme";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { CreateModal } from "@/components/shared/CreateModal";
+import { FormField } from "@/components/shared/FormField";
+import { Toast, useToast } from "@/components/shared/Toast";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Navigation } from "@/components/layout/Navigation";
 
 export default function Contractors() {
-  const handleAddContractor = () => {
-    // TODO: Implement add contractor
-    console.log("Add Contractor clicked");
+  const navigate = useNavigate();
+  const [items, setItems] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: "", description: "" });
+  const { toast, showToast } = useToast();
+
+  const handleCreate = () => {
+    setItems([...items, { ...formData, id: Date.now() }]);
+    showToast("Contractors created");
+    setIsModalOpen(false);
+    setFormData({ name: "", description: "" });
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Contractors</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage independent contractors and 1099 workers
-          </p>
-        </div>
-        <button
-          onClick={handleAddContractor}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4" />
-          Add Contractor
-        </button>
-      </div>
+    <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
+      <Navigation />
+      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
+        <PageHeader
+          breadcrumb="People → Contractors"
+          title="Contractors"
+          desc="Manage contractors and freelancers"
+          actionLabel="Create"
+          actionColor={departmentColors.people}
+          onAction={() => setIsModalOpen(true)}
+        />
 
-      <EmptyState
-        icon={Users}
-        title="No contractors yet"
-        description="Manage independent contractors and 1099 workers"
-        actions={[
-          {
-            label: "Add Contractor",
-            onClick: handleAddContractor,
-          },
-        ]}
-      />
+        {items.length === 0 && (
+          <EmptyState
+            icon="👥"
+            title="No contractors added"
+            description="Get started by creating your first item."
+            actionLabel="Create"
+            onAction={() => setIsModalOpen(true)}
+          />
+        )}
+
+        {items.length > 0 && (
+          <div style={ { background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" } }>
+            {items.map((item, i) => (
+              <div key={item.id} style={ { padding: "14px 16px", borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" } }>
+                <div style={ { color: C.text1, fontSize: 14, fontWeight: 600 } }>{item.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <CreateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Contractors" onSave={handleCreate} saveColor={departmentColors.people}>
+          <FormField label="Name" type="text" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} />
+          <FormField label="Description" type="textarea" value={formData.description} onChange={(v) => setFormData({...formData, description: v})} />
+        </CreateModal>
+
+        <Toast message={toast.message} isVisible={toast.isVisible} />
+      </main>
     </div>
   );
 }

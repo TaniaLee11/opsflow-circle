@@ -1,43 +1,52 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
-import { EmptyState } from "@/components/EmptyState";
-import { Card, CardContent } from "@/components/ui/card";
+import { C, departmentColors } from "@/components/shared/theme";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { AlertBox } from "@/components/shared/AlertBox";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Navigation } from "@/components/layout/Navigation";
 
 export default function Reconciliation() {
   const navigate = useNavigate();
-
-  const handleConnectAccounting = () => {
-    navigate("/integrations?category=accounting");
-  };
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Reconciliation</h1>
-        <p className="text-muted-foreground mt-1">
-          Categorize and reconcile transactions from your accounting software
-        </p>
-      </div>
+    <div style={{ display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" }}>
+      <Navigation />
+      <main style={{ marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 }}>
+        <PageHeader
+          breadcrumb="Finance → Reconciliation"
+          title="Reconciliation"
+          desc="Categorize and reconcile transactions from your accounting software"
+        />
 
-      <EmptyState
-        icon={RefreshCw}
-        title="Connect your accounting software"
-        description="Connect QuickBooks, Wave, Xero, or Stripe to start reconciling transactions."
-        actions={[
-          {
-            label: "Connect Accounting Software",
-            onClick: handleConnectAccounting,
-          },
-        ]}
-      />
+        <AlertBox
+          icon="🔌"
+          color={C.blue}
+          bgColor={C.blueSoft}
+          title="Integration: QuickBooks / Wave / Xero / Stripe"
+        >
+          <div style={{ color: C.text2, fontSize: 13 }}>
+            Transactions will appear here automatically once you connect your accounting software.{" "}
+            <span
+              onClick={() => navigate("/integrations")}
+              style={{ color: C.blue, cursor: "pointer", textDecoration: "underline" }}
+            >
+              Connect now
+            </span>
+          </div>
+        </AlertBox>
 
-      <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            <strong>Integration:</strong> Reads from QuickBooks/Wave/Xero/Stripe. Transactions appear here for categorization and reconciliation.
-          </p>
-        </CardContent>
-      </Card>
+        {transactions.length === 0 && (
+          <EmptyState
+            icon="💰"
+            title="No transactions to reconcile"
+            description="Connect your accounting software to start reconciling transactions."
+            actionLabel="Connect Accounting Software"
+            onAction={() => navigate("/integrations")}
+          />
+        )}
+      </main>
     </div>
   );
 }

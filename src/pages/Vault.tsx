@@ -1,55 +1,67 @@
-import { FolderOpen, Upload, Plus } from "lucide-react";
-import { EmptyState } from "@/components/EmptyState";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { C, departmentColors } from "@/components/shared/theme";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { CreateModal } from "@/components/shared/CreateModal";
+import { FormField } from "@/components/shared/FormField";
+import { Toast, useToast } from "@/components/shared/Toast";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Navigation } from "@/components/layout/Navigation";
 
 export default function Vault() {
-  const handleUpload = () => {
-    // TODO: Open file upload
-    console.log("Upload clicked");
-  };
+  const navigate = useNavigate();
+  const [items, setItems] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: "", description: "" });
+  const { toast, showToast } = useToast();
 
-  const handleCreateFolder = () => {
-    // TODO: Create folder
-    console.log("Create folder clicked");
+  const handleCreate = () => {
+    setItems([...items, { ...formData, id: Date.now() }]);
+    showToast("Vault created");
+    setIsModalOpen(false);
+    setFormData({ name: "", description: "" });
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Vault</h1>
-          <p className="text-muted-foreground mt-1">
-            Secure document storage
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleCreateFolder}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-input rounded-md hover:bg-accent"
-          >
-            <Plus className="w-4 h-4" />
-            New Folder
-          </button>
-          <button
-            onClick={handleUpload}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            <Upload className="w-4 h-4" />
-            Upload
-          </button>
-        </div>
-      </div>
+    <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
+      <Navigation />
+      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
+        <PageHeader
+          breadcrumb="Tools → Vault"
+          title="Vault"
+          desc="Store and organize files"
+          actionLabel="Create"
+          actionColor={C.accent}
+          onAction={() => setIsModalOpen(true)}
+        />
 
-      <EmptyState
-        icon={FolderOpen}
-        title="No documents yet"
-        description="Upload your first document to start building your secure document vault."
-        actions={[
-          {
-            label: "Upload Document",
-            onClick: handleUpload,
-          },
-        ]}
-      />
+        {items.length === 0 && (
+          <EmptyState
+            icon="📁"
+            title="No files uploaded"
+            description="Get started by creating your first item."
+            actionLabel="Create"
+            onAction={() => setIsModalOpen(true)}
+          />
+        )}
+
+        {items.length > 0 && (
+          <div style={ { background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" } }>
+            {items.map((item, i) => (
+              <div key={item.id} style={ { padding: "14px 16px", borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" } }>
+                <div style={ { color: C.text1, fontSize: 14, fontWeight: 600 } }>{item.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <CreateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Vault" onSave={handleCreate} saveColor={C.accent}>
+          <FormField label="Name" type="text" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} />
+          <FormField label="Description" type="textarea" value={formData.description} onChange={(v) => setFormData({...formData, description: v})} />
+        </CreateModal>
+
+        <Toast message={toast.message} isVisible={toast.isVisible} />
+      </main>
     </div>
   );
 }
