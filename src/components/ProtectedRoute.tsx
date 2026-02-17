@@ -5,11 +5,10 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requireOnboarding?: boolean;
 }
 
-export function ProtectedRoute({ children, requireOnboarding = true }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, isOwner, isCohort, hasAccess } = useAuth();
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking auth status
@@ -26,29 +25,7 @@ export function ProtectedRoute({ children, requireOnboarding = true }: Protected
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Owner always has access - skip all onboarding checks
-  if (isOwner) {
-    return <>{children}</>;
-  }
-
-  // Cohort users bypass onboarding - they get automatic access
-  if (isCohort) {
-    return <>{children}</>;
-  }
-
-  // Regular sub-users: check if they've completed onboarding
-  if (requireOnboarding) {
-    // If user hasn't selected a tier yet, send to onboarding
-    if (!user.tierSelected) {
-      return <Navigate to="/onboarding" replace />;
-    }
-    
-    // If user selected a tier but doesn't have access yet, send to tier selection
-    if (!hasAccess) {
-      return <Navigate to="/select-tier" replace />;
-    }
-  }
-
-  // All checks passed - render the protected content
+  // User is logged in - render the protected content
+  // No tier checks. No onboarding checks. Just render.
   return <>{children}</>;
 }
