@@ -1,74 +1,44 @@
-import { useNavigate } from "react-router-dom";
-import { C, departmentColors } from "@/components/shared/theme";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { MetricCard } from "@/components/shared/MetricCard";
-import { Navigation } from "@/components/layout/Navigation";
+import { Navigation } from '@/components/layout/Navigation';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { Settings } from 'lucide-react';
+
+const C = {
+  bg: "#0B1120",
+  card: "#1A2332",
+  border: "#1E293B",
+  accent: "#0891B2",
+  text1: "#F1F5F9",
+  text2: "#94A3B8",
+};
 
 export default function Systems() {
-  const navigate = useNavigate();
+  const userContext = {
+    stage: 'foundations' as const,
+  };
 
   return (
-    <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
+    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
-        <PageHeader
-          title="Systems"
-          desc="Automation and infrastructure"
+      <main style={{ padding: 32 }}>
+        <PageHeader 
+          title="Systems Department"
+          subtitle="Manage your systems operations"
+          icon={Settings}
         />
-
-        {/* Metrics */}
-        <div style={ { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 } }>
-          <MetricCard label="Active Integrations" value="—" />
-          <MetricCard label="Workflows Running" value="—" />
-          <MetricCard label="API Calls" value="—" />
-          <MetricCard label="Uptime" value="—" />
-        </div>
-
-        {/* Quick Actions */}
-        <div style={ { marginBottom: 24 } }>
-          <div style={ { color: C.text1, fontSize: 16, fontWeight: 700, marginBottom: 12 } }>Quick Actions</div>
-          <div style={ { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 } }>
-            <button
-              onClick={() => navigate("/integrations")}
-              style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: 10,
-                padding: 16,
-                color: C.text1,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              🔌 Integrations
-            </button>
-            <button
-              onClick={() => navigate("/workflows")}
-              style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: 10,
-                padding: 16,
-                color: C.text1,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              ⚡ Workflows
-            </button>
+        
+        <div style={{ 
+          background: C.card, 
+          border: `1px solid ${C.border}`, 
+          borderRadius: 12, 
+          padding: 24,
+          marginTop: 24
+        }}>
+          <div style={{ color: C.text1, fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+            Systems Pages
           </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div>
-          <div style={ { color: C.text1, fontSize: 16, fontWeight: 700, marginBottom: 12 } }>Recent Activity</div>
-          <div style={ { background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, padding: 24, textAlign: "center" } }>
-            <div style={ { color: C.text3, fontSize: 13 } }>No recent activity</div>
-          </div>
+          <ul style={{ color: C.text2, fontSize: 14, lineHeight: 1.8, paddingLeft: 20 }}>
+            <li key="0" style={{ marginBottom: 8 }}><a href="/integrations" style={{ color: C.accent, textDecoration: "none" }}>Integrations</a></li>\n            <li key="1" style={{ marginBottom: 8 }}><a href="/workflows" style={{ color: C.accent, textDecoration: "none" }}>Workflows</a></li>\n            <li key="2" style={{ marginBottom: 8 }}><a href="/calendar" style={{ color: C.accent, textDecoration: "none" }}>Calendar</a></li>\n            <li key="3" style={{ marginBottom: 8 }}><a href="/tasks" style={{ color: C.accent, textDecoration: "none" }}>Tasks</a></li>\n            <li key="4" style={{ marginBottom: 8 }}><a href="/vault" style={{ color: C.accent, textDecoration: "none" }}>Vault</a></li>
+          </ul>
         </div>
       </main>
     </div>

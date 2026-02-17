@@ -5,7 +5,7 @@ import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
 import { CreateModal } from '@/components/shared/CreateModal';
 import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
 import { useToast } from '@/components/shared/Toast';
-import { DollarSign } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 const C = {
   bg: "#0B1120",
@@ -18,12 +18,12 @@ const C = {
   text3: "#64748B",
 };
 
-export default function Payroll() {
+export default function Documents() {
   const [items, setItems] = useState<any[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  
+  const [activeTab, setActiveTab] = useState('Proposals');
   const { showToast } = useToast();
   
   // Mock user context - in production, get from auth
@@ -36,50 +36,20 @@ export default function Payroll() {
   };
   
   // Check if tool is connected
-  const isConnected = userContext.integrations.includes('gusto');
-
-  if (userContext.stage === 'foundations') {
-    return (
-      <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
-        <Navigation />
-        <main style={{ padding: 32 }}>
-          <PageHeader 
-            title="Payroll"
-            subtitle="Available in Operating and Growing stages"
-            icon={DollarSign}
-          />
-          <VOPSyInsight page="payroll" userContext={userContext} />
-          <div style={{
-            background: C.card, borderRadius: 12,
-            border: `1px solid ${C.border}`,
-            padding: 48, textAlign: "center"
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-            <div style={{ color: C.text1, fontSize: 18, fontWeight: 600, marginBottom: 12 }}>
-              This page is locked
-            </div>
-            <div style={{ color: C.text2, fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: '0 auto' }}>
-              Payroll becomes available when you move to the Operating stage. 
-              Focus on building your foundation first, then we'll help you scale your team.
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const isConnected = userContext.integrations.includes('dotloop');
 
   const handleCreate = (data: any) => {
     const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() };
     setItems([...items, newItem]);
     setShowCreateModal(false);
-    showToast('success', 'Payroll Run created successfully');
+    showToast('success', 'Document created successfully');
   };
   
   const handleDelete = () => {
     setItems(items.filter(item => item.id !== selectedItem?.id));
     setShowDeleteConfirm(false);
     setSelectedItem(null);
-    showToast('success', 'Payroll Run deleted');
+    showToast('success', 'Document deleted');
   };
   
   return (
@@ -87,18 +57,21 @@ export default function Payroll() {
       <Navigation />
       <main style={{ padding: 32 }}>
         <PageHeader 
-          title="Payroll"
-          subtitle="{isConnected ? 'Connected to Gusto' : 'Track manually or connect Gusto'}"
-          icon={DollarSign}
+          title="Proposals & Contracts"
+          subtitle="{isConnected ? 'Connected to Dotloop' : 'Track manually or connect Dotloop'}"
+          icon={FileText}
           action={{
-            label: "Add Payroll Run",
+            label: "Add Document",
             onClick: () => setShowCreateModal(true),
-            color: "#E11D48"
+            color: "#9333EA"
           }}
         />
         
-        <VOPSyInsight page="payroll" userContext={userContext} />
+        <VOPSyInsight page="documents" userContext={userContext} />
 
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20, borderBottom: '1px solid #1E293B' }}>
+        {<button onClick={() => setActiveTab('Proposals')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Proposals' ? '2px solid #9333EA' : 'none', color: activeTab === 'Proposals' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Proposals' ? 600 : 400, cursor: 'pointer' }}>Proposals</button>, <button onClick={() => setActiveTab('Contracts')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Contracts' ? '2px solid #9333EA' : 'none', color: activeTab === 'Contracts' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Contracts' ? 600 : 400, cursor: 'pointer' }}>Contracts</button>}
+      </div>
         {items.length === 0 ? (
           <div style={{
             background: C.card, borderRadius: 12,
@@ -107,24 +80,24 @@ export default function Payroll() {
           }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
             <div style={{ color: C.text1, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-              No payroll runs yet
+              No documents yet
             </div>
             <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
               {isConnected 
-                ? 'Data will appear after your first sync with Gusto.'
-                : 'Add payroll runs manually or connect Gusto to sync automatically.'
+                ? 'Data will appear after your first sync with Dotloop.'
+                : 'Add documents manually or connect Dotloop to sync automatically.'
               }
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
               <button 
                 onClick={() => setShowCreateModal(true)}
                 style={{
-                  background: "#E11D48", color: "#fff", border: "none",
+                  background: "#9333EA", color: "#fff", border: "none",
                   padding: "8px 18px", borderRadius: 8, fontWeight: 600,
                   fontSize: 13, cursor: "pointer"
                 }}
               >
-                Add Payroll Run
+                Add Document
               </button>
               {!isConnected && (
                 <button style={{
@@ -134,7 +107,7 @@ export default function Payroll() {
                 }}
                   onClick={() => window.location.href = '/integrations'}
                 >
-                  Connect Gusto →
+                  Connect Dotloop →
                 </button>
               )}
             </div>
@@ -173,7 +146,7 @@ export default function Payroll() {
       
       {showCreateModal && (
         <CreateModal
-          title="Add Payroll Run"
+          title="Add Document"
           fields={[
             { name: 'name', label: 'Name', type: 'text', required: true },
             { name: 'description', label: 'Description', type: 'textarea' },

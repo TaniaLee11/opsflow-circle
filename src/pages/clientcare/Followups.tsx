@@ -1,180 +1,168 @@
-import { useState } from "react";
-import { C, departmentColors } from "@/components/shared/theme";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { Badge } from "@/components/shared/Badge";
-import { CreateModal } from "@/components/shared/CreateModal";
-import { FormField } from "@/components/shared/FormField";
-import { Toast, useToast } from "@/components/shared/Toast";
-import { EmptyState } from "@/components/shared/EmptyState";
-import { Navigation } from "@/components/layout/Navigation";
+import { useState } from 'react';
+import { Navigation } from '@/components/layout/Navigation';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
+import { CreateModal } from '@/components/shared/CreateModal';
+import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
+import { useToast } from '@/components/shared/Toast';
+import { Clock } from 'lucide-react';
+
+const C = {
+  bg: "#0B1120",
+  surface: "#111827",
+  card: "#1A2332",
+  border: "#1E293B",
+  accent: "#0891B2",
+  text1: "#F1F5F9",
+  text2: "#94A3B8",
+  text3: "#64748B",
+};
 
 export default function Followups() {
-  const [activeTab, setActiveTab] = useState<"queue" | "rules">("queue");
-  const [followups, setFollowups] = useState<any[]>([]);
-  const [rules, setRules] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ client: "", type: "", dueDate: "", trigger: "", action: "" });
-  const { toast, showToast } = useToast();
-
-  const handleCreate = () => {
-    if (activeTab === "queue") {
-      const newFollowup = { ...formData, id: Date.now(), status: "pending" };
-      setFollowups([...followups, newFollowup]);
-      showToast("Follow-up created");
-    } else {
-      const newRule = { ...formData, id: Date.now(), active: true };
-      setRules([...rules, newRule]);
-      showToast("Rule created");
-    }
-    setIsModalOpen(false);
-    setFormData({ client: "", type: "", dueDate: "", trigger: "", action: "" });
+  const [items, setItems] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('Due');
+  const { showToast } = useToast();
+  
+  // Mock user context - in production, get from auth
+  const userContext = {
+    name: 'Tanya',
+    stage: 'foundations' as const,
+    tier: 'free' as const,
+    industry: 'owner' as const,
+    integrations: [],
   };
+  
+  // Check if tool is connected
+  const isConnected = userContext.integrations.includes('gohighlevel');
 
-  const currentItems = activeTab === "queue" ? followups : rules;
-
+  const handleCreate = (data: any) => {
+    const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() };
+    setItems([...items, newItem]);
+    setShowCreateModal(false);
+    showToast('success', 'Follow-up created successfully');
+  };
+  
+  const handleDelete = () => {
+    setItems(items.filter(item => item.id !== selectedItem?.id));
+    setShowDeleteConfirm(false);
+    setSelectedItem(null);
+    showToast('success', 'Follow-up deleted');
+  };
+  
   return (
-    <div style={{ display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={{ marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 }}>
-        <PageHeader
-          breadcrumb="Client Care → Follow-ups"
+      <main style={{ padding: 32 }}>
+        <PageHeader 
           title="Follow-ups"
-          desc="Manage client follow-up queue and automation rules"
-          actionLabel={activeTab === "queue" ? "New Follow-up" : "Create Rule"}
-          actionColor={departmentColors.clientcare}
-          onAction={() => setIsModalOpen(true)}
+          subtitle="{isConnected ? 'Connected to GoHighLevel' : 'Track manually or connect GoHighLevel'}"
+          icon={Clock}
+          action={{
+            label: "Add Follow-up",
+            onClick: () => setShowCreateModal(true),
+            color: "#9333EA"
+          }}
         />
+        
+        <VOPSyInsight page="followups" userContext={userContext} />
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-          <button
-            onClick={() => setActiveTab("queue")}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: activeTab === "queue" ? C.purple : C.text3,
-              borderBottom: activeTab === "queue" ? `2px solid ${C.purple}` : "none",
-              padding: "10px 0",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Queue
-          </button>
-          <button
-            onClick={() => setActiveTab("rules")}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: activeTab === "rules" ? C.purple : C.text3,
-              borderBottom: activeTab === "rules" ? `2px solid ${C.purple}` : "none",
-              padding: "10px 0",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Rules
-          </button>
-        </div>
-
-        {/* Empty state */}
-        {currentItems.length === 0 && (
-          <EmptyState
-            icon={activeTab === "queue" ? "📋" : "⚡"}
-            title={activeTab === "queue" ? "No follow-ups scheduled" : "No automation rules"}
-            description={activeTab === "queue" ? "Create your first follow-up task." : "Set up your first automation rule."}
-            actionLabel={activeTab === "queue" ? "New Follow-up" : "Create Rule"}
-            onAction={() => setIsModalOpen(true)}
-          />
-        )}
-
-        {/* Items list */}
-        {currentItems.length > 0 && (
-          <div style={{ background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            {currentItems.map((item, i) => (
-              <div
-                key={item.id}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20, borderBottom: '1px solid #1E293B' }}>
+        {<button onClick={() => setActiveTab('Due')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Due' ? '2px solid #9333EA' : 'none', color: activeTab === 'Due' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Due' ? 600 : 400, cursor: 'pointer' }}>Due</button>, <button onClick={() => setActiveTab('Scheduled')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Scheduled' ? '2px solid #9333EA' : 'none', color: activeTab === 'Scheduled' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Scheduled' ? 600 : 400, cursor: 'pointer' }}>Scheduled</button>, <button onClick={() => setActiveTab('Completed')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Completed' ? '2px solid #9333EA' : 'none', color: activeTab === 'Completed' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Completed' ? 600 : 400, cursor: 'pointer' }}>Completed</button>}
+      </div>
+        {items.length === 0 ? (
+          <div style={{
+            background: C.card, borderRadius: 12,
+            border: `1px solid ${C.border}`,
+            padding: 48, textAlign: "center"
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+            <div style={{ color: C.text1, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+              No follow-ups yet
+            </div>
+            <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
+              {isConnected 
+                ? 'Data will appear after your first sync with GoHighLevel.'
+                : 'Add follow-ups manually or connect GoHighLevel to sync automatically.'
+              }
+            </div>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button 
+                onClick={() => setShowCreateModal(true)}
                 style={{
-                  padding: "14px 16px",
-                  borderBottom: i < currentItems.length - 1 ? `1px solid ${C.border}` : "none",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+                  background: "#9333EA", color: "#fff", border: "none",
+                  padding: "8px 18px", borderRadius: 8, fontWeight: 600,
+                  fontSize: 13, cursor: "pointer"
                 }}
               >
+                Add Follow-up
+              </button>
+              {!isConnected && (
+                <button style={{
+                  background: "transparent", color: C.accent,
+                  border: `1px solid ${C.accent}`, padding: "8px 18px",
+                  borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer"
+                }}
+                  onClick={() => window.location.href = '/integrations'}
+                >
+                  Connect GoHighLevel →
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 16 }}>
+            {items.map(item => (
+              <div key={item.id} style={{
+                background: C.card, border: `1px solid ${C.border}`,
+                borderRadius: 10, padding: 16, display: 'flex',
+                justifyContent: 'space-between', alignItems: 'center'
+              }}>
                 <div>
-                  <div style={{ color: C.text1, fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
-                    {activeTab === "queue" ? item.client : item.trigger}
+                  <div style={{ color: C.text1, fontWeight: 600, marginBottom: 4 }}>
+                    {item.name || item.title}
                   </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <Badge type="info" label={activeTab === "queue" ? item.type : item.action} />
-                    {activeTab === "rules" && <Badge type={item.active ? "ok" : "muted"} label={item.active ? "active" : "inactive"} />}
+                  <div style={{ color: C.text3, fontSize: 12 }}>
+                    {new Date(item.createdAt).toLocaleDateString()}
                   </div>
                 </div>
-                {activeTab === "queue" && <div style={{ color: C.text3, fontSize: 12 }}>{item.dueDate}</div>}
+                <button
+                  onClick={() => { setSelectedItem(item); setShowDeleteConfirm(true); }}
+                  style={{
+                    background: 'transparent', border: `1px solid ${C.border}`,
+                    color: C.text2, padding: '6px 12px', borderRadius: 6,
+                    fontSize: 12, cursor: 'pointer'
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             ))}
           </div>
         )}
-
-        <CreateModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title={activeTab === "queue" ? "New Follow-up" : "Create Rule"}
-          onSave={handleCreate}
-          saveColor={departmentColors.clientcare}
-        >
-          {activeTab === "queue" ? (
-            <>
-              <FormField label="Client" type="text" value={formData.client} onChange={(v) => setFormData({ ...formData, client: v })} />
-              <FormField
-                label="Type"
-                type="select"
-                value={formData.type}
-                onChange={(v) => setFormData({ ...formData, type: v })}
-                options={[
-                  { value: "check-in", label: "Check-in" },
-                  { value: "renewal", label: "Renewal" },
-                  { value: "feedback", label: "Feedback Request" },
-                  { value: "upsell", label: "Upsell Opportunity" },
-                ]}
-              />
-              <FormField label="Due Date" type="date" value={formData.dueDate} onChange={(v) => setFormData({ ...formData, dueDate: v })} />
-            </>
-          ) : (
-            <>
-              <FormField
-                label="Trigger"
-                type="select"
-                value={formData.trigger}
-                onChange={(v) => setFormData({ ...formData, trigger: v })}
-                options={[
-                  { value: "30-days-no-contact", label: "30 days no contact" },
-                  { value: "contract-expiring", label: "Contract expiring" },
-                  { value: "ticket-resolved", label: "Ticket resolved" },
-                  { value: "payment-received", label: "Payment received" },
-                ]}
-              />
-              <FormField
-                label="Action"
-                type="select"
-                value={formData.action}
-                onChange={(v) => setFormData({ ...formData, action: v })}
-                options={[
-                  { value: "send-email", label: "Send email" },
-                  { value: "create-task", label: "Create task" },
-                  { value: "send-survey", label: "Send survey" },
-                  { value: "notify-team", label: "Notify team" },
-                ]}
-              />
-            </>
-          )}
-        </CreateModal>
-
-        <Toast message={toast.message} isVisible={toast.isVisible} />
       </main>
+      
+      {showCreateModal && (
+        <CreateModal
+          title="Add Follow-up"
+          fields={[
+            { name: 'name', label: 'Name', type: 'text', required: true },
+            { name: 'description', label: 'Description', type: 'textarea' },
+          ]}
+          onSave={handleCreate}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
+      
+      {showDeleteConfirm && (
+        <DeleteConfirm
+          itemName={selectedItem?.name || selectedItem?.title}
+          onConfirm={handleDelete}
+          onCancel={() => { setShowDeleteConfirm(false); setSelectedItem(null); }}
+        />
+      )}
     </div>
   );
 }

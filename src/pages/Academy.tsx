@@ -447,13 +447,7 @@ function AcademyContent() {
                                     <Award className="absolute -top-1 -right-1 w-5 h-5 text-warning fill-warning/20" />
                                   )}
                                 </div>
-                                <div className="flex gap-1">
-                                  {course.tier_access?.map(tier => (
-                                    <span key={tier} className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-                                      {tier}
-                                    </span>
-                                  ))}
-                                </div>
+
                               </div>
                               
                               <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2">

@@ -1,263 +1,253 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { C } from "@/lib/design-system";
-import {
-  LayoutDashboard,
-  Sparkles,
-  GraduationCap,
-  Megaphone,
-  TrendingUp,
-  Heart,
-  DollarSign,
-  Settings,
-  Users,
-  Calendar,
-  CheckSquare,
-  FolderOpen,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { 
+  LayoutDashboard, Bot, GraduationCap, 
+  Megaphone, Users, DollarSign, Settings, UsersRound,
+  Calendar, CheckSquare, FolderLock, ChevronDown, Lock
+} from 'lucide-react';
+
+const C = {
+  bg: "#0B1120",
+  surface: "#111827",
+  card: "#1A2332",
+  border: "#1E293B",
+  accent: "#0891B2",
+  accentSoft: "rgba(8,145,178,0.12)",
+  text1: "#F1F5F9",
+  text2: "#94A3B8",
+  text3: "#64748B",
+};
 
 export function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [expandedDepts, setExpandedDepts] = useState<string[]>(["marketing"]);
+  const [expanded, setExpanded] = useState<string[]>(['marketing', 'engagement', 'finance', 'systems']);
 
-  const toggleDept = (dept: string) => {
-    if (expandedDepts.includes(dept)) {
-      setExpandedDepts(expandedDepts.filter((d) => d !== dept));
-    } else {
-      setExpandedDepts([...expandedDepts, dept]);
-    }
+  const toggle = (dept: string) => {
+    setExpanded(prev => prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]);
   };
 
   const isActive = (path: string) => location.pathname === path;
 
-  const navItemStyle = (active: boolean) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "8px 16px",
-    color: active ? C.accent : C.text2,
-    background: active ? C.accentSoft : "transparent",
-    borderRight: active ? `2px solid ${C.accent}` : "none",
-    fontSize: 13,
-    fontWeight: active ? 600 : 400,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  });
-
-  const subItemStyle = (active: boolean) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "6px 16px 6px 40px",
-    color: active ? C.accent : C.text3,
-    background: active ? C.accentSoft : "transparent",
-    borderRight: active ? `2px solid ${C.accent}` : "none",
-    fontSize: 12,
-    fontWeight: active ? 600 : 400,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  });
-
-  const deptHeaderStyle = (expanded: boolean) => ({
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "8px 16px",
-    color: C.text2,
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  });
+  const departments = [
+    {
+      id: 'marketing',
+      name: 'Marketing',
+      icon: Megaphone,
+      color: '#D97706',
+      dashboard: '/marketing',
+      pages: [
+        { name: 'Campaign Results', path: '/campaigns' },
+        { name: 'Audience Insights', path: '/audience' },
+      ]
+    },
+    {
+      id: 'engagement',
+      name: 'Engagement',
+      icon: Users,
+      color: '#9333EA',
+      dashboard: '/engagement',
+      pages: [
+        { name: 'People', path: '/people' },
+        { name: 'Pipeline', path: '/pipeline' },
+        { name: 'Proposals & Contracts', path: '/documents' },
+        { name: 'Inbox', path: '/inbox' },
+        { name: 'Follow-ups', path: '/followups' },
+        { name: 'Surveys', path: '/surveys' },
+      ]
+    },
+    {
+      id: 'finance',
+      name: 'Finance',
+      icon: DollarSign,
+      color: '#059669',
+      dashboard: '/finance',
+      pages: [
+        { name: 'Reconciliation', path: '/reconciliation' },
+        { name: 'Tax Organizer', path: '/tax' },
+        { name: 'Reports', path: '/reports' },
+        { name: 'Cash Flow', path: '/cashflow' },
+        { name: 'Banking', path: '/banking' },
+        { name: 'Funding Readiness', path: '/funding', locked: true },
+        { name: 'Grants', path: '/grants', locked: true },
+      ]
+    },
+    {
+      id: 'systems',
+      name: 'Systems',
+      icon: Settings,
+      color: '#0891B2',
+      dashboard: '/systems',
+      pages: [
+        { name: 'Integrations', path: '/integrations' },
+        { name: 'Workflows', path: '/workflows' },
+        { name: 'Calendar', path: '/calendar' },
+        { name: 'Tasks', path: '/tasks' },
+        { name: 'Vault', path: '/vault' },
+      ]
+    },
+    {
+      id: 'people',
+      name: 'People',
+      icon: UsersRound,
+      color: '#E11D48',
+      dashboard: '/contractors',
+      locked: true,
+      pages: [
+        { name: 'Team', path: '/contractors' },
+        { name: 'Payroll', path: '/payroll' },
+      ]
+    },
+  ];
 
   return (
-    <aside
-      style={{
-        width: 220,
-        height: "100vh",
-        background: C.surface,
-        borderRight: `1px solid ${C.border}`,
-        display: "flex",
-        flexDirection: "column",
-        position: "fixed",
-        left: 0,
-        top: 0,
-        overflowY: "auto",
-      }}
-    >
+    <aside style={{
+      width: 220,
+      height: '100vh',
+      background: C.bg,
+      borderRight: `1px solid ${C.border}`,
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'fixed',
+      left: 0,
+      top: 0,
+      overflowY: 'auto',
+    }}>
       {/* Logo */}
-      <div style={{ padding: "20px 16px", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ color: C.accent, fontWeight: 800, fontSize: 13, letterSpacing: 0.5 }}>
+      <div style={{ padding: '20px 16px', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ color: C.text1, fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
           VIRTUAL OPS HUB
         </div>
-        <div style={{ color: C.text3, fontSize: 9, marginTop: 2 }}>
+        <div style={{ color: C.text3, fontSize: 10, marginTop: 2 }}>
           Human-Led AI Operating System
         </div>
       </div>
 
-      {/* Top Nav */}
-      <div style={{ padding: "10px 0" }}>
-        <div style={navItemStyle(isActive("/dashboard"))} onClick={() => navigate("/dashboard")}>
-          <LayoutDashboard size={16} />
-          Dashboard
-        </div>
-        <div style={navItemStyle(isActive("/vopsy"))} onClick={() => navigate("/vopsy")}>
-          <Sparkles size={16} />
-          VOPSy
-        </div>
-        <div style={navItemStyle(isActive("/academy"))} onClick={() => navigate("/academy")}>
-          <GraduationCap size={16} />
-          Academy
-        </div>
-      </div>
+      {/* Top-level pages */}
+      <nav style={{ flex: 1, padding: '16px 0' }}>
+        <NavLink 
+          icon={LayoutDashboard} 
+          label="Dashboard" 
+          active={isActive('/dashboard')}
+          onClick={() => navigate('/dashboard')}
+        />
+        <NavLink 
+          icon={Bot} 
+          label="VOPSy" 
+          active={isActive('/vopsy')}
+          onClick={() => navigate('/vopsy')}
+        />
+        <NavLink 
+          icon={GraduationCap} 
+          label="Academy" 
+          active={isActive('/academy')}
+          onClick={() => navigate('/academy')}
+        />
 
-      {/* Divider */}
-      <div style={{ height: 1, background: C.border, margin: "10px 16px" }} />
-
-      {/* Departments */}
-      <div style={{ padding: "10px 0" }}>
-        <div style={{ color: C.text3, fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "0 16px 8px", textTransform: "uppercase" }}>
+        {/* Departments */}
+        <div style={{ 
+          color: C.text3, 
+          fontSize: 10, 
+          fontWeight: 700, 
+          letterSpacing: 0.8, 
+          padding: '16px 16px 8px',
+          marginTop: 8
+        }}>
           DEPARTMENTS
         </div>
 
-        {/* Marketing */}
-        <div>
-          <div style={deptHeaderStyle(expandedDepts.includes("marketing"))} onClick={() => { toggleDept("marketing"); navigate("/marketing"); }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Megaphone size={16} />
-              Marketing
-            </div>
-            {expandedDepts.includes("marketing") ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        {departments.map(dept => (
+          <div key={dept.id}>
+            <button
+              onClick={() => {
+                if (dept.locked) {
+                  navigate(dept.dashboard);
+                } else {
+                  toggle(dept.id);
+                }
+              }}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                padding: '8px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                cursor: 'pointer',
+                color: dept.locked ? C.text3 : C.text1,
+                transition: 'all 0.2s',
+              }}
+            >
+              <dept.icon size={16} />
+              <span style={{ flex: 1, textAlign: 'left', fontSize: 13, fontWeight: 500 }}>
+                {dept.name}
+              </span>
+              {dept.locked && <Lock size={12} />}
+              {!dept.locked && <ChevronDown 
+                size={14} 
+                style={{ 
+                  transform: expanded.includes(dept.id) ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s'
+                }} 
+              />}
+            </button>
+
+            {!dept.locked && expanded.includes(dept.id) && (
+              <div style={{ paddingLeft: 42 }}>
+                {dept.pages.map(page => (
+                  <button
+                    key={page.path}
+                    onClick={() => navigate(page.path)}
+                    style={{
+                      width: '100%',
+                      background: isActive(page.path) ? C.accentSoft : 'transparent',
+                      border: 'none',
+                      padding: '6px 12px',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      color: page.locked ? C.text3 : (isActive(page.path) ? C.accent : C.text2),
+                      fontSize: 12,
+                      fontWeight: 500,
+                      borderRadius: 6,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {page.name}
+                    {page.locked && <Lock size={10} />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          {expandedDepts.includes("marketing") && (
-            <>
-              <div style={subItemStyle(isActive("/social"))} onClick={() => navigate("/social")}>Social Media</div>
-              <div style={subItemStyle(isActive("/campaigns"))} onClick={() => navigate("/campaigns")}>Campaigns</div>
-              <div style={subItemStyle(isActive("/studio"))} onClick={() => navigate("/studio")}>Studio</div>
-              <div style={subItemStyle(isActive("/funnels"))} onClick={() => navigate("/funnels")}>Funnels</div>
-            </>
-          )}
-        </div>
-
-        {/* Sales */}
-        <div>
-          <div style={deptHeaderStyle(expandedDepts.includes("sales"))} onClick={() => { toggleDept("sales"); navigate("/sales"); }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <TrendingUp size={16} />
-              Sales
-            </div>
-            {expandedDepts.includes("sales") ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-          {expandedDepts.includes("sales") && (
-            <>
-              <div style={subItemStyle(isActive("/pipeline"))} onClick={() => navigate("/pipeline")}>Pipeline</div>
-              <div style={subItemStyle(isActive("/crm"))} onClick={() => navigate("/crm")}>CRM</div>
-              <div style={subItemStyle(isActive("/proposals"))} onClick={() => navigate("/proposals")}>Proposals</div>
-              <div style={subItemStyle(isActive("/contracts"))} onClick={() => navigate("/contracts")}>Contracts</div>
-            </>
-          )}
-        </div>
-
-        {/* Client Care (renamed from Support) */}
-        <div>
-          <div style={deptHeaderStyle(expandedDepts.includes("clientcare"))} onClick={() => { toggleDept("clientcare"); navigate("/clientcare"); }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Heart size={16} />
-              Client Care
-            </div>
-            {expandedDepts.includes("clientcare") ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-          {expandedDepts.includes("clientcare") && (
-            <>
-              <div style={subItemStyle(isActive("/inbox"))} onClick={() => navigate("/inbox")}>Inbox</div>
-              <div style={subItemStyle(isActive("/followups"))} onClick={() => navigate("/followups")}>Follow-ups</div>
-              <div style={subItemStyle(isActive("/surveys"))} onClick={() => navigate("/surveys")}>Surveys</div>
-            </>
-          )}
-        </div>
-
-        {/* Finance */}
-        <div>
-          <div style={deptHeaderStyle(expandedDepts.includes("finance"))} onClick={() => { toggleDept("finance"); navigate("/finance"); }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <DollarSign size={16} />
-              Finance
-            </div>
-            {expandedDepts.includes("finance") ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-          {expandedDepts.includes("finance") && (
-            <>
-              <div style={subItemStyle(isActive("/reconciliation"))} onClick={() => navigate("/reconciliation")}>Reconciliation</div>
-              <div style={subItemStyle(isActive("/tax"))} onClick={() => navigate("/tax")}>Tax Organizer</div>
-              <div style={subItemStyle(isActive("/reports"))} onClick={() => navigate("/reports")}>Reports & Analytics</div>
-              <div style={subItemStyle(isActive("/cashflow"))} onClick={() => navigate("/cashflow")}>Cash Flow</div>
-              <div style={subItemStyle(isActive("/banking"))} onClick={() => navigate("/banking")}>Banking</div>
-              <div style={subItemStyle(isActive("/funding"))} onClick={() => navigate("/funding")}>Funding Readiness</div>
-              <div style={subItemStyle(isActive("/grants"))} onClick={() => navigate("/grants")}>Donation/Grant Tracking</div>
-            </>
-          )}
-        </div>
-
-        {/* Systems */}
-        <div>
-          <div style={deptHeaderStyle(expandedDepts.includes("systems"))} onClick={() => { toggleDept("systems"); navigate("/systems"); }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Settings size={16} />
-              Systems
-            </div>
-            {expandedDepts.includes("systems") ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-          {expandedDepts.includes("systems") && (
-            <>
-              <div style={subItemStyle(isActive("/integrations"))} onClick={() => navigate("/integrations")}>Integrations</div>
-              <div style={subItemStyle(isActive("/workflows"))} onClick={() => navigate("/workflows")}>Workflows</div>
-            </>
-          )}
-        </div>
-
-        {/* People */}
-        <div>
-          <div style={deptHeaderStyle(expandedDepts.includes("people"))} onClick={() => { toggleDept("people"); navigate("/people"); }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Users size={16} />
-              People
-            </div>
-            {expandedDepts.includes("people") ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-          {expandedDepts.includes("people") && (
-            <>
-              <div style={subItemStyle(isActive("/contractors"))} onClick={() => navigate("/contractors")}>Contractors</div>
-              <div style={subItemStyle(isActive("/roles"))} onClick={() => navigate("/roles")}>Roles & Permissions</div>
-              <div style={subItemStyle(isActive("/payroll"))} onClick={() => navigate("/payroll")}>Payroll</div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div style={{ height: 1, background: C.border, margin: "10px 16px" }} />
-
-      {/* Tools */}
-      <div style={{ padding: "10px 0" }}>
-        <div style={{ color: C.text3, fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "0 16px 8px", textTransform: "uppercase" }}>
-          TOOLS
-        </div>
-        <div style={navItemStyle(isActive("/calendar"))} onClick={() => navigate("/calendar")}>
-          <Calendar size={16} />
-          Calendar
-        </div>
-        <div style={navItemStyle(isActive("/tasks"))} onClick={() => navigate("/tasks")}>
-          <CheckSquare size={16} />
-          Tasks
-        </div>
-        <div style={navItemStyle(isActive("/vault"))} onClick={() => navigate("/vault")}>
-          <FolderOpen size={16} />
-          Vault
-        </div>
-      </div>
+        ))}
+      </nav>
     </aside>
+  );
+}
+
+function NavLink({ icon: Icon, label, active, onClick }: any) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        background: active ? C.accentSoft : 'transparent',
+        border: 'none',
+        padding: '8px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        cursor: 'pointer',
+        color: active ? C.accent : C.text1,
+        transition: 'all 0.2s',
+      }}
+    >
+      <Icon size={16} />
+      <span style={{ fontSize: 13, fontWeight: 500 }}>{label}</span>
+    </button>
   );
 }

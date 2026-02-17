@@ -5,7 +5,7 @@ import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
 import { CreateModal } from '@/components/shared/CreateModal';
 import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
 import { useToast } from '@/components/shared/Toast';
-import { DollarSign } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 const C = {
   bg: "#0B1120",
@@ -18,7 +18,7 @@ const C = {
   text3: "#64748B",
 };
 
-export default function Payroll() {
+export default function People() {
   const [items, setItems] = useState<any[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -36,50 +36,20 @@ export default function Payroll() {
   };
   
   // Check if tool is connected
-  const isConnected = userContext.integrations.includes('gusto');
-
-  if (userContext.stage === 'foundations') {
-    return (
-      <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
-        <Navigation />
-        <main style={{ padding: 32 }}>
-          <PageHeader 
-            title="Payroll"
-            subtitle="Available in Operating and Growing stages"
-            icon={DollarSign}
-          />
-          <VOPSyInsight page="payroll" userContext={userContext} />
-          <div style={{
-            background: C.card, borderRadius: 12,
-            border: `1px solid ${C.border}`,
-            padding: 48, textAlign: "center"
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-            <div style={{ color: C.text1, fontSize: 18, fontWeight: 600, marginBottom: 12 }}>
-              This page is locked
-            </div>
-            <div style={{ color: C.text2, fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: '0 auto' }}>
-              Payroll becomes available when you move to the Operating stage. 
-              Focus on building your foundation first, then we'll help you scale your team.
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const isConnected = userContext.integrations.includes('gohighlevel');
 
   const handleCreate = (data: any) => {
     const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() };
     setItems([...items, newItem]);
     setShowCreateModal(false);
-    showToast('success', 'Payroll Run created successfully');
+    showToast('success', 'Contact created successfully');
   };
   
   const handleDelete = () => {
     setItems(items.filter(item => item.id !== selectedItem?.id));
     setShowDeleteConfirm(false);
     setSelectedItem(null);
-    showToast('success', 'Payroll Run deleted');
+    showToast('success', 'Contact deleted');
   };
   
   return (
@@ -87,17 +57,17 @@ export default function Payroll() {
       <Navigation />
       <main style={{ padding: 32 }}>
         <PageHeader 
-          title="Payroll"
-          subtitle="{isConnected ? 'Connected to Gusto' : 'Track manually or connect Gusto'}"
-          icon={DollarSign}
+          title="People"
+          subtitle="{isConnected ? 'Connected to GoHighLevel' : 'Track manually or connect GoHighLevel'}"
+          icon={Users}
           action={{
-            label: "Add Payroll Run",
+            label: "Add Contact",
             onClick: () => setShowCreateModal(true),
-            color: "#E11D48"
+            color: "#9333EA"
           }}
         />
         
-        <VOPSyInsight page="payroll" userContext={userContext} />
+        <VOPSyInsight page="people" userContext={userContext} />
 
         {items.length === 0 ? (
           <div style={{
@@ -107,24 +77,24 @@ export default function Payroll() {
           }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
             <div style={{ color: C.text1, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-              No payroll runs yet
+              No contacts yet
             </div>
             <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
               {isConnected 
-                ? 'Data will appear after your first sync with Gusto.'
-                : 'Add payroll runs manually or connect Gusto to sync automatically.'
+                ? 'Data will appear after your first sync with GoHighLevel.'
+                : 'Add contacts manually or connect GoHighLevel to sync automatically.'
               }
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
               <button 
                 onClick={() => setShowCreateModal(true)}
                 style={{
-                  background: "#E11D48", color: "#fff", border: "none",
+                  background: "#9333EA", color: "#fff", border: "none",
                   padding: "8px 18px", borderRadius: 8, fontWeight: 600,
                   fontSize: 13, cursor: "pointer"
                 }}
               >
-                Add Payroll Run
+                Add Contact
               </button>
               {!isConnected && (
                 <button style={{
@@ -134,7 +104,7 @@ export default function Payroll() {
                 }}
                   onClick={() => window.location.href = '/integrations'}
                 >
-                  Connect Gusto →
+                  Connect GoHighLevel →
                 </button>
               )}
             </div>
@@ -173,7 +143,7 @@ export default function Payroll() {
       
       {showCreateModal && (
         <CreateModal
-          title="Add Payroll Run"
+          title="Add Contact"
           fields={[
             { name: 'name', label: 'Name', type: 'text', required: true },
             { name: 'description', label: 'Description', type: 'textarea' },

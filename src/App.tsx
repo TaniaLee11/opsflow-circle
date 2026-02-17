@@ -36,24 +36,19 @@ import Academy from "./pages/Academy";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
-// Marketing pages (4 sub-pages)
-import SocialMedia from "./pages/marketing/SocialMedia";
+// Marketing pages (2)
 import Campaigns from "./pages/marketing/Campaigns";
-import Studio from "./pages/Studio";
-import Funnels from "./pages/marketing/Funnels";
+import Audience from "./pages/marketing/Audience";
 
-// Sales pages (4 sub-pages)
+// Engagement pages (6)
+import People from "./pages/engagement/People";
 import Pipeline from "./pages/Pipeline";
-import CRM from "./pages/sales/CRM";
-import Proposals from "./pages/sales/Proposals";
-import Contracts from "./pages/sales/Contracts";
-
-// Client Care pages (3 sub-pages) - renamed from Support
+import Documents from "./pages/engagement/Documents";
 import Inbox from "./pages/clientcare/Inbox";
 import Followups from "./pages/clientcare/Followups";
 import Surveys from "./pages/clientcare/Surveys";
 
-// Finance pages (7 sub-pages)
+// Finance pages (7)
 import Reconciliation from "./pages/finance/Reconciliation";
 import TaxOrganizer from "./pages/finance/Tax";
 import Reports from "./pages/finance/Reports";
@@ -62,37 +57,28 @@ import Banking from "./pages/finance/Banking";
 import FundingReadiness from "./pages/finance/FundingReadiness";
 import DonationGrantTracking from "./pages/finance/DonationGrantTracking";
 
-// Systems pages (2 sub-pages)
+// Systems pages (5)
 import Integrations from "./pages/Integrations";
 import Workflows from "./pages/Workflows";
-
-// People pages (3 sub-pages)
-import Contractors from "./pages/people/Contractors";
-import Roles from "./pages/people/Roles";
-import Payroll from "./pages/people/Payroll";
-
-// Tools pages (3 pages)
 import Calendar from "./pages/tools/Calendar";
 import Tasks from "./pages/tools/Tasks";
 import Vault from "./pages/Vault";
 
-// Department dashboards (6 pages)
+// People pages (2)
+import Contractors from "./pages/people/Contractors";
+import Payroll from "./pages/people/Payroll";
+
+// Department dashboards (5)
 import Marketing from "./pages/departments/Marketing";
-import Sales from "./pages/departments/Sales";
-import ClientCare from "./pages/departments/ClientCare";
-import FinancePage from "./pages/departments/FinancePage";
+import Engagement from "./pages/departments/Engagement";
+import Finance from "./pages/departments/Finance";
 import Systems from "./pages/departments/Systems";
-import People from "./pages/departments/People";
+import PeopleDept from "./pages/departments/People";
 
 // Utility pages
-import AIStudio from "./pages/AIStudio";
-import FinancialHub from "./pages/FinancialHub";
-import Finance from "./pages/Finance";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
-import TierSelection from "./pages/TierSelection";
 import ProductSelection from "./pages/ProductSelection";
-import UserPortal from "./pages/UserPortal";
 import IntegrationCallback from "./pages/IntegrationCallback";
 import AnalyticsPortal from "./pages/AnalyticsPortal";
 
@@ -104,7 +90,6 @@ const queryClient = new QueryClient();
 // Component to conditionally show chat widget
 function ChatWidgetWrapper() {
   const location = useLocation();
-  // Hide chat widget on VOPSy page (has its own chat) and auth pages
   const hiddenPaths = ["/vopsy", "/auth", "/onboarding"];
   const shouldHide = hiddenPaths.some(path => location.pathname.startsWith(path));
   
@@ -152,28 +137,22 @@ const App = () => (
                     <Route path="/vopsy" element={<ProtectedRoute><VOPSy /></ProtectedRoute>} />
                     <Route path="/academy" element={<ProtectedRoute><Academy /></ProtectedRoute>} />
 
-                    {/* Marketing routes (4 sub-pages) */}
+                    {/* Marketing routes (2) */}
                     <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
-                    <Route path="/social" element={<ProtectedRoute><SocialMedia /></ProtectedRoute>} />
                     <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
-                    <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
-                    <Route path="/funnels" element={<ProtectedRoute><Funnels /></ProtectedRoute>} />
+                    <Route path="/audience" element={<ProtectedRoute><Audience /></ProtectedRoute>} />
 
-                    {/* Sales routes (4 sub-pages) */}
-                    <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+                    {/* Engagement routes (6) */}
+                    <Route path="/engagement" element={<ProtectedRoute><Engagement /></ProtectedRoute>} />
+                    <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
                     <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
-                    <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
-                    <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
-                    <Route path="/contracts" element={<ProtectedRoute><Contracts /></ProtectedRoute>} />
-
-                    {/* Client Care routes (3 sub-pages) - renamed from Support */}
-                    <Route path="/clientcare" element={<ProtectedRoute><ClientCare /></ProtectedRoute>} />
+                    <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                     <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
                     <Route path="/followups" element={<ProtectedRoute><Followups /></ProtectedRoute>} />
                     <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
 
-                    {/* Finance routes (7 sub-pages) */}
-                    <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
+                    {/* Finance routes (7) */}
+                    <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
                     <Route path="/reconciliation" element={<ProtectedRoute><Reconciliation /></ProtectedRoute>} />
                     <Route path="/tax" element={<ProtectedRoute><TaxOrganizer /></ProtectedRoute>} />
                     <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
@@ -182,28 +161,22 @@ const App = () => (
                     <Route path="/funding" element={<ProtectedRoute><FundingReadiness /></ProtectedRoute>} />
                     <Route path="/grants" element={<ProtectedRoute><DonationGrantTracking /></ProtectedRoute>} />
 
-                    {/* Systems routes (2 sub-pages) */}
+                    {/* Systems routes (5) */}
                     <Route path="/systems" element={<ProtectedRoute><Systems /></ProtectedRoute>} />
                     <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                     <Route path="/integrations/callback" element={<IntegrationCallback />} />
                     <Route path="/workflows" element={<ProtectedRoute><Workflows /></ProtectedRoute>} />
-
-                    {/* People routes (3 sub-pages) */}
-                    <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
-                    <Route path="/contractors" element={<ProtectedRoute><Contractors /></ProtectedRoute>} />
-                    <Route path="/roles" element={<ProtectedRoute><Roles /></ProtectedRoute>} />
-                    <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
-
-                    {/* Tools routes (3 pages) */}
                     <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                     <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                     <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
 
+                    {/* People routes (2) */}
+                    <Route path="/contractors" element={<ProtectedRoute><PeopleDept /></ProtectedRoute>} />
+                    <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
+
                     {/* Utility routes */}
                     <Route path="/portal/:tierId" element={<AnalyticsPortal />} />
                     <Route path="/analytics/:tierId" element={<AnalyticsPortal />} />
-                    <Route path="/ai-studio" element={<ProtectedRoute><AIStudio /></ProtectedRoute>} />
-                    <Route path="/financial" element={<ProtectedRoute><FinancialHub /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-canceled" element={<PaymentCanceled />} />

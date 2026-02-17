@@ -1,150 +1,168 @@
-import { useState } from "react";
-import { C, departmentColors } from "@/components/shared/theme";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { Badge } from "@/components/shared/Badge";
-import { CreateModal } from "@/components/shared/CreateModal";
-import { FormField } from "@/components/shared/FormField";
-import { Toast, useToast } from "@/components/shared/Toast";
-import { EmptyState } from "@/components/shared/EmptyState";
-import { Navigation } from "@/components/layout/Navigation";
+import { useState } from 'react';
+import { Navigation } from '@/components/layout/Navigation';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
+import { CreateModal } from '@/components/shared/CreateModal';
+import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
+import { useToast } from '@/components/shared/Toast';
+import { Inbox } from 'lucide-react';
+
+const C = {
+  bg: "#0B1120",
+  surface: "#111827",
+  card: "#1A2332",
+  border: "#1E293B",
+  accent: "#0891B2",
+  text1: "#F1F5F9",
+  text2: "#94A3B8",
+  text3: "#64748B",
+};
 
 export default function Inbox() {
-  const [activeTab, setActiveTab] = useState<"messages" | "tickets">("messages");
-  const [messages, setMessages] = useState<any[]>([]);
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ to: "", subject: "", body: "", priority: "normal" });
-  const { toast, showToast } = useToast();
-
-  const handleCreate = () => {
-    if (activeTab === "messages") {
-      const newMessage = { ...formData, id: Date.now(), status: "sent", date: new Date().toISOString() };
-      setMessages([...messages, newMessage]);
-      showToast("Message sent");
-    } else {
-      const newTicket = { ...formData, id: Date.now(), status: "open", date: new Date().toISOString() };
-      setTickets([...tickets, newTicket]);
-      showToast("Ticket created");
-    }
-    setIsModalOpen(false);
-    setFormData({ to: "", subject: "", body: "", priority: "normal" });
+  const [items, setItems] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('All');
+  const { showToast } = useToast();
+  
+  // Mock user context - in production, get from auth
+  const userContext = {
+    name: 'Tanya',
+    stage: 'foundations' as const,
+    tier: 'free' as const,
+    industry: 'owner' as const,
+    integrations: [],
   };
+  
+  // Check if tool is connected
+  const isConnected = userContext.integrations.includes('gmail');
 
-  const currentItems = activeTab === "messages" ? messages : tickets;
-
+  const handleCreate = (data: any) => {
+    const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() };
+    setItems([...items, newItem]);
+    setShowCreateModal(false);
+    showToast('success', 'Message created successfully');
+  };
+  
+  const handleDelete = () => {
+    setItems(items.filter(item => item.id !== selectedItem?.id));
+    setShowDeleteConfirm(false);
+    setSelectedItem(null);
+    showToast('success', 'Message deleted');
+  };
+  
   return (
-    <div style={{ display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={{ marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 }}>
-        <PageHeader
-          breadcrumb="Client Care → Inbox"
+      <main style={{ padding: 32 }}>
+        <PageHeader 
           title="Inbox"
-          desc="Manage client communications and support tickets"
-          actionLabel={activeTab === "messages" ? "Compose Message" : "New Ticket"}
-          actionColor={departmentColors.clientcare}
-          onAction={() => setIsModalOpen(true)}
+          subtitle="{isConnected ? 'Connected to Gmail' : 'Track manually or connect Gmail'}"
+          icon={Inbox}
+          action={{
+            label: "Add Message",
+            onClick: () => setShowCreateModal(true),
+            color: "#9333EA"
+          }}
         />
+        
+        <VOPSyInsight page="inbox" userContext={userContext} />
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-          <button
-            onClick={() => setActiveTab("messages")}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: activeTab === "messages" ? C.purple : C.text3,
-              borderBottom: activeTab === "messages" ? `2px solid ${C.purple}` : "none",
-              padding: "10px 0",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Messages
-          </button>
-          <button
-            onClick={() => setActiveTab("tickets")}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: activeTab === "tickets" ? C.purple : C.text3,
-              borderBottom: activeTab === "tickets" ? `2px solid ${C.purple}` : "none",
-              padding: "10px 0",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Tickets
-          </button>
-        </div>
-
-        {/* Empty state */}
-        {currentItems.length === 0 && (
-          <EmptyState
-            icon={activeTab === "messages" ? "💬" : "🎫"}
-            title={activeTab === "messages" ? "No messages" : "No tickets"}
-            description={activeTab === "messages" ? "Send your first message to a client." : "Create your first support ticket."}
-            actionLabel={activeTab === "messages" ? "Compose Message" : "New Ticket"}
-            onAction={() => setIsModalOpen(true)}
-          />
-        )}
-
-        {/* Items list */}
-        {currentItems.length > 0 && (
-          <div style={{ background: C.card, borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            {currentItems.map((item, i) => (
-              <div
-                key={item.id}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20, borderBottom: '1px solid #1E293B' }}>
+        {<button onClick={() => setActiveTab('All')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'All' ? '2px solid #9333EA' : 'none', color: activeTab === 'All' ? '#9333EA' : C.text2, fontWeight: activeTab === 'All' ? 600 : 400, cursor: 'pointer' }}>All</button>, <button onClick={() => setActiveTab('Action Needed')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Action Needed' ? '2px solid #9333EA' : 'none', color: activeTab === 'Action Needed' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Action Needed' ? 600 : 400, cursor: 'pointer' }}>Action Needed</button>, <button onClick={() => setActiveTab('Archived')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Archived' ? '2px solid #9333EA' : 'none', color: activeTab === 'Archived' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Archived' ? 600 : 400, cursor: 'pointer' }}>Archived</button>}
+      </div>
+        {items.length === 0 ? (
+          <div style={{
+            background: C.card, borderRadius: 12,
+            border: `1px solid ${C.border}`,
+            padding: 48, textAlign: "center"
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+            <div style={{ color: C.text1, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+              No messages yet
+            </div>
+            <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
+              {isConnected 
+                ? 'Data will appear after your first sync with Gmail.'
+                : 'Add messages manually or connect Gmail to sync automatically.'
+              }
+            </div>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button 
+                onClick={() => setShowCreateModal(true)}
                 style={{
-                  padding: "14px 16px",
-                  borderBottom: i < currentItems.length - 1 ? `1px solid ${C.border}` : "none",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+                  background: "#9333EA", color: "#fff", border: "none",
+                  padding: "8px 18px", borderRadius: 8, fontWeight: 600,
+                  fontSize: 13, cursor: "pointer"
                 }}
               >
+                Add Message
+              </button>
+              {!isConnected && (
+                <button style={{
+                  background: "transparent", color: C.accent,
+                  border: `1px solid ${C.accent}`, padding: "8px 18px",
+                  borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer"
+                }}
+                  onClick={() => window.location.href = '/integrations'}
+                >
+                  Connect Gmail →
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 16 }}>
+            {items.map(item => (
+              <div key={item.id} style={{
+                background: C.card, border: `1px solid ${C.border}`,
+                borderRadius: 10, padding: 16, display: 'flex',
+                justifyContent: 'space-between', alignItems: 'center'
+              }}>
                 <div>
-                  <div style={{ color: C.text1, fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{item.subject}</div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ color: C.text3, fontSize: 12 }}>{item.to}</span>
-                    <Badge type={item.priority === "high" ? "error" : item.priority === "normal" ? "info" : "muted"} label={item.priority} />
-                    {activeTab === "tickets" && (
-                      <Badge type={item.status === "open" ? "warn" : "ok"} label={item.status} />
-                    )}
+                  <div style={{ color: C.text1, fontWeight: 600, marginBottom: 4 }}>
+                    {item.name || item.title}
+                  </div>
+                  <div style={{ color: C.text3, fontSize: 12 }}>
+                    {new Date(item.createdAt).toLocaleDateString()}
                   </div>
                 </div>
-                <div style={{ color: C.text3, fontSize: 12 }}>{new Date(item.date).toLocaleDateString()}</div>
+                <button
+                  onClick={() => { setSelectedItem(item); setShowDeleteConfirm(true); }}
+                  style={{
+                    background: 'transparent', border: `1px solid ${C.border}`,
+                    color: C.text2, padding: '6px 12px', borderRadius: 6,
+                    fontSize: 12, cursor: 'pointer'
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             ))}
           </div>
         )}
-
-        <CreateModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title={activeTab === "messages" ? "Compose Message" : "New Ticket"}
-          onSave={handleCreate}
-          saveColor={departmentColors.clientcare}
-        >
-          <FormField label="To" type="text" value={formData.to} onChange={(v) => setFormData({ ...formData, to: v })} placeholder="Client name or email" />
-          <FormField label="Subject" type="text" value={formData.subject} onChange={(v) => setFormData({ ...formData, subject: v })} />
-          <FormField label="Message" type="textarea" value={formData.body} onChange={(v) => setFormData({ ...formData, body: v })} rows={6} />
-          <FormField
-            label="Priority"
-            type="select"
-            value={formData.priority}
-            onChange={(v) => setFormData({ ...formData, priority: v })}
-            options={[
-              { value: "low", label: "Low" },
-              { value: "normal", label: "Normal" },
-              { value: "high", label: "High" },
-            ]}
-          />
-        </CreateModal>
-
-        <Toast message={toast.message} isVisible={toast.isVisible} />
       </main>
+      
+      {showCreateModal && (
+        <CreateModal
+          title="Add Message"
+          fields={[
+            { name: 'name', label: 'Name', type: 'text', required: true },
+            { name: 'description', label: 'Description', type: 'textarea' },
+          ]}
+          onSave={handleCreate}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
+      
+      {showDeleteConfirm && (
+        <DeleteConfirm
+          itemName={selectedItem?.name || selectedItem?.title}
+          onConfirm={handleDelete}
+          onCancel={() => { setShowDeleteConfirm(false); setSelectedItem(null); }}
+        />
+      )}
     </div>
   );
 }
