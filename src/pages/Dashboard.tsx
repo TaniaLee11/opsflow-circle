@@ -18,11 +18,11 @@ const C = {
 export default function Dashboard() {
   // Mock user context - in production, get from auth
   const userContext = {
-    name: 'Tanya',
-    stage: 'foundations' as const,
-    tier: 'free' as const,
+    name: 'Tania',
+    stage: 'growing' as const,
+    tier: 'ops' as const,
     industry: 'owner' as const,
-    integrations: [],
+    integrations: ['quickbooks', 'gmail', 'ghl'],
   };
   
   const isConnected = userContext.integrations.length > 0;

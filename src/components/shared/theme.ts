@@ -35,9 +35,40 @@ export const C = {
 
 export const departmentColors = {
   marketing: C.orange,
-  sales: C.blue,
-  clientcare: C.purple,
+  engagement: C.purple,
   finance: C.green,
   systems: C.accent,
   people: C.pink,
+};
+
+// Academy-style gradient helpers
+export function getCardGradient(color: string) {
+  // Extract RGB from hex
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  return `linear-gradient(135deg, rgba(${r},${g},${b},0.15) 0%, rgba(${r},${g},${b},0.05) 100%)`;
+}
+
+export function getCardBorder(color: string) {
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  return `1px solid rgba(${r},${g},${b},0.25)`;
+}
+
+export function getIconBackground(color: string) {
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  return `rgba(${r},${g},${b},0.2)`;
+}
+
+export const cardBaseStyles = {
+  borderRadius: '12px',
+  padding: '20px 24px',
+  transition: 'all 0.2s ease',
 };
