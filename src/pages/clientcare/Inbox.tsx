@@ -55,7 +55,7 @@ export default function Inbox() {
   return (
     <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={{ padding: 32 }}>
+      <main className="p-6 lg:p-8">
         <PageHeader 
           title="Inbox"
           subtitle="{isConnected ? 'Connected to Gmail' : 'Track manually or connect Gmail'}"
@@ -113,7 +113,7 @@ export default function Inbox() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 16 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {items.map(item => (
               <div key={item.id} style={{
                 background: C.card, border: `1px solid ${C.border}`,

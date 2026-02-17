@@ -11,14 +11,14 @@ export default function ClientCare() {
   return (
     <div style={{ display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" }}>
       <Navigation />
-      <main style={{ marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 }}>
+      <main className="p-6 lg:p-8">
         <PageHeader
           title="Client Care"
           desc="Post-sale relationship management and client success"
         />
 
         {/* Metrics */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard label="Open Tickets" value="—" />
           <MetricCard label="Avg Response Time" value="—" />
           <MetricCard label="NPS Score" value="—" />
@@ -28,7 +28,7 @@ export default function ClientCare() {
         {/* Quick Actions */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ color: C.text1, fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Quick Actions</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <button
               onClick={() => navigate("/inbox")}
               style={{

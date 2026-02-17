@@ -1,4 +1,5 @@
 import { Navigation } from '@/components/layout/Navigation';
+import { C, getCardGradient, getCardBorder, cardBaseStyles } from "@/components/shared/theme";
 import { PageHeader } from '@/components/shared/PageHeader';
 import { UsersRound } from 'lucide-react';
 
@@ -20,15 +21,15 @@ export default function People() {
     return (
       <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
         <Navigation />
-        <main style={{ padding: 32 }}>
+        <main className="p-6 lg:p-8">
           <PageHeader 
             title="People Department"
             subtitle="Available in Operating and Growing stages"
             icon={UsersRound}
           />
           <div style={{
-            background: C.card, borderRadius: 12,
-            border: `1px solid ${C.border}`,
+            background: getCardGradient("#DC2626"), borderRadius: 12,
+            border: getCardBorder("#DC2626"),
             padding: 48, textAlign: "center"
           }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
@@ -47,20 +48,14 @@ export default function People() {
   return (
     <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={{ padding: 32 }}>
+      <main className="p-6 lg:p-8">
         <PageHeader 
           title="People Department"
           subtitle="Manage your people operations"
           icon={UsersRound}
         />
         
-        <div style={{ 
-          background: C.card, 
-          border: `1px solid ${C.border}`, 
-          borderRadius: 12, 
-          padding: 24,
-          marginTop: 24
-        }}>
+        <div className="glass gradient-border rounded-xl p-6">
           <div style={{ color: C.text1, fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
             People Pages
           </div>

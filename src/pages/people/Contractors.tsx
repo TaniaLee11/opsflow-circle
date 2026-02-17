@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { C, getCardGradient, getCardBorder, cardBaseStyles } from "@/components/shared/theme";
 import { Navigation } from '@/components/layout/Navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
@@ -42,7 +43,7 @@ export default function Team() {
     return (
       <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
         <Navigation />
-        <main style={{ padding: 32 }}>
+        <main className="p-6 lg:p-8">
           <PageHeader 
             title="Team"
             subtitle="Available in Operating and Growing stages"
@@ -50,8 +51,8 @@ export default function Team() {
           />
           <VOPSyInsight page="contractors" userContext={userContext} />
           <div style={{
-            background: C.card, borderRadius: 12,
-            border: `1px solid ${C.border}`,
+            background: getCardGradient("#DC2626"), borderRadius: 12,
+            border: getCardBorder("#DC2626"),
             padding: 48, textAlign: "center"
           }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
@@ -85,7 +86,7 @@ export default function Team() {
   return (
     <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={{ padding: 32 }}>
+      <main className="p-6 lg:p-8">
         <PageHeader 
           title="Team"
           subtitle="{isConnected ? 'Connected to Gusto' : 'Track manually or connect Gusto'}"
@@ -104,8 +105,8 @@ export default function Team() {
       </div>
         {items.length === 0 ? (
           <div style={{
-            background: C.card, borderRadius: 12,
-            border: `1px solid ${C.border}`,
+            background: getCardGradient("#DC2626"), borderRadius: 12,
+            border: getCardBorder("#DC2626"),
             padding: 48, textAlign: "center"
           }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
@@ -122,7 +123,7 @@ export default function Team() {
               <button 
                 onClick={() => setShowCreateModal(true)}
                 style={{
-                  background: "#E11D48", color: "#fff", border: "none",
+                  background: getCardGradient("#DC2626"), color: "#fff", border: "none",
                   padding: "8px 18px", borderRadius: 8, fontWeight: 600,
                   fontSize: 13, cursor: "pointer"
                 }}
@@ -143,13 +144,9 @@ export default function Team() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 16 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {items.map(item => (
-              <div key={item.id} style={{
-                background: C.card, border: `1px solid ${C.border}`,
-                borderRadius: 10, padding: 16, display: 'flex',
-                justifyContent: 'space-between', alignItems: 'center'
-              }}>
+              <div key={item.id} className="glass gradient-border rounded-xl p-6">
                 <div>
                   <div style={{ color: C.text1, fontWeight: 600, marginBottom: 4 }}>
                     {item.name || item.title}
@@ -161,7 +158,7 @@ export default function Team() {
                 <button
                   onClick={() => { setSelectedItem(item); setShowDeleteConfirm(true); }}
                   style={{
-                    background: 'transparent', border: `1px solid ${C.border}`,
+                    background: 'transparent', border: getCardBorder("#DC2626"),
                     color: C.text2, padding: '6px 12px', borderRadius: 6,
                     fontSize: 12, cursor: 'pointer'
                   }}

@@ -270,7 +270,8 @@ function AcademyContent() {
                         </motion.div>
                       </div>
 
-                      {/* Enrollments by tier row */}
+                      {/* Enrollments by tier row - Owner only */}
+                      {isOwner && (
                       <motion.div 
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
@@ -300,6 +301,7 @@ function AcademyContent() {
                           ))}
                         </div>
                       </motion.div>
+                      )}
                     </div>
                   )}
 

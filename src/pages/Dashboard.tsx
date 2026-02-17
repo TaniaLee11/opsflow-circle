@@ -22,7 +22,7 @@ export default function Dashboard() {
     stage: 'growing' as const,
     tier: 'ops' as const,
     industry: 'owner' as const,
-    integrations: ['quickbooks', 'gmail', 'ghl'],
+    integrations: [],
   };
   
   const isConnected = userContext.integrations.length > 0;
@@ -30,7 +30,7 @@ export default function Dashboard() {
   return (
     <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={{ padding: 32 }}>
+      <main className="p-6 lg:p-8">
         <PageHeader 
           title={`Welcome back, ${userContext.name}`}
           subtitle={isConnected ? 'Your business at a glance' : 'Connect your tools to see your business data here'}
@@ -40,25 +40,25 @@ export default function Dashboard() {
         <VOPSyInsight page="dashboard" userContext={userContext} />
         
         {/* Metrics */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 32 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             label="Revenue (MTD)"
-            value={isConnected ? "$12,450" : "$0"}
-            change={isConnected ? "+8%" : undefined}
+            value="$0"
+            change={undefined}
             icon={DollarSign}
             color="#059669"
           />
           <MetricCard
             label="Active Deals"
-            value={isConnected ? "14" : "0"}
-            change={isConnected ? "+2" : undefined}
+            value="0"
+            change={undefined}
             icon={TrendingUp}
             color="#9333EA"
           />
           <MetricCard
             label="Contacts"
-            value={isConnected ? "287" : "0"}
-            change={isConnected ? "+23" : undefined}
+            value="0"
+            change={undefined}
             icon={Users}
             color="#D97706"
           />
@@ -80,7 +80,7 @@ export default function Dashboard() {
           <div style={{ color: C.text1, fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
             Quick Actions
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <QuickActionButton label="Add Task" onClick={() => window.location.href = '/tasks'} />
             <QuickActionButton label="Create Event" onClick={() => window.location.href = '/calendar'} />
             <QuickActionButton label="Upload File" onClick={() => window.location.href = '/vault'} />

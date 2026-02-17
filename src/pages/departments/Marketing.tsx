@@ -1,4 +1,5 @@
 import { Navigation } from '@/components/layout/Navigation';
+import { C, getCardGradient, getCardBorder, cardBaseStyles } from "@/components/shared/theme";
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Megaphone } from 'lucide-react';
 
@@ -19,20 +20,14 @@ export default function Marketing() {
   return (
     <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
       <Navigation />
-      <main style={{ padding: 32 }}>
+      <main className="p-6 lg:p-8">
         <PageHeader 
           title="Marketing Department"
           subtitle="Manage your marketing operations"
           icon={Megaphone}
         />
         
-        <div style={{ 
-          background: C.card, 
-          border: `1px solid ${C.border}`, 
-          borderRadius: 12, 
-          padding: 24,
-          marginTop: 24
-        }}>
+        <div className="glass gradient-border rounded-xl p-6">
           <div style={{ color: C.text1, fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
             Marketing Pages
           </div>
