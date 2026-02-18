@@ -121,10 +121,12 @@ const App = () => (
                     <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
                     <Route path="/tax-services" element={<TaxServices />} />
                     <Route path="/free-courses" element={<FreeCourses />} />
+                    <Route path="/free-course" element={<FreeCourses />} />
                     <Route path="/free-courses/:courseId" element={<FreeCourse />} />
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/health-check" element={<BusinessHealthCheck />} />
+                    <Route path="/business-health-check" element={<BusinessHealthCheck />} />
                     <Route path="/managed-partners" element={<ManagedPartners />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/onboarding" element={<Onboarding />} />
