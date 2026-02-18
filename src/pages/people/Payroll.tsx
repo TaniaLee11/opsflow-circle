@@ -31,9 +31,9 @@ export default function Payroll() {
 
   if (userContext.stage === 'foundations') {
     return (
-      <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+      <div className="flex min-h-screen bg-background">
         <Navigation />
-        <main className="p-6 lg:p-8">
+        <main className="flex-1 p-6 lg:p-8">
           <PageHeader 
             title="Payroll"
             subtitle="Available in Operating and Growing stages"
@@ -74,9 +74,9 @@ export default function Payroll() {
   };
   
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Payroll"
           subtitle="{isConnected ? 'Connected to Gusto' : 'Track manually or connect Gusto'}"

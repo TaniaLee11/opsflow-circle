@@ -49,7 +49,7 @@ export default function Dashboard() {
     <div style={{ display: 'flex', height: '100vh', background: C.bg }}>
       <Navigation />
       
-      <main style={{ flex: 1, overflowY: 'auto', marginLeft: 220 }}>
+      <main className="flex-1 p-6 lg:p-8">
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
           
           {/* Header */}

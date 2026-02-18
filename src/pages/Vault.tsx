@@ -54,9 +54,9 @@ export default function Vault() {
   };
   
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Vault"
           subtitle="{isConnected ? 'Connected to Dropbox' : 'Track manually or connect Dropbox'}"

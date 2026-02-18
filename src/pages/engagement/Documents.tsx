@@ -44,9 +44,9 @@ export default function Documents() {
   };
   
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Proposals & Contracts"
           subtitle="{isConnected ? 'Connected to Dotloop' : 'Track manually or connect Dotloop'}"

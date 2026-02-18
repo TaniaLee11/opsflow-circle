@@ -44,9 +44,9 @@ export default function TaxOrganizer() {
   };
   
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Tax Organizer"
           subtitle="{isConnected ? 'Connected to QuickBooks' : 'Track manually or connect QuickBooks'}"

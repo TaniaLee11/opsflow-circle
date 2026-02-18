@@ -11,7 +11,7 @@ export default function ClientCare() {
   return (
     <div style={{ display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" }}>
       <Navigation />
-      <main className="p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader
           title="Client Care"
           desc="Post-sale relationship management and client success"

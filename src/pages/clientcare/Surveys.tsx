@@ -53,9 +53,9 @@ export default function Surveys() {
   };
   
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Surveys"
           subtitle="{isConnected ? 'Connected to Typeform' : 'Track manually or connect Typeform'}"

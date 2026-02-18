@@ -53,9 +53,9 @@ export default function Followups() {
   };
   
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Follow-ups"
           subtitle="{isConnected ? 'Connected to GoHighLevel' : 'Track manually or connect GoHighLevel'}"

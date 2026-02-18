@@ -25,7 +25,7 @@ export default function Funnels() {
   return (
     <div style={ { display: "flex", height: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif" } }>
       <Navigation />
-      <main style={ { marginLeft: 220, flex: 1, overflowY: "auto", padding: 32 } }>
+      <main className="flex-1 p-6 lg:p-8">
         <PageHeader
           breadcrumb="Marketing → Funnels"
           title="Funnels"
