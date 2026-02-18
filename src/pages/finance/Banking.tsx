@@ -1,162 +1,278 @@
-import { useState } from 'react';
-import { C, getCardGradient, getCardBorder, cardBaseStyles } from "@/components/shared/theme";
+import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/layout/Navigation';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
-import { CreateModal } from '@/components/shared/CreateModal';
-import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
-import { useToast } from '@/components/shared/Toast';
-import { Building } from 'lucide-react';
+import { GlassCard } from '@/components/ui/glass-card';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchAllTransactionSources, type UnifiedTransaction } from '@/services/unifiedData';
+import { Building, CreditCard, TrendingUp, TrendingDown, Plus, Loader2, Link as LinkIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const C = {
-  bg: "#0B1120",
-  surface: "#111827",
-  card: "#1A2332",
-  border: "#1E293B",
-  accent: "#0891B2",
-  text1: "#F1F5F9",
-  text2: "#94A3B8",
-  text3: "#64748B",
-};
+interface BankAccount {
+  id: string;
+  name: string;
+  type: 'checking' | 'savings' | 'credit';
+  balance: number;
+  lastFour: string;
+  institution: string;
+  sources: { icon: string; label: string }[];
+}
 
 export default function Banking() {
-  const [items, setItems] = useState<any[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  
-  const { showToast } = useToast();
-  
-  // Mock user context - in production, get from auth
-  const userContext = {
-    name: 'Tania',
-    stage: 'foundations' as const,
-    tier: 'free' as const,
-    industry: 'owner' as const,
-    integrations: [],
-  };
-  
-  // Check if tool is connected
-  const isConnected = userContext.integrations.includes('plaid');
+  const { user } = useAuth();
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [transactions, setTransactions] = useState<UnifiedTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  const handleCreate = (data: any) => {
-    const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() };
-    setItems([...items, newItem]);
-    setShowCreateModal(false);
-    showToast('success', 'Bank Account created successfully');
-  };
-  
-  const handleDelete = () => {
-    setItems(items.filter(item => item.id !== selectedItem?.id));
-    setShowDeleteConfirm(false);
-    setSelectedItem(null);
-    showToast('success', 'Bank Account deleted');
-  };
-  
-  return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
-      <Navigation />
-      <main className="p-6 lg:p-8">
-        <PageHeader 
-          title="Banking"
-          subtitle="{isConnected ? 'Connected to Plaid' : 'Track manually or connect Plaid'}"
-          icon={Building}
-          action={{
-            label: "Add Bank Account",
-            onClick: () => setShowCreateModal(true),
-            color: "#059669"
-          }}
-        />
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // Fetch from ALL connected bank sources (Plaid, Stripe, manual bank connections)
+      const sources = await fetchAllTransactionSources(user.id);
+      
+      if (sources.length === 0) {
+        setIsConnected(false);
+        setAccounts([]);
+        setTransactions([]);
+      } else {
+        // Group transactions by account/source
+        const accountMap = new Map<string, BankAccount>();
         
-        <VOPSyInsight page="banking" userContext={userContext} />
+        sources.forEach((source) => {
+          source.transactions.forEach((txn: any) => {
+            const accountId = txn.accountId || source.provider;
+            
+            if (!accountMap.has(accountId)) {
+              accountMap.set(accountId, {
+                id: accountId,
+                name: txn.accountName || `${source.provider} Account`,
+                type: txn.accountType || 'checking',
+                balance: 0,
+                lastFour: txn.accountLastFour || '****',
+                institution: source.provider,
+                sources: [{ icon: '🏦', label: source.provider }],
+              });
+            }
+            
+            // Update balance
+            const account = accountMap.get(accountId)!;
+            account.balance += txn.amount;
+          });
+        });
+        
+        const accountsList = Array.from(accountMap.values());
+        setAccounts(accountsList);
+        setIsConnected(true);
 
-        {items.length === 0 ? (
-          <div style={{
-            background: getCardGradient("#059669"), borderRadius: 12,
-            border: getCardBorder("#059669"),
-            padding: 48, textAlign: "center"
-          }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-            <div style={{ color: C.text1, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-              No bank accounts yet
+        // Set first account as selected
+        if (accountsList.length > 0 && !selectedAccount) {
+          setSelectedAccount(accountsList[0].id);
+        }
+
+        // Get transactions for selected account
+        if (selectedAccount) {
+          const accountTransactions = sources
+            .flatMap(s => s.transactions)
+            .filter((t: any) => (t.accountId || s.provider) === selectedAccount);
+          setTransactions(accountTransactions);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load banking data:', error);
+      setIsConnected(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedAccount) {
+      loadData();
+    }
+  }, [selectedAccount]);
+
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Navigation />
+      
+      <main className="flex-1 p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <Building className="text-indigo-500" size={32} />
+                Banking
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {isConnected 
+                  ? 'All your bank accounts in one place' 
+                  : 'Connect your bank accounts to see balances and transactions'}
+              </p>
             </div>
-            <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
-              {isConnected 
-                ? 'Data will appear after your first sync with Plaid.'
-                : 'Add bank accounts manually or connect Plaid to sync automatically.'
-              }
-            </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                style={{
-                  background: getCardGradient("#059669"), color: "#fff", border: "none",
-                  padding: "8px 18px", borderRadius: 8, fontWeight: 600,
-                  fontSize: 13, cursor: "pointer"
-                }}
-              >
-                Add Bank Account
-              </button>
-              {!isConnected && (
-                <button style={{
-                  background: "transparent", color: C.accent,
-                  border: `1px solid ${C.accent}`, padding: "8px 18px",
-                  borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer"
-                }}
-                  onClick={() => window.location.href = '/integrations'}
-                >
-                  Connect Plaid →
-                </button>
-              )}
-            </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+              <Plus size={18} />
+              Add Account
+            </button>
           </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="animate-spin text-primary" size={32} />
+          </div>
+        ) : !isConnected ? (
+          /* Empty State */
+          <GlassCard className="p-12 text-center">
+            <LinkIcon className="mx-auto text-muted-foreground mb-4" size={48} />
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              No Bank Accounts Connected
+            </h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Connect your bank accounts via Plaid, Stripe, or manually to see all your accounts and transactions in one place.
+            </p>
+            <button 
+              onClick={() => window.location.href = '/integrations'}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Connect Your Bank
+            </button>
+          </GlassCard>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {items.map(item => (
-              <div key={item.id} className="glass gradient-border rounded-xl p-6">
+          <>
+            {/* Total Balance */}
+            <GlassCard className="p-6 mb-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div style={{ color: C.text1, fontWeight: 600, marginBottom: 4 }}>
-                    {item.name || item.title}
-                  </div>
-                  <div style={{ color: C.text3, fontSize: 12 }}>
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </div>
+                  <p className="text-sm text-muted-foreground mb-1">Total Balance</p>
+                  <p className="text-4xl font-bold text-foreground">
+                    ${totalBalance.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Across {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
+                  </p>
                 </div>
-                <button
-                  onClick={() => { setSelectedItem(item); setShowDeleteConfirm(true); }}
-                  style={{
-                    background: 'transparent', border: getCardBorder("#059669"),
-                    color: C.text2, padding: '6px 12px', borderRadius: 6,
-                    fontSize: 12, cursor: 'pointer'
-                  }}
-                >
-                  Delete
-                </button>
+                <Building className="text-indigo-500" size={48} />
               </div>
-            ))}
-          </div>
+            </GlassCard>
+
+            {/* Accounts List */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {accounts.map((account) => (
+                <GlassCard
+                  key={account.id}
+                  className={cn(
+                    "p-6 cursor-pointer transition-all",
+                    selectedAccount === account.id
+                      ? "border-indigo-500 shadow-lg shadow-indigo-500/20"
+                      : "hover:border-indigo-500/50"
+                  )}
+                  onClick={() => setSelectedAccount(account.id)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="text-indigo-500" size={20} />
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground">
+                          {account.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          ****{account.lastFour}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={cn(
+                      "text-xs px-2 py-1 rounded-full capitalize",
+                      account.type === 'checking' && "bg-blue-500/10 text-blue-500",
+                      account.type === 'savings' && "bg-green-500/10 text-green-500",
+                      account.type === 'credit' && "bg-orange-500/10 text-orange-500"
+                    )}>
+                      {account.type}
+                    </span>
+                  </div>
+
+                  <div className="mb-3">
+                    <p className="text-sm text-muted-foreground mb-1">Balance</p>
+                    <p className={cn(
+                      "text-2xl font-bold",
+                      account.balance >= 0 ? "text-green-500" : "text-red-500"
+                    )}>
+                      ${Math.abs(account.balance).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {account.sources.map((source, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
+                      >
+                        {source.icon} {source.label}
+                      </span>
+                    ))}
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+
+            {/* Recent Transactions for Selected Account */}
+            {selectedAccount && (
+              <GlassCard className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">
+                  Recent Transactions
+                </h3>
+                <div className="space-y-3">
+                  {transactions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No transactions found for this account.
+                    </p>
+                  ) : (
+                    transactions.slice(0, 10).map((txn) => (
+                      <div key={txn.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                        <div className="flex items-center gap-3">
+                          {txn.amount >= 0 ? (
+                            <TrendingUp className="text-green-500" size={18} />
+                          ) : (
+                            <TrendingDown className="text-red-500" size={18} />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              {txn.description}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(txn.date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <p className={cn(
+                          "text-sm font-bold",
+                          txn.amount >= 0 ? "text-green-500" : "text-red-500"
+                        )}>
+                          {txn.amount >= 0 ? '+' : '-'}${Math.abs(txn.amount).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </GlassCard>
+            )}
+          </>
         )}
       </main>
-      
-      {showCreateModal && (
-        <CreateModal
-          title="Add Bank Account"
-          fields={[
-            { name: 'name', label: 'Name', type: 'text', required: true },
-            { name: 'description', label: 'Description', type: 'textarea' },
-          ]}
-          onSave={handleCreate}
-          onClose={() => setShowCreateModal(false)}
-        />
-      )}
-      
-      {showDeleteConfirm && (
-        <DeleteConfirm
-          itemName={selectedItem?.name || selectedItem?.title}
-          onConfirm={handleDelete}
-          onCancel={() => { setShowDeleteConfirm(false); setSelectedItem(null); }}
-        />
-      )}
     </div>
   );
 }
