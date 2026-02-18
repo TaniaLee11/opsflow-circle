@@ -1,165 +1,306 @@
-import { useState } from 'react';
-import { C, getCardGradient, getCardBorder, cardBaseStyles } from "@/components/shared/theme";
+import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/layout/Navigation';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
-import { CreateModal } from '@/components/shared/CreateModal';
-import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
-import { useToast } from '@/components/shared/Toast';
-import { DollarSign } from 'lucide-react';
-
-const C = {
-  bg: "#0B1120",
-  surface: "#111827",
-  card: "#1A2332",
-  border: "#1E293B",
-  accent: "#0891B2",
-  text1: "#F1F5F9",
-  text2: "#94A3B8",
-  text3: "#64748B",
-};
+import { GlassCard } from '@/components/ui/glass-card';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchAllTransactionSources, deduplicateTransactions, type UnifiedTransaction } from '@/services/unifiedData';
+import { DollarSign, TrendingUp, TrendingDown, Search, Filter, Plus, Loader2, Link as LinkIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function Reconciliation() {
-  const [items, setItems] = useState<any[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('Uncategorized');
-  const { showToast } = useToast();
-  
-  // Mock user context - in production, get from auth
-  const userContext = {
-    name: 'Tania',
-    stage: 'foundations' as const,
-    tier: 'free' as const,
-    industry: 'owner' as const,
-    integrations: [],
-  };
-  
-  // Check if tool is connected
-  const isConnected = userContext.integrations.includes('quickbooks');
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<UnifiedTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'uncategorized' | 'recent'>('all');
+  const [isConnected, setIsConnected] = useState(false);
+  const [stats, setStats] = useState({
+    totalIncome: 0,
+    totalExpenses: 0,
+    netCashFlow: 0,
+    uncategorized: 0,
+  });
 
-  const handleCreate = (data: any) => {
-    const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() };
-    setItems([...items, newItem]);
-    setShowCreateModal(false);
-    showToast('success', 'Transaction created successfully');
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // Fetch from ALL connected accounting sources (QuickBooks, Wave, Stripe, bank connections)
+      const sources = await fetchAllTransactionSources(user.id);
+      
+      if (sources.length === 0) {
+        setIsConnected(false);
+        setTransactions([]);
+      } else {
+        const unified = deduplicateTransactions(sources);
+        setTransactions(unified);
+        setIsConnected(true);
+
+        // Calculate stats
+        const income = unified.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+        const expenses = unified.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        const uncategorized = unified.filter(t => !t.category || t.category === 'Uncategorized').length;
+
+        setStats({
+          totalIncome: income,
+          totalExpenses: expenses,
+          netCashFlow: income - expenses,
+          uncategorized,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load transaction data:', error);
+      setIsConnected(false);
+    } finally {
+      setLoading(false);
+    }
   };
-  
-  const handleDelete = () => {
-    setItems(items.filter(item => item.id !== selectedItem?.id));
-    setShowDeleteConfirm(false);
-    setSelectedItem(null);
-    showToast('success', 'Transaction deleted');
-  };
-  
+
+  const filteredTransactions = transactions.filter(txn => {
+    const matchesSearch = searchQuery === '' || 
+      txn.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (txn.category && txn.category.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    if (activeTab === 'uncategorized') {
+      return matchesSearch && (!txn.category || txn.category === 'Uncategorized');
+    } else if (activeTab === 'recent') {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return matchesSearch && new Date(txn.date) >= thirtyDaysAgo;
+    }
+    
+    return matchesSearch;
+  });
+
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
-        <PageHeader 
-          title="Reconciliation"
-          subtitle="{isConnected ? 'Connected to QuickBooks' : 'Track manually or connect QuickBooks'}"
-          icon={DollarSign}
-          action={{
-            label: "Add Transaction",
-            onClick: () => setShowCreateModal(true),
-            color: "#059669"
-          }}
-        />
-        
-        <VOPSyInsight page="reconciliation" userContext={userContext} />
-
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20, borderBottom: '1px solid #1E293B' }}>
-        {<button onClick={() => setActiveTab('Uncategorized')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Uncategorized' ? '2px solid #059669' : 'none', color: activeTab === 'Uncategorized' ? '#059669' : C.text2, fontWeight: activeTab === 'Uncategorized' ? 600 : 400, cursor: 'pointer' }}>Uncategorized</button>, <button onClick={() => setActiveTab('Recent')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Recent' ? '2px solid #059669' : 'none', color: activeTab === 'Recent' ? '#059669' : C.text2, fontWeight: activeTab === 'Recent' ? 600 : 400, cursor: 'pointer' }}>Recent</button>, <button onClick={() => setActiveTab('All')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'All' ? '2px solid #059669' : 'none', color: activeTab === 'All' ? '#059669' : C.text2, fontWeight: activeTab === 'All' ? 600 : 400, cursor: 'pointer' }}>All</button>}
-      </div>
-        {items.length === 0 ? (
-          <div style={{
-            background: getCardGradient("#059669"), borderRadius: 12,
-            border: getCardBorder("#059669"),
-            padding: 48, textAlign: "center"
-          }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-            <div style={{ color: C.text1, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-              No transactions yet
+      
+      <main className="flex-1 p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <DollarSign className="text-green-500" size={32} />
+                Reconciliation
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {isConnected 
+                  ? 'Unified transactions from all connected accounting sources' 
+                  : 'Connect your accounting software to see transactions'}
+              </p>
             </div>
-            <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
-              {isConnected 
-                ? 'Data will appear after your first sync with QuickBooks.'
-                : 'Add transactions manually or connect QuickBooks to sync automatically.'
-              }
-            </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                style={{
-                  background: getCardGradient("#059669"), color: "#fff", border: "none",
-                  padding: "8px 18px", borderRadius: 8, fontWeight: 600,
-                  fontSize: 13, cursor: "pointer"
-                }}
-              >
-                Add Transaction
-              </button>
-              {!isConnected && (
-                <button style={{
-                  background: "transparent", color: C.accent,
-                  border: `1px solid ${C.accent}`, padding: "8px 18px",
-                  borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer"
-                }}
-                  onClick={() => window.location.href = '/integrations'}
-                >
-                  Connect QuickBooks →
-                </button>
-              )}
-            </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+              <Plus size={18} />
+              Add Transaction
+            </button>
           </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="animate-spin text-primary" size={32} />
+          </div>
+        ) : !isConnected ? (
+          /* Empty State - No Accounting Connected */
+          <GlassCard className="p-12 text-center">
+            <LinkIcon className="mx-auto text-muted-foreground mb-4" size={48} />
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              No Accounting Software Connected
+            </h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Connect QuickBooks, Wave, Xero, or your bank to automatically sync and reconcile transactions.
+            </p>
+            <button 
+              onClick={() => window.location.href = '/integrations'}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+            >
+              Connect Your Tools
+            </button>
+          </GlassCard>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {items.map(item => (
-              <div key={item.id} className="glass gradient-border rounded-xl p-6">
-                <div>
-                  <div style={{ color: C.text1, fontWeight: 600, marginBottom: 4 }}>
-                    {item.name || item.title}
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Income</p>
+                    <p className="text-2xl font-bold text-green-500 mt-1">
+                      ${stats.totalIncome.toLocaleString()}
+                    </p>
                   </div>
-                  <div style={{ color: C.text3, fontSize: 12 }}>
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </div>
+                  <TrendingUp className="text-green-500" size={24} />
                 </div>
+              </GlassCard>
+
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Expenses</p>
+                    <p className="text-2xl font-bold text-red-500 mt-1">
+                      ${stats.totalExpenses.toLocaleString()}
+                    </p>
+                  </div>
+                  <TrendingDown className="text-red-500" size={24} />
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Net Cash Flow</p>
+                    <p className={cn(
+                      "text-2xl font-bold mt-1",
+                      stats.netCashFlow >= 0 ? "text-green-500" : "text-red-500"
+                    )}>
+                      ${stats.netCashFlow.toLocaleString()}
+                    </p>
+                  </div>
+                  <DollarSign className={stats.netCashFlow >= 0 ? "text-green-500" : "text-red-500"} size={24} />
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Uncategorized</p>
+                    <p className="text-2xl font-bold text-orange-500 mt-1">
+                      {stats.uncategorized}
+                    </p>
+                  </div>
+                  <Filter className="text-orange-500" size={24} />
+                </div>
+              </GlassCard>
+            </div>
+
+            {/* Search and Filters */}
+            <GlassCard className="p-4 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-secondary text-foreground rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-2 mt-4">
                 <button
-                  onClick={() => { setSelectedItem(item); setShowDeleteConfirm(true); }}
-                  style={{
-                    background: 'transparent', border: getCardBorder("#059669"),
-                    color: C.text2, padding: '6px 12px', borderRadius: 6,
-                    fontSize: 12, cursor: 'pointer'
-                  }}
+                  onClick={() => setActiveTab('all')}
+                  className={cn(
+                    "px-4 py-2 rounded-lg font-medium transition-colors",
+                    activeTab === 'all'
+                      ? "bg-green-600 text-white"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  )}
                 >
-                  Delete
+                  All
+                </button>
+                <button
+                  onClick={() => setActiveTab('uncategorized')}
+                  className={cn(
+                    "px-4 py-2 rounded-lg font-medium transition-colors",
+                    activeTab === 'uncategorized'
+                      ? "bg-green-600 text-white"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  Uncategorized ({stats.uncategorized})
+                </button>
+                <button
+                  onClick={() => setActiveTab('recent')}
+                  className={cn(
+                    "px-4 py-2 rounded-lg font-medium transition-colors",
+                    activeTab === 'recent'
+                      ? "bg-green-600 text-white"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  Recent (30 days)
                 </button>
               </div>
-            ))}
-          </div>
+            </GlassCard>
+
+            {/* Transactions List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-foreground">
+                  Transactions
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredTransactions.length} {filteredTransactions.length === 1 ? 'transaction' : 'transactions'}
+                </p>
+              </div>
+
+              {filteredTransactions.length === 0 ? (
+                <GlassCard className="p-8 text-center">
+                  <p className="text-muted-foreground">
+                    {searchQuery ? 'No transactions match your search.' : 'No transactions found.'}
+                  </p>
+                </GlassCard>
+              ) : (
+                filteredTransactions.map((txn) => (
+                  <GlassCard key={txn.id} className="p-4 hover:border-primary/50 transition-colors cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {txn.description}
+                          </h3>
+                          {/* Source Badges */}
+                          <div className="flex gap-1">
+                            {txn.sources.map((source, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
+                                title={source.label}
+                              >
+                                {source.icon} {source.label}
+                              </span>
+                            ))}
+                          </div>
+                          {/* Category Badge */}
+                          {txn.category && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                              {txn.category}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(txn.date).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                      <div className={cn(
+                        "text-xl font-bold",
+                        txn.amount >= 0 ? "text-green-500" : "text-red-500"
+                      )}>
+                        {txn.amount >= 0 ? '+' : '-'}${Math.abs(txn.amount).toLocaleString()}
+                      </div>
+                    </div>
+                  </GlassCard>
+                ))
+              )}
+            </div>
+          </>
         )}
       </main>
-      
-      {showCreateModal && (
-        <CreateModal
-          title="Add Transaction"
-          fields={[
-            { name: 'name', label: 'Name', type: 'text', required: true },
-            { name: 'description', label: 'Description', type: 'textarea' },
-          ]}
-          onSave={handleCreate}
-          onClose={() => setShowCreateModal(false)}
-        />
-      )}
-      
-      {showDeleteConfirm && (
-        <DeleteConfirm
-          itemName={selectedItem?.name || selectedItem?.title}
-          onConfirm={handleDelete}
-          onCancel={() => { setShowDeleteConfirm(false); setSelectedItem(null); }}
-        />
-      )}
     </div>
   );
 }
