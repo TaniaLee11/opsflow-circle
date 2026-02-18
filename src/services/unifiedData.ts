@@ -294,11 +294,8 @@ export async function fetchAllContactSources(
   const sources: { provider: string; contacts: any[] }[] = [];
 
   // 1. Get ALL active integrations for this user
-  const { data: integrations } = await supabase
-    .from('user_integrations')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active');
+  // TODO: Implement user_integrations table in Supabase
+  const integrations: any[] = []; // Empty for now - will populate when OAuth is connected
 
   // 2. Fetch contacts from EACH connected source
   for (const integration of integrations || []) {
@@ -339,12 +336,8 @@ export async function fetchAllTransactionSources(
 ): Promise<{ provider: string; transactions: any[] }[]> {
   const sources: { provider: string; transactions: any[] }[] = [];
 
-  const { data: integrations } = await supabase
-    .from('user_integrations')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .in('provider', ['quickbooks', 'wave', 'xero', 'freshbooks', 'stripe', 'square', 'chime', 'plaid', 'mercury', 'relay']);
+  // TODO: Implement user_integrations table in Supabase
+  const integrations: any[] = []; // Empty for now - will populate when OAuth is connected
 
   for (const integration of integrations || []) {
     try {
@@ -364,4 +357,93 @@ export async function fetchAllTransactionSources(
   }
 
   return sources;
+}
+
+export async function fetchAllOpportunitySources(
+  userId: string,
+  userRole: string
+): Promise<UnifiedOpportunity[]> {
+  const sources: { provider: string; opportunities: any[] }[] = [];
+
+  // TODO: Implement user_integrations table in Supabase
+  const integrations: any[] = []; // Empty for now - will populate when OAuth is connected
+
+  for (const integration of integrations || []) {
+    try {
+      const response = await fetch(`/api/integrations/${integration.provider}/opportunities`, {
+        headers: {
+          'x-user-id': userId,
+          'x-integration-id': integration.id,
+        },
+      });
+      const data = await response.json();
+      if (data.opportunities) {
+        sources.push({ provider: integration.provider, opportunities: data.opportunities });
+      }
+    } catch (error) {
+      console.error(`Failed to fetch opportunities from ${integration.provider}:`, error);
+    }
+  }
+
+  // FOR OWNER: also include platform GHL data
+  if (userRole === 'owner') {
+    try {
+      const response = await fetch('/api/ghl-opportunities');
+      const data = await response.json();
+      if (data.opportunities) {
+        sources.push({ provider: 'ghl', opportunities: data.opportunities });
+      }
+    } catch (error) {
+      console.error('Failed to fetch platform GHL opportunities:', error);
+    }
+  }
+
+  // Deduplicate and return
+  return deduplicateOpportunities(sources);
+}
+
+function deduplicateOpportunities(
+  sources: { provider: string; opportunities: any[] }[]
+): UnifiedOpportunity[] {
+  const oppMap = new Map<string, UnifiedOpportunity>();
+
+  for (const source of sources) {
+    for (const opp of source.opportunities) {
+      // Dedup key: title + value (fuzzy match)
+      const key = `${opp.title?.toLowerCase()}_${opp.value || opp.monetaryValue || 0}`;
+
+      if (oppMap.has(key)) {
+        // EXISTS — merge
+        const existing = oppMap.get(key)!;
+        existing.sources.push({
+          provider: source.provider,
+          providerId: opp.id,
+          label: providerLabel(source.provider),
+          icon: providerIcon(source.provider),
+        });
+        existing.sourceData[source.provider] = opp;
+      } else {
+        // NEW opportunity
+        oppMap.set(key, {
+          id: crypto.randomUUID(),
+          title: opp.title || opp.name || 'Untitled Deal',
+          value: opp.value || opp.monetaryValue || 0,
+          stage: opp.stage || opp.pipelineStage || 'Unknown',
+          status: opp.status || 'open',
+          contactName: opp.contactName || opp.contact?.name,
+          sources: [
+            {
+              provider: source.provider,
+              providerId: opp.id,
+              label: providerLabel(source.provider),
+              icon: providerIcon(source.provider),
+            },
+          ],
+          sourceData: { [source.provider]: opp },
+        });
+      }
+    }
+  }
+
+  return Array.from(oppMap.values());
 }
