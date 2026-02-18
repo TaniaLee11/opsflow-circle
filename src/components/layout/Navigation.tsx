@@ -6,18 +6,6 @@ import {
   Calendar, CheckSquare, FolderLock, ChevronDown, Lock, HelpCircle
 } from 'lucide-react';
 
-const C = {
-  bg: "#0B1120",
-  surface: "#111827",
-  card: "#1A2332",
-  border: "#1E293B",
-  accent: "#0891B2",
-  accentSoft: "rgba(8,145,178,0.12)",
-  text1: "#F1F5F9",
-  text2: "#94A3B8",
-  text3: "#64748B",
-};
-
 export function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,39 +89,19 @@ export function Navigation() {
   ];
 
   return (
-    <aside style={{
-      width: 220,
-      height: '100vh',
-      background: C.bg,
-      borderRight: `1px solid ${C.border}`,
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'fixed',
-      left: 0,
-      top: 0,
-      zIndex: 50,
-    }}>
+    <aside className="w-[220px] h-screen glass border-r border-border/50 flex flex-col fixed left-0 top-0 z-50">
       {/* Logo */}
-      <div style={{ 
-        padding: '20px 16px', 
-        borderBottom: `1px solid ${C.border}`,
-        flexShrink: 0,
-      }}>
-        <div style={{ color: C.text1, fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
+      <div className="p-4 border-b border-border/50 flex-shrink-0">
+        <div className="text-foreground text-sm font-bold tracking-wide">
           VIRTUAL OPS HUB
         </div>
-        <div style={{ color: C.text3, fontSize: 10, marginTop: 2 }}>
+        <div className="text-muted-foreground text-xs mt-0.5">
           Your AI Business Partner
         </div>
       </div>
 
       {/* Scrollable navigation area */}
-      <nav style={{ 
-        flex: 1, 
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        padding: '16px 0',
-      }}>
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4">
         <NavLink 
           icon={LayoutDashboard} 
           label="Dashboard" 
@@ -154,14 +122,7 @@ export function Navigation() {
         />
 
         {/* Departments */}
-        <div style={{ 
-          color: C.text3, 
-          fontSize: 10, 
-          fontWeight: 700, 
-          letterSpacing: 0.8, 
-          padding: '16px 16px 8px',
-          marginTop: 8
-        }}>
+        <div className="text-muted-foreground text-[10px] font-bold tracking-wider px-4 py-2 mt-2">
           DEPARTMENTS
         </div>
 
@@ -175,55 +136,35 @@ export function Navigation() {
                   toggle(dept.id);
                 }
               }}
-              style={{
-                width: '100%',
-                background: 'transparent',
-                border: 'none',
-                padding: '8px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                cursor: 'pointer',
-                color: dept.locked ? C.text3 : C.text1,
-                transition: 'all 0.2s',
-              }}
+              className="w-full bg-transparent border-none px-4 py-2 flex items-center gap-2.5 cursor-pointer text-foreground transition-all hover:bg-accent/10"
             >
               <dept.icon size={16} />
-              <span style={{ flex: 1, textAlign: 'left', fontSize: 13, fontWeight: 500 }}>
+              <span className="flex-1 text-left text-sm font-medium">
                 {dept.name}
               </span>
-              {dept.locked && <Lock size={12} />}
+              {dept.locked && <Lock size={12} className="text-muted-foreground" />}
               {!dept.locked && <ChevronDown 
                 size={14} 
+                className="transition-transform duration-200"
                 style={{ 
-                  transform: expanded.includes(dept.id) ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s'
+                  transform: expanded.includes(dept.id) ? 'rotate(180deg)' : 'rotate(0deg)'
                 }} 
               />}
             </button>
 
             {!dept.locked && expanded.includes(dept.id) && (
-              <div style={{ paddingLeft: 42 }}>
+              <div className="pl-[42px]">
                 {dept.pages.map(page => (
                   <button
                     key={page.path}
                     onClick={() => navigate(page.path)}
-                    style={{
-                      width: '100%',
-                      background: isActive(page.path) ? C.accentSoft : 'transparent',
-                      border: 'none',
-                      padding: '6px 12px',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      color: page.locked ? C.text3 : (isActive(page.path) ? C.accent : C.text2),
-                      fontSize: 12,
-                      fontWeight: 500,
-                      borderRadius: 6,
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
+                    className={`w-full border-none px-3 py-1.5 text-left cursor-pointer text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                      isActive(page.path) 
+                        ? 'bg-primary/10 text-primary' 
+                        : page.locked 
+                        ? 'bg-transparent text-muted-foreground' 
+                        : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent/10'
+                    }`}
                   >
                     {page.name}
                     {page.locked && <Lock size={10} />}
@@ -235,42 +176,14 @@ export function Navigation() {
         ))}
 
         {/* Add some bottom padding for scroll space */}
-        <div style={{ height: 80 }} />
+        <div className="h-20" />
       </nav>
 
       {/* Support button at bottom */}
-      <div style={{ 
-        borderTop: `1px solid ${C.border}`,
-        padding: '12px',
-        flexShrink: 0,
-      }}>
+      <div className="border-t border-border/50 p-3 flex-shrink-0">
         <button
           onClick={() => window.open('https://help.manus.im', '_blank')}
-          style={{
-            width: '100%',
-            background: 'transparent',
-            border: `1px solid ${C.border}`,
-            borderRadius: 8,
-            padding: '10px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            cursor: 'pointer',
-            color: C.text2,
-            fontSize: 13,
-            fontWeight: 500,
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.accentSoft;
-            e.currentTarget.style.borderColor = C.accent;
-            e.currentTarget.style.color = C.accent;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.borderColor = C.border;
-            e.currentTarget.style.color = C.text2;
-          }}
+          className="w-full bg-transparent border border-border rounded-lg px-3 py-2.5 flex items-center gap-2.5 cursor-pointer text-muted-foreground text-sm font-medium transition-all hover:bg-primary/10 hover:border-primary hover:text-primary"
         >
           <HelpCircle size={16} />
           <span>Support</span>
@@ -284,21 +197,14 @@ function NavLink({ icon: Icon, label, active, onClick }: any) {
   return (
     <button
       onClick={onClick}
-      style={{
-        width: '100%',
-        background: active ? C.accentSoft : 'transparent',
-        border: 'none',
-        padding: '8px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        cursor: 'pointer',
-        color: active ? C.accent : C.text1,
-        transition: 'all 0.2s',
-      }}
+      className={`w-full border-none px-4 py-2 flex items-center gap-2.5 cursor-pointer transition-all ${
+        active 
+          ? 'bg-primary/10 text-primary' 
+          : 'bg-transparent text-foreground hover:bg-accent/10'
+      }`}
     >
       <Icon size={16} />
-      <span style={{ fontSize: 13, fontWeight: 500 }}>{label}</span>
+      <span className="text-sm font-medium">{label}</span>
     </button>
   );
 }

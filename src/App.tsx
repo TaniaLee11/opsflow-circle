@@ -83,7 +83,7 @@ import IntegrationCallback from "./pages/IntegrationCallback";
 import AnalyticsPortal from "./pages/AnalyticsPortal";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { TicketingWidget } from "@/components/TicketingWidget";
+
 
 const queryClient = new QueryClient();
 
@@ -111,7 +111,6 @@ const App = () => (
                 <BrowserRouter>
                   <ClientViewBanner />
                   <ChatWidgetWrapper />
-                  <TicketingWidget />
                   <Routes>
                     {/* Public routes */}
                     <Route path="/" element={<Landing />} />
