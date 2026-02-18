@@ -1,67 +1,51 @@
 import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/layout/Navigation';
-import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardDescription, GlassCardContent } from '@/components/ui/glass-card';
-import { ghlService, type GHLPipeline, type GHLOpportunity } from '@/services/ghl';
+import { GlassCard } from '@/components/ui/glass-card';
+import { fetchAllDeals } from '@/services/integrationFetcher';
+import { deduplicateDeals, type UnifiedDeal } from '@/services/dataUnifier';
 import { TrendingUp, DollarSign, Target, CheckCircle2, XCircle, Loader2, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Pipeline() {
-  const [pipelines, setPipelines] = useState<GHLPipeline[]>([]);
-  const [opportunities, setOpportunities] = useState<GHLOpportunity[]>([]);
+  const { user, profile } = useAuth();
+  const [deals, setDeals] = useState<UnifiedDeal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPipeline, setSelectedPipeline] = useState<string | null>(null);
-  const [stats, setStats] = useState({
-    totalValue: 0,
-    totalDeals: 0,
-    wonDeals: 0,
-    lostDeals: 0,
-    openDeals: 0,
-  });
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user && profile) {
+      loadDeals();
+    }
+  }, [user, profile]);
 
-  const loadData = async () => {
+  const loadDeals = async () => {
+    if (!user || !profile) return;
+    
     setLoading(true);
     try {
-      const [pipelinesData, opportunitiesData] = await Promise.all([
-        ghlService.getPipelines(),
-        ghlService.getOpportunities(),
-      ]);
+      // Fetch from ALL connected sources
+      const sources = await fetchAllDeals(user.id, profile.role);
       
-      setPipelines(pipelinesData);
-      setOpportunities(opportunitiesData);
-      
-      if (pipelinesData.length > 0 && !selectedPipeline) {
-        setSelectedPipeline(pipelinesData[0].id);
+      if (sources.length > 0) {
+        // Merge and deduplicate
+        const unified = deduplicateDeals(sources);
+        setDeals(unified);
+        setConnected(true);
+      } else {
+        setConnected(false);
+        setDeals([]);
       }
-
-      // Calculate stats
-      const totalValue = opportunitiesData.reduce((sum, opp) => sum + (opp.monetaryValue || 0), 0);
-      const wonDeals = opportunitiesData.filter(opp => opp.status === 'won').length;
-      const lostDeals = opportunitiesData.filter(opp => opp.status === 'lost').length;
-      const openDeals = opportunitiesData.filter(opp => opp.status === 'open').length;
-
-      setStats({
-        totalValue,
-        totalDeals: opportunitiesData.length,
-        wonDeals,
-        lostDeals,
-        openDeals,
-      });
     } catch (error) {
-      console.error('Failed to load pipeline data:', error);
+      console.error('Failed to load deals:', error);
+      setConnected(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredOpportunities = selectedPipeline
-    ? opportunities.filter(opp => opp.pipelineId === selectedPipeline)
-    : opportunities;
-
-  const currentPipeline = pipelines.find(p => p.id === selectedPipeline);
+  const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
+  const wonDeals = deals.filter(d => d.stage === 'won' || d.stage === 'closed_won');
+  const lostDeals = deals.filter(d => d.stage === 'lost' || d.stage === 'closed_lost');
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -77,7 +61,9 @@ export default function Pipeline() {
                 Pipeline
               </h1>
               <p className="text-muted-foreground mt-1">
-                Track deals and opportunities from GoHighLevel
+                {connected 
+                  ? 'Track deals and opportunities from all connected sources'
+                  : 'Manage your sales pipeline'}
               </p>
             </div>
             <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
@@ -91,16 +77,41 @@ export default function Pipeline() {
           <div className="flex items-center justify-center h-64">
             <Loader2 className="animate-spin text-primary" size={32} />
           </div>
+        ) : !connected ? (
+          /* Empty State - Not Connected */
+          <div className="flex flex-col items-center justify-center h-96">
+            <GlassCard className="max-w-md text-center p-8">
+              <TrendingUp className="mx-auto text-muted-foreground mb-4" size={48} />
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                No Deals Yet
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Add deals manually or connect your CRM to sync automatically.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                  <Plus size={18} />
+                  Add Deal Manually
+                </button>
+                <button 
+                  onClick={() => window.location.href = '/integrations'}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-transparent text-primary border border-primary/30 rounded-lg font-medium hover:bg-primary/10 transition-colors"
+                >
+                  Connect Your CRM →
+                </button>
+              </div>
+            </GlassCard>
+          </div>
         ) : (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <GlassCard className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Value</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      ${stats.totalValue.toLocaleString()}
+                      ${totalValue.toLocaleString()}
                     </p>
                   </div>
                   <DollarSign className="text-green-500" size={24} />
@@ -112,7 +123,7 @@ export default function Pipeline() {
                   <div>
                     <p className="text-sm text-muted-foreground">Total Deals</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      {stats.totalDeals}
+                      {deals.length}
                     </p>
                   </div>
                   <Target className="text-blue-500" size={24} />
@@ -124,7 +135,7 @@ export default function Pipeline() {
                   <div>
                     <p className="text-sm text-muted-foreground">Won</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      {stats.wonDeals}
+                      {wonDeals.length}
                     </p>
                   </div>
                   <CheckCircle2 className="text-green-500" size={24} />
@@ -136,7 +147,7 @@ export default function Pipeline() {
                   <div>
                     <p className="text-sm text-muted-foreground">Lost</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      {stats.lostDeals}
+                      {lostDeals.length}
                     </p>
                   </div>
                   <XCircle className="text-red-500" size={24} />
@@ -144,120 +155,63 @@ export default function Pipeline() {
               </GlassCard>
             </div>
 
-            {/* Pipeline Selector */}
-            {pipelines.length > 0 && (
-              <div className="mb-6">
-                <div className="flex gap-2 flex-wrap">
-                  {pipelines.map(pipeline => (
-                    <button
-                      key={pipeline.id}
-                      onClick={() => setSelectedPipeline(pipeline.id)}
-                      className={cn(
-                        "px-4 py-2 rounded-lg font-medium transition-all",
-                        selectedPipeline === pipeline.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card/50 text-muted-foreground hover:bg-card"
-                      )}
-                    >
-                      {pipeline.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Deals List */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">
+                Active Deals
+                <span className="text-sm text-muted-foreground ml-2">
+                  {deals.length} {deals.length === 1 ? 'deal' : 'deals'}
+                </span>
+              </h3>
 
-            {/* Pipeline Stages */}
-            {currentPipeline && (
-              <GlassCard>
-                <GlassCardHeader>
-                  <GlassCardTitle>{currentPipeline.name}</GlassCardTitle>
-                  <GlassCardDescription>
-                    {currentPipeline.stages.length} stages
-                  </GlassCardDescription>
-                </GlassCardHeader>
-                <GlassCardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {currentPipeline.stages
-                      .sort((a, b) => a.position - b.position)
-                      .map(stage => {
-                        const stageOpps = filteredOpportunities.filter(
-                          opp => opp.pipelineStageId === stage.id
-                        );
-                        const stageValue = stageOpps.reduce(
-                          (sum, opp) => sum + (opp.monetaryValue || 0),
-                          0
-                        );
-
-                        return (
-                          <div
-                            key={stage.id}
-                            className="glass rounded-lg p-4 border border-border/50"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-semibold text-foreground">
-                                {stage.name}
-                              </h4>
-                              <span className="text-sm text-muted-foreground">
-                                {stageOpps.length}
-                              </span>
-                            </div>
-                            <p className="text-lg font-bold text-primary">
-                              ${stageValue.toLocaleString()}
-                            </p>
+              <div className="space-y-3">
+                {deals.map((deal) => (
+                  <GlassCard key={deal.id} className="p-4 hover:bg-background/80 transition-colors cursor-pointer">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-base font-semibold text-foreground">
+                          {deal.title}
+                        </h4>
+                        
+                        <div className="flex flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <DollarSign size={14} />
+                            ${deal.value.toLocaleString()}
                           </div>
-                        );
-                      })}
-                  </div>
-                </GlassCardContent>
-              </GlassCard>
-            )}
-
-            {/* Opportunities List */}
-            {filteredOpportunities.length > 0 && (
-              <GlassCard className="mt-6">
-                <GlassCardHeader>
-                  <GlassCardTitle>Opportunities</GlassCardTitle>
-                  <GlassCardDescription>
-                    {filteredOpportunities.length} active opportunities
-                  </GlassCardDescription>
-                </GlassCardHeader>
-                <GlassCardContent>
-                  <div className="space-y-3">
-                    {filteredOpportunities.map(opp => (
-                      <div
-                        key={opp.id}
-                        className="flex items-center justify-between p-4 rounded-lg bg-card/30 border border-border/30 hover:bg-card/50 transition-colors"
-                      >
-                        <div>
-                          <h5 className="font-medium text-foreground">{opp.name}</h5>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Status: {opp.status}
-                          </p>
+                          {deal.contactName && (
+                            <div className="flex items-center gap-1">
+                              {deal.contactName}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-primary">
-                            ${(opp.monetaryValue || 0).toLocaleString()}
-                          </p>
+
+                        {/* Source Badges */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {deal.sources.map((source, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 text-xs rounded-md bg-background/60 text-muted-foreground border border-border"
+                            >
+                              {source.icon} {source.label}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </GlassCardContent>
-              </GlassCard>
-            )}
 
-            {/* Empty State */}
-            {pipelines.length === 0 && (
-              <GlassCard className="text-center py-12">
-                <div className="text-6xl mb-4">📋</div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  No Pipelines Found
-                </h3>
-                <p className="text-muted-foreground">
-                  Connect your GoHighLevel account to see your pipelines and opportunities.
-                </p>
-              </GlassCard>
-            )}
+                      <span className="text-xs text-blue-500 font-medium px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+                        {deal.stage}
+                      </span>
+                    </div>
+                  </GlassCard>
+                ))}
+
+                {deals.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No active deals
+                  </div>
+                )}
+              </div>
+            </div>
           </>
         )}
       </main>
