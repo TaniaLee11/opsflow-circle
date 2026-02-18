@@ -6,9 +6,12 @@ CREATE TABLE IF NOT EXISTS vopsy_conversations (
   content TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   
-  -- Index for efficient queries
-  INDEX idx_vopsy_conversations_user_created (user_id, created_at DESC)
+
 );
+
+-- Create index for efficient queries
+CREATE INDEX IF NOT EXISTS idx_vopsy_conversations_user_created 
+  ON vopsy_conversations (user_id, created_at DESC);
 
 -- Enable Row Level Security
 ALTER TABLE vopsy_conversations ENABLE ROW LEVEL SECURITY;

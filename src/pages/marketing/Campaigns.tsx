@@ -8,16 +8,6 @@ import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
 import { useToast } from '@/components/shared/Toast';
 import { Megaphone } from 'lucide-react';
 
-const C = {
-  bg: "#0B1120",
-  surface: "#111827",
-  card: "#1A2332",
-  border: "#1E293B",
-  accent: "#0891B2",
-  text1: "#F1F5F9",
-  text2: "#94A3B8",
-  text3: "#64748B",
-};
 
 export default function CampaignResults() {
   const [items, setItems] = useState<any[]>([]);

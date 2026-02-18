@@ -3,14 +3,6 @@ import { C, getCardGradient, getCardBorder, cardBaseStyles } from "@/components/
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Megaphone } from 'lucide-react';
 
-const C = {
-  bg: "#0B1120",
-  card: "#1A2332",
-  border: "#1E293B",
-  accent: "#0891B2",
-  text1: "#F1F5F9",
-  text2: "#94A3B8",
-};
 
 export default function Marketing() {
   const userContext = {
