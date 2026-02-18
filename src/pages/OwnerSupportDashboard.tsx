@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/layout/Navigation';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Bell, Clock, CheckCircle, AlertCircle, MessageSquare, Phone, Video, Mail } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Escalation {
   id: string;
