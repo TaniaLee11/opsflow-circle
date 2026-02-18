@@ -24,6 +24,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { useState } from "react";
+import { EmailCaptureModal } from "@/components/EmailCaptureModal";
+import { useTaxSeasonIntegration } from "@/hooks/tax-season-integration";
 
 // Calculate days until deadline
 const getDaysUntil = (dateStr: string) => {
@@ -168,6 +170,7 @@ const taxSlides = [
 export default function TaxSeason2026() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { isModalOpen, captureEmail, submitEmail, closeModal } = useTaxSeasonIntegration();
   const totalSlides = taxSlides.length;
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
@@ -179,8 +182,14 @@ export default function TaxSeason2026() {
     if (action === "next") {
       nextSlide();
     } else if (action === "signup") {
-      window.open(CALENDLY_URL, "_blank");
+      // Show email capture modal before scheduling
+      captureEmail("schedule");
     }
+  };
+
+  const handleEmailSubmit = async (email: string, firstName?: string) => {
+    await submitEmail(email, firstName);
+    // Redirect to Calendly happens in the hook after successful submission
   };
 
   const currentSlideData = taxSlides[currentSlide];
@@ -597,6 +606,16 @@ export default function TaxSeason2026() {
         </div>
       </footer>
     </div>
+
+    {/* Email Capture Modal */}
+    <EmailCaptureModal
+      isOpen={isModalOpen}
+      onClose={closeModal}
+      onSubmit={handleEmailSubmit}
+      title="Get Your Tax Season Guide"
+      description="Enter your email to receive your personalized tax deadline reminders and resources."
+      submitButtonText="Get My Guide"
+    />
     </>
   );
 }

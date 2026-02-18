@@ -6,6 +6,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { cn } from "@/lib/utils";
+import { EmailCaptureModal } from "@/components/EmailCaptureModal";
+import { useHealthCheckIntegration } from "@/hooks/health-check-integration";
 
 interface Question {
   id: string;
@@ -89,6 +91,7 @@ const getInterpretation = (score: number): string => {
 export default function BusinessHealthCheck() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const { isModalOpen, captureEmail, submitEmail, closeModal } = useHealthCheckIntegration();
 
   const handleAnswer = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -109,6 +112,15 @@ export default function BusinessHealthCheck() {
 
   const handleSubmit = () => {
     if (allAnswered) {
+      // Show email capture modal BEFORE showing results
+      captureEmail();
+    }
+  };
+
+  const handleEmailSubmit = async (email: string, firstName?: string) => {
+    const success = await submitEmail(email, firstName);
+    if (success) {
+      // Show results after email is captured
       setSubmitted(true);
     }
   };
@@ -254,6 +266,16 @@ export default function BusinessHealthCheck() {
           )}
         </div>
       </div>
+
+      {/* Email Capture Modal */}
+      <EmailCaptureModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSubmit={handleEmailSubmit}
+        title="Get Your Detailed Report"
+        description="Enter your email to receive your personalized business health report and recommendations."
+        submitButtonText="Get My Report"
+      />
     </>
   );
 }

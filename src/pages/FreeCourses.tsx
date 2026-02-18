@@ -24,6 +24,8 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { usePublicCourses } from "@/hooks/usePublicCourses";
 import { cn } from "@/lib/utils";
+import { EmailCaptureModal } from "@/components/EmailCaptureModal";
+import { useFreeCoursesIntegration } from "@/hooks/free-courses-integration";
 
 const platformHighlights = [
   {
@@ -71,9 +73,16 @@ const testimonials = [
 export default function FreeCourses() {
   const navigate = useNavigate();
   const { courses, isLoading } = usePublicCourses();
+  const { isModalOpen, captureEmail, submitEmail, closeModal } = useFreeCoursesIntegration();
 
   const handleSignUp = () => {
-    navigate("/hub");
+    // Show email capture modal before redirecting
+    captureEmail("/hub");
+  };
+
+  const handleEmailSubmit = async (email: string, firstName?: string) => {
+    await submitEmail(email, firstName);
+    // Redirect happens in the hook after successful submission
   };
 
   return (
@@ -430,6 +439,16 @@ export default function FreeCourses() {
 
         <PublicFooter />
       </div>
+
+      {/* Email Capture Modal */}
+      <EmailCaptureModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSubmit={handleEmailSubmit}
+        title="Start Learning Today"
+        description="Enter your email to access free courses and get started with Virtual OPS Hub."
+        submitButtonText="Get Started"
+      />
     </>
   );
 }
