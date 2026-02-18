@@ -89,7 +89,7 @@ export function Navigation() {
   ];
 
   return (
-    <aside className="w-[220px] h-screen glass border-r border-border/50 flex flex-col fixed left-0 top-0 z-50">
+    <aside className="w-[220px] h-screen glass border-r border-border/50 flex flex-col flex-shrink-0">
       {/* Logo */}
       <div className="p-4 border-b border-border/50 flex-shrink-0">
         <div className="text-foreground text-sm font-bold tracking-wide">

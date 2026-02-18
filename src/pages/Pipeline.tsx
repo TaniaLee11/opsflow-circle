@@ -67,7 +67,7 @@ export default function Pipeline() {
     <div className="flex min-h-screen bg-background">
       <Navigation />
       
-      <main className="flex-1 ml-[220px] p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
