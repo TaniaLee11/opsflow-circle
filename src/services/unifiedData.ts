@@ -1,7 +1,7 @@
 // Unified Data Layer: Merge data from ALL connected OAuth sources
 // Deduplicates contacts, transactions, emails across GHL, QuickBooks, Google, Stripe, etc.
 
-import { supabase } from '@/lib/supabase';
+// import { supabase } from '@/lib/supabase'; // Not needed yet
 
 // ============================================================================
 // TYPES
