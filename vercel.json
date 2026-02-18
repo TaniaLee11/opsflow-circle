@@ -13,6 +13,12 @@
       "schedule": "*/5 * * * *"
     }
   ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "redirects": [
     {
       "source": "/free-course",
