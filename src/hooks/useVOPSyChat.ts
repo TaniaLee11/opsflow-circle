@@ -174,23 +174,33 @@ export function useVOPSyChat() {
           content: m.content,
         }));
 
-      const { data, error: fnError } = await supabase.functions.invoke('vopsy-chat', {
-        body: {
-          messages: conversationHistory,
-          userContext,
-          capabilityBlocked: capabilityCheck.blocked ? capabilityCheck.capability : undefined,
+      // Call new /api/vopsy/chat endpoint
+      const response = await fetch('/api/vopsy/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          message: content.trim(),
+          userId: user?.id,
+          pageContext: window.location.pathname.includes('/') 
+            ? window.location.pathname.split('/').filter(Boolean).join(' > ') 
+            : undefined,
+        }),
       });
 
-      if (fnError) {
-        throw new Error(fnError.message || 'Failed to get response');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to get response');
       }
+
+      const data = await response.json();
 
       // Replace typing indicator with actual response
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'vopsy',
-        content: data.reply || data.message || "I'm having trouble responding right now. Please try again.",
+        content: data.response || "I'm having trouble responding right now. Please try again.",
         timestamp: new Date(),
         // Add upgrade nudge if capability was blocked
         showUpgradeNudge: capabilityCheck.blocked,
