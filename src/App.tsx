@@ -121,6 +121,7 @@ const App = () => (
                     <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
                     <Route path="/tax-services" element={<TaxServices />} />
                     <Route path="/free-courses" element={<FreeCourses />} />
+                    {/* Landing page alias for marketing funnel */}
                     <Route path="/free-course" element={<FreeCourses />} />
                     <Route path="/free-courses/:courseId" element={<FreeCourse />} />
                     <Route path="/privacy" element={<Privacy />} />
