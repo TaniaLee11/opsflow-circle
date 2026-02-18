@@ -11,6 +11,18 @@
       "schedule": "*/5 * * * *"
     }
   ],
+  "redirects": [
+    {
+      "source": "/free-course",
+      "destination": "/free-courses",
+      "permanent": false
+    },
+    {
+      "source": "/business-health-check",
+      "destination": "/health-check",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api).*)",
