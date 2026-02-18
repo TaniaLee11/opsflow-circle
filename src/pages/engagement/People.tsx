@@ -1,44 +1,64 @@
 import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/layout/Navigation';
-import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardDescription, GlassCardContent } from '@/components/ui/glass-card';
-import { ghlService, type GHLContact } from '@/services/ghl';
-import { Users, Mail, Phone, Building2, Tag, Loader2, Plus, Search } from 'lucide-react';
+import { GlassCard } from '@/components/ui/glass-card';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchAllContactSources, deduplicateContacts, type UnifiedContact } from '@/services/unifiedData';
+import { Users, Mail, Phone, Building2, Tag, Loader2, Plus, Search, Link as LinkIcon } from 'lucide-react';
 
 export default function People() {
-  const [contacts, setContacts] = useState<GHLContact[]>([]);
+  const { user } = useAuth();
+  const [contacts, setContacts] = useState<UnifiedContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [totalCount, setTotalCount] = useState(0);
+  const [sourceCount, setSourceCount] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    loadContacts();
-  }, []);
+    if (user) {
+      loadContacts();
+    }
+  }, [user]);
 
   const loadContacts = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
-      const [contactsData, count] = await Promise.all([
-        ghlService.getContacts(100),
-        ghlService.getContactCount(),
-      ]);
+      // Fetch from ALL connected sources (GHL, QuickBooks, Google, etc.)
+      const sources = await fetchAllContactSources(user.id, user.user_metadata?.role || 'user');
       
-      setContacts(contactsData);
-      setTotalCount(count);
+      if (sources.length === 0) {
+        // No integrations connected
+        setIsConnected(false);
+        setContacts([]);
+        setSourceCount(0);
+      } else {
+        // Merge and deduplicate contacts from all sources
+        const unified = deduplicateContacts(sources);
+        setContacts(unified);
+        setSourceCount(sources.length);
+        setIsConnected(true);
+      }
     } catch (error) {
       console.error('Failed to load contacts:', error);
+      setIsConnected(false);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredContacts = contacts.filter(contact => {
-    const name = ghlService.getContactName(contact).toLowerCase();
-    const email = (contact.email || '').toLowerCase();
-    const phone = (contact.phone || '').toLowerCase();
     const query = searchQuery.toLowerCase();
-    
-    return name.includes(query) || email.includes(query) || phone.includes(query);
+    return (
+      contact.name.toLowerCase().includes(query) ||
+      contact.email.toLowerCase().includes(query) ||
+      (contact.phone || '').toLowerCase().includes(query) ||
+      (contact.company || '').toLowerCase().includes(query)
+    );
   });
+
+  const leadsCount = contacts.filter(c => c.tags.some(t => t.toLowerCase().includes('lead'))).length;
+  const withEmailCount = contacts.filter(c => c.email).length;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -54,7 +74,9 @@ export default function People() {
                 People
               </h1>
               <p className="text-muted-foreground mt-1">
-                Manage contacts from GoHighLevel
+                {isConnected 
+                  ? `Contacts from ${sourceCount} connected ${sourceCount === 1 ? 'source' : 'sources'}` 
+                  : 'Connect your tools to see contacts'}
               </p>
             </div>
             <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
@@ -68,6 +90,23 @@ export default function People() {
           <div className="flex items-center justify-center h-64">
             <Loader2 className="animate-spin text-primary" size={32} />
           </div>
+        ) : !isConnected ? (
+          /* Empty State - No Integrations Connected */
+          <GlassCard className="p-12 text-center">
+            <LinkIcon className="mx-auto text-muted-foreground mb-4" size={48} />
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              No Integrations Connected
+            </h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Connect your CRM, accounting software, or email to see all your contacts in one place.
+            </p>
+            <button 
+              onClick={() => window.location.href = '/integrations'}
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              Connect Your Tools
+            </button>
+          </GlassCard>
         ) : (
           <>
             {/* Stats */}
@@ -77,7 +116,7 @@ export default function People() {
                   <div>
                     <p className="text-sm text-muted-foreground">Total Contacts</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      {totalCount}
+                      {contacts.length}
                     </p>
                   </div>
                   <Users className="text-primary" size={24} />
@@ -89,7 +128,7 @@ export default function People() {
                   <div>
                     <p className="text-sm text-muted-foreground">Leads</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      {contacts.filter(c => c.type === 'lead').length}
+                      {leadsCount}
                     </p>
                   </div>
                   <Tag className="text-blue-500" size={24} />
@@ -101,7 +140,7 @@ export default function People() {
                   <div>
                     <p className="text-sm text-muted-foreground">With Email</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      {contacts.filter(c => c.email).length}
+                      {withEmailCount}
                     </p>
                   </div>
                   <Mail className="text-green-500" size={24} />
@@ -110,101 +149,96 @@ export default function People() {
             </div>
 
             {/* Search */}
-            <GlassCard className="mb-6 p-4">
+            <GlassCard className="p-4 mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <input
                   type="text"
                   placeholder="Search contacts by name, email, or phone..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
             </GlassCard>
 
             {/* Contacts List */}
-            {filteredContacts.length > 0 ? (
-              <GlassCard>
-                <GlassCardHeader>
-                  <GlassCardTitle>Contacts</GlassCardTitle>
-                  <GlassCardDescription>
-                    {filteredContacts.length} contact{filteredContacts.length !== 1 ? 's' : ''}
-                    {searchQuery && ` matching "${searchQuery}"`}
-                  </GlassCardDescription>
-                </GlassCardHeader>
-                <GlassCardContent>
-                  <div className="space-y-3">
-                    {filteredContacts.map(contact => (
-                      <div
-                        key={contact.id}
-                        className="flex items-start justify-between p-4 rounded-lg bg-card/30 border border-border/30 hover:bg-card/50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <h5 className="font-medium text-foreground">
-                            {ghlService.getContactName(contact)}
-                          </h5>
-                          <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
-                            {contact.email && (
-                              <div className="flex items-center gap-1.5">
-                                <Mail size={14} />
-                                <span>{contact.email}</span>
-                              </div>
-                            )}
-                            {contact.phone && (
-                              <div className="flex items-center gap-1.5">
-                                <Phone size={14} />
-                                <span>{contact.phone}</span>
-                              </div>
-                            )}
-                            {contact.companyName && (
-                              <div className="flex items-center gap-1.5">
-                                <Building2 size={14} />
-                                <span>{contact.companyName}</span>
-                              </div>
-                            )}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-foreground">
+                  Contacts
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredContacts.length} {filteredContacts.length === 1 ? 'contact' : 'contacts'}
+                </p>
+              </div>
+
+              {filteredContacts.length === 0 ? (
+                <GlassCard className="p-8 text-center">
+                  <p className="text-muted-foreground">No contacts found matching your search.</p>
+                </GlassCard>
+              ) : (
+                filteredContacts.map((contact) => (
+                  <GlassCard key={contact.id} className="p-4 hover:border-primary/50 transition-colors cursor-pointer">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {contact.name}
+                          </h3>
+                          {/* Source Badges */}
+                          <div className="flex gap-1">
+                            {contact.sources.map((source, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
+                                title={source.label}
+                              >
+                                {source.icon} {source.label}
+                              </span>
+                            ))}
                           </div>
-                          {contact.tags && contact.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {contact.tags.map((tag, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
+                        </div>
+
+                        <div className="space-y-1">
+                          {contact.email && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Mail size={14} />
+                              <span>{contact.email}</span>
+                            </div>
+                          )}
+                          {contact.phone && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Phone size={14} />
+                              <span>{contact.phone}</span>
+                            </div>
+                          )}
+                          {contact.company && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Building2 size={14} />
+                              <span>{contact.company}</span>
                             </div>
                           )}
                         </div>
-                        <div className="text-right ml-4">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            contact.type === 'lead' 
-                              ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                              : 'bg-green-500/10 text-green-500 border border-green-500/20'
-                          }`}>
-                            {contact.type || 'contact'}
-                          </span>
-                        </div>
+
+                        {contact.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {contact.tags.map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </GlassCardContent>
-              </GlassCard>
-            ) : (
-              <GlassCard className="text-center py-12">
-                <div className="text-6xl mb-4">👥</div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  {searchQuery ? 'No contacts found' : 'No Contacts Yet'}
-                </h3>
-                <p className="text-muted-foreground">
-                  {searchQuery 
-                    ? `No contacts match "${searchQuery}"`
-                    : 'Connect your GoHighLevel account to see your contacts.'
-                  }
-                </p>
-              </GlassCard>
-            )}
+                    </div>
+                  </GlassCard>
+                ))
+              )}
+            </div>
           </>
         )}
       </main>
