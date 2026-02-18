@@ -5,14 +5,12 @@ import { Sparkles, Zap, Gift, Building2, TrendingUp, FileText, Shield } from "lu
 interface TierBadgeProps {
   tierId?: UserTierId;
   size?: "sm" | "md" | "lg";
-  showPrice?: boolean;
   className?: string;
 }
 
 export function TierBadge({ 
   tierId, 
-  size = "sm", 
-  showPrice = false,
+  size = "sm",
   className 
 }: TierBadgeProps) {
   const { currentTier, getTierById } = useUserTier();
@@ -79,11 +77,6 @@ export function TierBadge({
     )}>
       {getIcon()}
       <span>{tier.displayName}</span>
-      {showPrice && tier.price !== null && (
-        <span className="opacity-75">
-          ${tier.price}/mo
-        </span>
-      )}
     </div>
   );
 }

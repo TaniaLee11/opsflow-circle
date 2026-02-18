@@ -254,7 +254,7 @@ LIMIT 20;
 
 2. **Edge function deployment fails**
    - Check Supabase service role key is set
-   - Verify OPENAI_API_KEY is configured in Supabase secrets
+   - Verify ANTHROPIC_API_KEY is configured in Supabase secrets (Claude API)
 
 3. **CRI calculation returns errors**
    - Ensure user has a compliance profile

@@ -235,7 +235,7 @@ export default function Finance() {
                 </ul>
               </div>
               <Button onClick={() => navigate("/services")} className="w-full">
-                Upgrade to Connect Your Accounts
+                Connect Your Accounts
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
@@ -361,7 +361,7 @@ export default function Finance() {
               <Alert>
                 <Lock className="w-4 h-4" />
                 <AlertDescription>
-                  <strong>Upgrade to Operations</strong> to unlock automated invoice reminders, follow-ups, and proactive alerts.
+                  <strong>Additional access required</strong> to unlock automated invoice reminders, follow-ups, and proactive alerts.
                   <Button size="sm" variant="link" onClick={() => navigate("/services")}>
                     Learn More
                   </Button>

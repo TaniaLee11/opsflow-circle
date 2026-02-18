@@ -36,7 +36,7 @@ export function Navigation() {
       color: '#9333EA',
       dashboard: '/engagement',
       pages: [
-        { name: 'People', path: '/people' },
+        { name: 'Contacts', path: '/people' },
         { name: 'Pipeline', path: '/pipeline' },
         { name: 'Proposals & Contracts', path: '/documents' },
         { name: 'Inbox', path: '/inbox' },

@@ -51,10 +51,10 @@ export default function People() {
             <div>
               <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                 <Users className="text-primary" size={32} />
-                People
+                Contacts
               </h1>
               <p className="text-muted-foreground mt-1">
-                Manage contacts from GoHighLevel
+                Contacts, clients, and leads from GoHighLevel
               </p>
             </div>
             <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">

@@ -10,19 +10,16 @@ interface VOPSyUpgradeNudgeProps {
   className?: string;
 }
 
-const TIER_UPGRADE_CONFIG: Record<VOPSyTier, { label: string; ctaText: string; benefit: string }> = {
+const TIER_UPGRADE_CONFIG: Record<VOPSyTier, { ctaText: string; benefit: string }> = {
   free: {
-    label: 'AI Free',
     ctaText: 'Enable read access',
     benefit: 'analyze connected tools',
   },
   assistant: {
-    label: 'AI Assistant',
     ctaText: 'Enable execution',
     benefit: 'execute actions automatically',
   },
   operations: {
-    label: 'AI Operations',
     ctaText: 'Full access',
     benefit: 'full operational control',
   },
@@ -58,11 +55,11 @@ export function VOPSyUpgradeNudge({
   const getMessage = () => {
     switch (context) {
       case 'integration':
-        return `Upgrade to ${targetConfig.label}`;
+        return targetConfig.ctaText;
       case 'action':
         return targetConfig.ctaText;
       default:
-        return `Unlock with ${targetConfig.label}`;
+        return targetConfig.ctaText;
     }
   };
 

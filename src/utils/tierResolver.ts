@@ -126,20 +126,20 @@ export function canAccessFeature(tierInfo: TierInfo, feature: keyof typeof TIER_
 }
 
 // Stage locking (for non-owner users)
-export type Stage = 'Foundations' | 'Growth' | 'Scale';
+export type Stage = 'Foundations' | 'Operating' | 'Growing';
 
 export function getUnlockedStages(tierInfo: TierInfo): Stage[] {
   // Owner has all stages unlocked
-  if (tierInfo.isOwner) return ['Foundations', 'Growth', 'Scale'];
+  if (tierInfo.isOwner) return ['Foundations', 'Operating', 'Growing'];
 
   // All other tiers follow stage progression
   switch (tierInfo.techTier) {
     case 'FREE':
       return ['Foundations'];
     case 'ASSIST':
-      return ['Foundations', 'Growth'];
+      return ['Foundations', 'Operating'];
     case 'OPS':
-      return ['Foundations', 'Growth', 'Scale'];
+      return ['Foundations', 'Operating', 'Growing'];
     default:
       return ['Foundations'];
   }
