@@ -1,169 +1,266 @@
-import { useState } from 'react';
-import { C, getCardGradient, getCardBorder, cardBaseStyles } from "@/components/shared/theme";
+import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/layout/Navigation';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { VOPSyInsight } from '@/components/shared/VOPSyInsight';
-import { CreateModal } from '@/components/shared/CreateModal';
-import { DeleteConfirm } from '@/components/shared/DeleteConfirm';
-import { useToast } from '@/components/shared/Toast';
-import { TrendingUp } from 'lucide-react';
-
-const C = {
-  bg: "#0B1120",
-  surface: "#111827",
-  card: "#1A2332",
-  border: "#1E293B",
-  accent: "#0891B2",
-  text1: "#F1F5F9",
-  text2: "#94A3B8",
-  text3: "#64748B",
-};
+import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardDescription, GlassCardContent } from '@/components/ui/glass-card';
+import { ghlService, type GHLPipeline, type GHLOpportunity } from '@/services/ghl';
+import { TrendingUp, DollarSign, Target, CheckCircle2, XCircle, Loader2, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function Pipeline() {
-  const [items, setItems] = useState<any[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('Active');
-  const { showToast } = useToast();
-  
-  // Mock user context - in production, get from auth
-  const userContext = {
-    name: 'Tania',
-    stage: 'foundations' as const,
-    tier: 'free' as const,
-    industry: 'owner' as const,
-    integrations: [],
-  };
-  
-  // Check if tool is connected
-  const isConnected = userContext.integrations.includes('gohighlevel');
+  const [pipelines, setPipelines] = useState<GHLPipeline[]>([]);
+  const [opportunities, setOpportunities] = useState<GHLOpportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPipeline, setSelectedPipeline] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalValue: 0,
+    totalDeals: 0,
+    wonDeals: 0,
+    lostDeals: 0,
+    openDeals: 0,
+  });
 
-  const handleCreate = (data: any) => {
-    const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() };
-    setItems([...items, newItem]);
-    setShowCreateModal(false);
-    showToast('success', 'Deal created successfully');
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [pipelinesData, opportunitiesData] = await Promise.all([
+        ghlService.getPipelines(),
+        ghlService.getOpportunities(),
+      ]);
+      
+      setPipelines(pipelinesData);
+      setOpportunities(opportunitiesData);
+      
+      if (pipelinesData.length > 0 && !selectedPipeline) {
+        setSelectedPipeline(pipelinesData[0].id);
+      }
+
+      // Calculate stats
+      const totalValue = opportunitiesData.reduce((sum, opp) => sum + (opp.monetaryValue || 0), 0);
+      const wonDeals = opportunitiesData.filter(opp => opp.status === 'won').length;
+      const lostDeals = opportunitiesData.filter(opp => opp.status === 'lost').length;
+      const openDeals = opportunitiesData.filter(opp => opp.status === 'open').length;
+
+      setStats({
+        totalValue,
+        totalDeals: opportunitiesData.length,
+        wonDeals,
+        lostDeals,
+        openDeals,
+      });
+    } catch (error) {
+      console.error('Failed to load pipeline data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-  
-  const handleDelete = () => {
-    setItems(items.filter(item => item.id !== selectedItem?.id));
-    setShowDeleteConfirm(false);
-    setSelectedItem(null);
-    showToast('success', 'Deal deleted');
-  };
-  
+
+  const filteredOpportunities = selectedPipeline
+    ? opportunities.filter(opp => opp.pipelineId === selectedPipeline)
+    : opportunities;
+
+  const currentPipeline = pipelines.find(p => p.id === selectedPipeline);
+
   return (
-    <div style={{ marginLeft: 220, minHeight: '100vh', background: C.bg }}>
+    <div className="flex min-h-screen bg-background">
       <Navigation />
-      <main className="p-6 lg:p-8">
-        <PageHeader 
-          title="Pipeline"
-          subtitle="{isConnected ? 'Connected to GoHighLevel' : 'Track manually or connect GoHighLevel'}"
-          icon={TrendingUp}
-          action={{
-            label: "Add Deal",
-            onClick: () => setShowCreateModal(true),
-            color: "#9333EA"
-          }}
-        />
-        
-        <VOPSyInsight page="pipeline" userContext={userContext} />
+      
+      <main className="flex-1 ml-[220px] p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <TrendingUp className="text-primary" size={32} />
+                Pipeline
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Track deals and opportunities from GoHighLevel
+              </p>
+            </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+              <Plus size={18} />
+              Add Deal
+            </button>
+          </div>
+        </div>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20, borderBottom: '1px solid #1E293B' }}>
-        {<button onClick={() => setActiveTab('Active')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Active' ? '2px solid #9333EA' : 'none', color: activeTab === 'Active' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Active' ? 600 : 400, cursor: 'pointer' }}>Active</button>, <button onClick={() => setActiveTab('Won')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Won' ? '2px solid #9333EA' : 'none', color: activeTab === 'Won' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Won' ? 600 : 400, cursor: 'pointer' }}>Won</button>, <button onClick={() => setActiveTab('Lost')} style={{ padding: '10px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === 'Lost' ? '2px solid #9333EA' : 'none', color: activeTab === 'Lost' ? '#9333EA' : C.text2, fontWeight: activeTab === 'Lost' ? 600 : 400, cursor: 'pointer' }}>Lost</button>}
-      </div>
-        {items.length === 0 ? (
-          <div style={{
-            background: getCardGradient("#9333EA"), borderRadius: 12,
-            border: `1px solid ${C.border}`,
-            padding: 48, textAlign: "center"
-          }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-            <div style={{ color: C.text1, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-              No deals yet
-            </div>
-            <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
-              {isConnected 
-                ? 'Data will appear after your first sync with GoHighLevel.'
-                : 'Add deals manually or connect GoHighLevel to sync automatically.'
-              }
-            </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                style={{
-                  background: getCardGradient("#9333EA"), color: "#fff", border: "none",
-                  padding: "8px 18px", borderRadius: 8, fontWeight: 600,
-                  fontSize: 13, cursor: "pointer"
-                }}
-              >
-                Add Deal
-              </button>
-              {!isConnected && (
-                <button style={{
-                  background: "transparent", color: C.accent,
-                  border: `1px solid ${C.accent}`, padding: "8px 18px",
-                  borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer"
-                }}
-                  onClick={() => window.location.href = '/integrations'}
-                >
-                  Connect GoHighLevel →
-                </button>
-              )}
-            </div>
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="animate-spin text-primary" size={32} />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {items.map(item => (
-              <div key={item.id} style={{
-                background: getCardGradient("#9333EA"), border: `1px solid ${C.border}`,
-                borderRadius: 10, padding: 16, display: 'flex',
-                justifyContent: 'space-between', alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ color: C.text1, fontWeight: 600, marginBottom: 4 }}>
-                    {item.name || item.title}
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Value</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      ${stats.totalValue.toLocaleString()}
+                    </p>
                   </div>
-                  <div style={{ color: C.text3, fontSize: 12 }}>
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </div>
+                  <DollarSign className="text-green-500" size={24} />
                 </div>
-                <button
-                  onClick={() => { setSelectedItem(item); setShowDeleteConfirm(true); }}
-                  style={{
-                    background: 'transparent', border: `1px solid ${C.border}`,
-                    color: C.text2, padding: '6px 12px', borderRadius: 6,
-                    fontSize: 12, cursor: 'pointer'
-                  }}
-                >
-                  Delete
-                </button>
+              </GlassCard>
+
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Deals</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      {stats.totalDeals}
+                    </p>
+                  </div>
+                  <Target className="text-blue-500" size={24} />
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Won</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      {stats.wonDeals}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="text-green-500" size={24} />
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Lost</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      {stats.lostDeals}
+                    </p>
+                  </div>
+                  <XCircle className="text-red-500" size={24} />
+                </div>
+              </GlassCard>
+            </div>
+
+            {/* Pipeline Selector */}
+            {pipelines.length > 0 && (
+              <div className="mb-6">
+                <div className="flex gap-2 flex-wrap">
+                  {pipelines.map(pipeline => (
+                    <button
+                      key={pipeline.id}
+                      onClick={() => setSelectedPipeline(pipeline.id)}
+                      className={cn(
+                        "px-4 py-2 rounded-lg font-medium transition-all",
+                        selectedPipeline === pipeline.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card/50 text-muted-foreground hover:bg-card"
+                      )}
+                    >
+                      {pipeline.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            )}
+
+            {/* Pipeline Stages */}
+            {currentPipeline && (
+              <GlassCard>
+                <GlassCardHeader>
+                  <GlassCardTitle>{currentPipeline.name}</GlassCardTitle>
+                  <GlassCardDescription>
+                    {currentPipeline.stages.length} stages
+                  </GlassCardDescription>
+                </GlassCardHeader>
+                <GlassCardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {currentPipeline.stages
+                      .sort((a, b) => a.position - b.position)
+                      .map(stage => {
+                        const stageOpps = filteredOpportunities.filter(
+                          opp => opp.pipelineStageId === stage.id
+                        );
+                        const stageValue = stageOpps.reduce(
+                          (sum, opp) => sum + (opp.monetaryValue || 0),
+                          0
+                        );
+
+                        return (
+                          <div
+                            key={stage.id}
+                            className="glass rounded-lg p-4 border border-border/50"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold text-foreground">
+                                {stage.name}
+                              </h4>
+                              <span className="text-sm text-muted-foreground">
+                                {stageOpps.length}
+                              </span>
+                            </div>
+                            <p className="text-lg font-bold text-primary">
+                              ${stageValue.toLocaleString()}
+                            </p>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </GlassCardContent>
+              </GlassCard>
+            )}
+
+            {/* Opportunities List */}
+            {filteredOpportunities.length > 0 && (
+              <GlassCard className="mt-6">
+                <GlassCardHeader>
+                  <GlassCardTitle>Opportunities</GlassCardTitle>
+                  <GlassCardDescription>
+                    {filteredOpportunities.length} active opportunities
+                  </GlassCardDescription>
+                </GlassCardHeader>
+                <GlassCardContent>
+                  <div className="space-y-3">
+                    {filteredOpportunities.map(opp => (
+                      <div
+                        key={opp.id}
+                        className="flex items-center justify-between p-4 rounded-lg bg-card/30 border border-border/30 hover:bg-card/50 transition-colors"
+                      >
+                        <div>
+                          <h5 className="font-medium text-foreground">{opp.name}</h5>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Status: {opp.status}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">
+                            ${(opp.monetaryValue || 0).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </GlassCardContent>
+              </GlassCard>
+            )}
+
+            {/* Empty State */}
+            {pipelines.length === 0 && (
+              <GlassCard className="text-center py-12">
+                <div className="text-6xl mb-4">📋</div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  No Pipelines Found
+                </h3>
+                <p className="text-muted-foreground">
+                  Connect your GoHighLevel account to see your pipelines and opportunities.
+                </p>
+              </GlassCard>
+            )}
+          </>
         )}
       </main>
-      
-      {showCreateModal && (
-        <CreateModal
-          title="Add Deal"
-          fields={[
-            { name: 'name', label: 'Name', type: 'text', required: true },
-            { name: 'description', label: 'Description', type: 'textarea' },
-          ]}
-          onSave={handleCreate}
-          onClose={() => setShowCreateModal(false)}
-        />
-      )}
-      
-      {showDeleteConfirm && (
-        <DeleteConfirm
-          itemName={selectedItem?.name || selectedItem?.title}
-          onConfirm={handleDelete}
-          onCancel={() => { setShowDeleteConfirm(false); setSelectedItem(null); }}
-        />
-      )}
     </div>
   );
 }
