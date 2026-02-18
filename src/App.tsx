@@ -58,7 +58,7 @@ import FundingReadiness from "./pages/finance/FundingReadiness";
 import DonationGrantTracking from "./pages/finance/DonationGrantTracking";
 
 // Systems pages (5)
-import Integrations from "./pages/Integrations";
+import Integrations from "./pages/systems/Integrations";
 import Workflows from "./pages/Workflows";
 import Calendar from "./pages/tools/Calendar";
 import Tasks from "./pages/tools/Tasks";
