@@ -35,7 +35,7 @@ export default function Banking() {
     
     setLoading(true);
     try {
-      // Fetch from ALL connected bank sources (Plaid, Stripe, manual bank connections)
+      // Fetch from ALL connected bank sources (banking integrations, payment processors, accounting software)
       const sources = await fetchAllTransactionSources(user.id);
       
       if (sources.length === 0) {
@@ -139,7 +139,7 @@ export default function Banking() {
               No Bank Accounts Connected
             </h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Connect your bank accounts via Plaid, Stripe, or manually to see all your accounts and transactions in one place.
+              Connect your banking, payment, and accounting integrations to see all your accounts and transactions in one place.
             </p>
             <button 
               onClick={() => window.location.href = '/integrations'}

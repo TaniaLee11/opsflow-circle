@@ -139,7 +139,7 @@ export default function CashFlow() {
               No Accounting Software Connected
             </h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Connect QuickBooks, Wave, or your bank to automatically track cash flow.
+              Connect your accounting software, payment processors, or banking integrations to automatically track cash flow.
             </p>
             <button 
               onClick={() => window.location.href = '/integrations'}

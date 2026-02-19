@@ -49,7 +49,7 @@ export default function TaxOrganizer() {
       <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Tax Organizer"
-          subtitle="{isConnected ? 'Connected to QuickBooks' : 'Track manually or connect QuickBooks'}"
+          subtitle="{isConnected ? 'Connected to accounting software' : 'Track manually or connect your accounting software'}"
           icon={Calendar}
           action={{
             label: "Add Tax Document",
@@ -73,7 +73,7 @@ export default function TaxOrganizer() {
             <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
               {isConnected 
                 ? 'Data will appear after your first sync with QuickBooks.'
-                : 'Add tax documents manually or connect QuickBooks to sync automatically.'
+                : 'Add tax documents manually or connect your accounting software to sync automatically.'
               }
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -95,7 +95,7 @@ export default function TaxOrganizer() {
                 }}
                   onClick={() => window.location.href = '/integrations'}
                 >
-                  Connect QuickBooks →
+                  Connect your accounting software →
                 </button>
               )}
             </div>

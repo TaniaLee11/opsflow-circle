@@ -31,7 +31,7 @@ export default function Reconciliation() {
     
     setLoading(true);
     try {
-      // Fetch from ALL connected accounting sources (QuickBooks, Wave, Stripe, bank connections)
+      // Fetch from ALL connected accounting sources (your accounting software, Stripe, bank connections)
       const sources = await fetchAllTransactionSources(user.id);
       
       if (sources.length === 0) {
@@ -116,7 +116,7 @@ export default function Reconciliation() {
               No Accounting Software Connected
             </h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Connect QuickBooks, Wave, Xero, or your bank to automatically sync and reconcile transactions.
+              Connect your accounting software, or your bank to automatically sync and reconcile transactions.
             </p>
             <button 
               onClick={() => window.location.href = '/integrations'}
