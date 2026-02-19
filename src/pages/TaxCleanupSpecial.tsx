@@ -21,11 +21,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageThemeToggle } from "@/components/ui/page-theme-toggle";
 import { EmailCaptureModal } from "@/components/EmailCaptureModal";
-import { useTaxSeasonIntegration } from "@/hooks/tax-season-integration";
+import { useCalendlyCapture } from "@/hooks/useCalendlyCapture";
 
 const TaxCleanupSpecial = () => {
   const navigate = useNavigate();
-  const { showEmailModal, setShowEmailModal, handleCTAClick, handleEmailSubmit } = useTaxSeasonIntegration();
+  const { showEmailModal, setShowEmailModal, handleScheduleCall, handleEmailSubmit, isSubmitting } = useCalendlyCapture("https://calendly.com/vops", "tax-cleanup-special");
   const [spotsRemaining] = useState(18); // Update this manually or fetch from backend
 
   return (
@@ -94,7 +94,7 @@ const TaxCleanupSpecial = () => {
                 <Button 
                   size="lg" 
                   className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => handleCTAClick('tax-cleanup-special')}
+                  onClick={handleScheduleCall}
                 >
                   Book Your Cleanup Now
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -153,7 +153,7 @@ const TaxCleanupSpecial = () => {
               <p className="text-lg font-medium mb-6">We specialize in fixing exactly this situation.</p>
               <Button 
                 size="lg"
-                onClick={() => handleCTAClick('tax-cleanup-special')}
+                onClick={handleScheduleCall}
                 className="bg-primary hover:bg-primary/90"
               >
                 Let's Fix Your Books
@@ -451,7 +451,7 @@ const TaxCleanupSpecial = () => {
               <Button 
                 size="lg" 
                 className="bg-primary hover:bg-primary/90 text-lg px-8 py-6"
-                onClick={() => handleCTAClick('tax-cleanup-special')}
+                onClick={handleScheduleCall}
               >
                 Book Your Tax Cleanup Now
                 <ArrowRight className="ml-2 w-6 h-6" />
