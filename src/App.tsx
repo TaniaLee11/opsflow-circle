@@ -23,6 +23,7 @@ import Onboarding from "./pages/Onboarding";
 import TaxSeason2026 from "./pages/TaxSeason2026";
 import TaxServices from "./pages/TaxServices";
 import TaxCleanupSpecial from "./pages/TaxCleanupSpecial";
+import AutomateYourOffice from "./pages/AutomateYourOffice";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import FreeCourses from "./pages/FreeCourses";
@@ -122,6 +123,7 @@ const App = () => (
                     <Route path="/tax-season-2026" element={<TaxSeason2026 />} />
                     <Route path="/tax-services" element={<TaxServices />} />
                     <Route path="/tax-cleanup-special" element={<TaxCleanupSpecial />} />
+                    <Route path="/automate-your-office" element={<AutomateYourOffice />} />
                     <Route path="/free-courses" element={<FreeCourses />} />
                     {/* Landing page alias for marketing funnel */}
                     <Route path="/free-course" element={<FreeCourses />} />
