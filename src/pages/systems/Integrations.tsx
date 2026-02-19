@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GlassCard } from '../../components/ui/glass-card';
+import { Navigation } from '../../components/layout/Navigation';
 
 interface Integration {
   id: string;
@@ -24,18 +25,37 @@ export default function Integrations() {
   const fetchIntegrations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/ghl-integrations');
-      const data = await response.json();
       
-      // Map GHL integrations to our format
+      // Get user ID from context/session
+      const userResponse = await fetch('/api/auth/session');
+      const userData = await userResponse.json();
+      const userId = userData?.user?.id;
+      
+      if (!userId) {
+        console.error('No user ID found');
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch user's integrations from database
+      const response = await fetch(`/api/user-integrations?userId=${userId}`);
+      const data = await response.json();
+      const userIntegrations = data.integrations || [];
+      
+      // Create a map of connected integrations
+      const connectedMap = new Map(
+        userIntegrations.map((int: any) => [int.integration_id, int])
+      );
+      
+      // Define all available integrations
       const mappedIntegrations: Integration[] = [
         {
           id: 'ghl',
           name: 'GoHighLevel',
           category: 'CRM',
           icon: '🎯',
-          connected: data.connected || false,
-          lastSync: data.lastSync,
+          connected: connectedMap.has('ghl'),
+          lastSync: connectedMap.get('ghl')?.last_sync,
           description: 'All-in-one marketing and CRM platform'
         },
         {
@@ -43,7 +63,8 @@ export default function Integrations() {
           name: 'Google Workspace',
           category: 'Productivity',
           icon: '📧',
-          connected: data.integrations?.google || false,
+          connected: connectedMap.has('google'),
+          lastSync: connectedMap.get('google')?.last_sync,
           description: 'Gmail, Calendar, Drive, and more'
         },
         {
@@ -51,7 +72,8 @@ export default function Integrations() {
           name: 'Facebook Ads',
           category: 'Marketing',
           icon: '📘',
-          connected: data.integrations?.facebook || false,
+          connected: connectedMap.has('facebook'),
+          lastSync: connectedMap.get('facebook')?.last_sync,
           description: 'Facebook advertising and analytics'
         },
         {
@@ -59,8 +81,8 @@ export default function Integrations() {
           name: 'QuickBooks',
           category: 'Finance',
           icon: '💰',
-          connected: data.integrations?.quickbooks || false,
-          lastSync: data.integrations?.quickbooks ? 'Just now' : undefined,
+          connected: connectedMap.has('quickbooks'),
+          lastSync: connectedMap.get('quickbooks')?.last_sync,
           description: 'Accounting and financial management'
         },
         {
@@ -68,7 +90,8 @@ export default function Integrations() {
           name: 'TikTok Ads',
           category: 'Marketing',
           icon: '🎵',
-          connected: data.integrations?.tiktok || false,
+          connected: connectedMap.has('tiktok'),
+          lastSync: connectedMap.get('tiktok')?.last_sync,
           description: 'TikTok advertising platform'
         },
         {
@@ -76,7 +99,8 @@ export default function Integrations() {
           name: 'Google Analytics 4',
           category: 'Analytics',
           icon: '📊',
-          connected: data.integrations?.ga4 || false,
+          connected: connectedMap.has('ga4'),
+          lastSync: connectedMap.get('ga4')?.last_sync,
           description: 'Website and app analytics'
         },
         {
@@ -127,8 +151,77 @@ export default function Integrations() {
 
   const connectedCount = integrations.filter(i => i.connected).length;
 
+  const handleConnect = async (integrationId: string) => {
+    try {
+      // Get user ID from context/session
+      const userResponse = await fetch('/api/auth/session');
+      const userData = await userResponse.json();
+      const userId = userData?.user?.id;
+      
+      if (!userId) {
+        console.error('No user ID found');
+        return;
+      }
+      
+      const integration = integrations.find(int => int.id === integrationId);
+      if (!integration) return;
+      
+      // Save to database
+      const response = await fetch('/api/user-integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          integrationId: integration.id,
+          integrationName: integration.name,
+          connected: true,
+          metadata: { category: integration.category }
+        })
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setIntegrations(integrations.map(int => 
+          int.id === integrationId ? { ...int, connected: true, lastSync: new Date().toISOString() } : int
+        ));
+      }
+    } catch (error) {
+      console.error('Error connecting integration:', error);
+    }
+  };
+
+  const handleDisconnect = async (integrationId: string) => {
+    try {
+      // Get user ID from context/session
+      const userResponse = await fetch('/api/auth/session');
+      const userData = await userResponse.json();
+      const userId = userData?.user?.id;
+      
+      if (!userId) {
+        console.error('No user ID found');
+        return;
+      }
+      
+      // Delete from database
+      const response = await fetch(`/api/user-integrations?userId=${userId}&integrationId=${integrationId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setIntegrations(integrations.map(int => 
+          int.id === integrationId ? { ...int, connected: false, lastSync: undefined } : int
+        ));
+      }
+    } catch (error) {
+      console.error('Error disconnecting integration:', error);
+    }
+  };
+
   return (
-    <div className="p-8">
+    <div className="flex min-h-screen bg-background">
+      <Navigation />
+      <main className="flex-1 p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Integrations</h1>
         <p className="text-gray-400">Connect your business tools to unlock VOP Sy's full intelligence</p>
@@ -214,6 +307,7 @@ export default function Integrations() {
               )}
               
               <button
+                onClick={() => integration.connected ? handleDisconnect(integration.id) : handleConnect(integration.id)}
                 className={`w-full py-2 rounded-lg font-medium transition-all ${
                   integration.connected
                     ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
@@ -232,6 +326,7 @@ export default function Integrations() {
           <p className="text-gray-400">No integrations found matching your search.</p>
         </div>
       )}
+      </main>
     </div>
   );
 }
