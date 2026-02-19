@@ -41,7 +41,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         lastName: lastName || '',
         phone: phone || '',
         tags: tags || [],
-        customField: customFields || {},
       }),
     });
 
