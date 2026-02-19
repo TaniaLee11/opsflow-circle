@@ -5,6 +5,7 @@ import {
   Megaphone, Users, DollarSign, Settings, UsersRound,
   Calendar, CheckSquare, FolderLock, ChevronDown, Lock, HelpCircle
 } from 'lucide-react';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 export function Navigation() {
   const navigate = useNavigate();
@@ -179,15 +180,18 @@ export function Navigation() {
         <div className="h-20" />
       </nav>
 
-      {/* Support button at bottom */}
-      <div className="border-t border-border/50 p-3 flex-shrink-0">
-        <button
-          onClick={() => window.open('https://help.manus.im', '_blank')}
-          className="w-full bg-transparent border border-border rounded-lg px-3 py-2.5 flex items-center gap-2.5 cursor-pointer text-muted-foreground text-sm font-medium transition-all hover:bg-primary/10 hover:border-primary hover:text-primary"
-        >
-          <HelpCircle size={16} />
-          <span>Support</span>
-        </button>
+      {/* Support button and theme toggle at bottom */}
+      <div className="border-t border-border/50 p-3 flex-shrink-0 space-y-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.open('https://help.manus.im', '_blank')}
+            className="flex-1 bg-transparent border border-border rounded-lg px-3 py-2.5 flex items-center gap-2.5 cursor-pointer text-muted-foreground text-sm font-medium transition-all hover:bg-primary/10 hover:border-primary hover:text-primary"
+          >
+            <HelpCircle size={16} />
+            <span>Support</span>
+          </button>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );
