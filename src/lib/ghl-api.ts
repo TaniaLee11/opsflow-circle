@@ -4,7 +4,7 @@
  * Uses serverless function to keep API keys secure
  */
 
-const GHL_API_ENDPOINT = '/api/ghl/create-contact';
+const GHL_API_ENDPOINT = '/api/ghl-create-contact';
 
 export interface GHLContactData {
   email: string;
