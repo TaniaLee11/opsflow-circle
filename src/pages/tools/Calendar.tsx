@@ -35,7 +35,7 @@ export default function Calendar() {
     
     setLoading(true);
     try {
-      // Fetch from ALL connected calendar sources (Google Calendar, Outlook, etc.)
+      // Fetch from ALL connected calendar sources (connected calendar sources)
       const sources = await fetchAllCalendarSources(user.id);
       
       if (sources.length === 0) {
@@ -124,7 +124,7 @@ export default function Calendar() {
               No Calendar Connected
             </h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Connect Google Calendar, Outlook, or other calendar services to see all your events in one place.
+              Connect your connected calendar integrations to see all your events in one place.
             </p>
             <button 
               onClick={() => window.location.href = '/integrations'}
@@ -282,7 +282,7 @@ export default function Calendar() {
 // Helper functions
 async function fetchAllCalendarSources(userId: string): Promise<{ provider: string; events: any[] }[]> {
   const sources: { provider: string; events: any[] }[] = [];
-  // TODO: Implement user_integrations table and fetch from Google Calendar, Outlook, etc.
+  // TODO: Implement user_integrations table and fetch from connected calendar sources
   return sources;
 }
 

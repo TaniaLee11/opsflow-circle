@@ -59,7 +59,7 @@ export default function Vault() {
       <main className="flex-1 p-6 lg:p-8">
         <PageHeader 
           title="Vault"
-          subtitle="{isConnected ? 'Connected to Dropbox' : 'Track manually or connect Dropbox'}"
+          subtitle="{isConnected ? 'Connected to storage' : 'Track manually or connect storage integration'}"
           icon={FolderLock}
           action={{
             label: "Add Document",
@@ -82,8 +82,8 @@ export default function Vault() {
             </div>
             <div style={{ color: C.text2, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
               {isConnected 
-                ? 'Data will appear after your first sync with Dropbox.'
-                : 'Add documents manually or connect Dropbox to sync automatically.'
+                ? 'Data will appear after your first sync with storage.'
+                : 'Add documents manually or connect storage integration to sync automatically.'
               }
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -105,7 +105,7 @@ export default function Vault() {
                 }}
                   onClick={() => window.location.href = '/integrations'}
                 >
-                  Connect Dropbox →
+                  Connect storage integration →
                 </button>
               )}
             </div>

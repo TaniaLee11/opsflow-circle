@@ -77,7 +77,7 @@ export default function Pipeline() {
                 Pipeline
               </h1>
               <p className="text-muted-foreground mt-1">
-                Track deals and opportunities from GoHighLevel
+                Track deals and opportunities from all your connected systems
               </p>
             </div>
             <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
@@ -254,7 +254,7 @@ export default function Pipeline() {
                   No Pipelines Found
                 </h3>
                 <p className="text-muted-foreground">
-                  Connect your GoHighLevel account to see your pipelines and opportunities.
+                  Connect your CRM and email integrations to see your pipelines and opportunities.
                 </p>
               </GlassCard>
             )}
